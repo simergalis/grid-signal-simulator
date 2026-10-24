@@ -218,3 +218,46 @@ def test_cpu_only_unknown_partition_fails_closed():
     ]
     with pytest.raises(ValueError, match="unsupported partition"):
         ms.cpu_only_jobs_for_day(rows, DAY)
+
+
+def test_tc_isl_60_fuel_model_is_explicit_opt_in_and_records_provenance():
+    """TC-ISL-60 — D6-F generator option adds only fuel/cost accounting blocks."""
+    jobs = [ms.GpuJob(start_s=0.0, end_s=300.0, gpus=2, started_before_window=False)]
+    cpu_jobs = [ms.CpuJob(start_s=0.0, end_s=300.0, allocated_cores=4, partition="normal")]
+    without_fuel, _ = ms.build_scenario(
+        jobs,
+        TEMPLATE,
+        day=DAY,
+        peak_mw=50.0,
+        rated_kw=10.2,
+        cpu_jobs=cpu_jobs,
+        generator_commit="test-source-commit",
+        input_sha256="test-input-hash",
+        template_name="demo-islanded-ramp.json",
+    )
+    with_fuel, report = ms.build_scenario(
+        jobs,
+        TEMPLATE,
+        day=DAY,
+        peak_mw=50.0,
+        rated_kw=10.2,
+        cpu_jobs=cpu_jobs,
+        generator_commit="test-source-commit",
+        input_sha256="test-input-hash",
+        template_name="demo-islanded-ramp.json",
+        fuel_model="siemens-sgt-400-proxy",
+    )
+    assert "fuel" not in without_fuel["turbine_units"][0]
+    assert "operating_cost_inputs" not in without_fuel
+    assert with_fuel["turbine_units"][0]["fuel"]["heat_rate_basis"] == "LHV"
+    assert with_fuel["operating_cost_inputs"]["gas_price_basis"] == "HHV"
+    assert report["invocation"]["fuel_model"] == "siemens-sgt-400-proxy"
+    assert report["invocation"]["generator_commit"] == "test-source-commit"
+    assert report["invocation"]["input_sha256"] == "test-input-hash"
+    assert report["invocation"]["gpu_partitions_status"].startswith("INFERRED")
+    assert report["fuel_model"]["option"] == "siemens-sgt-400-proxy"
+    assert report["fuel_model"]["full_load_conversion"]["converted_btu_per_kwh"] == pytest.approx(
+        10160.59824
+    )
+    assert with_fuel["workload_events"] == without_fuel["workload_events"]
+    assert with_fuel["turbine_units"][0]["rated_mw"] == without_fuel["turbine_units"][0]["rated_mw"]

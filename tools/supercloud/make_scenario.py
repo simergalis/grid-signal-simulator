@@ -112,6 +112,124 @@ CPU_WATTS_PER_CORE = {
 # Platinum 8260, 165 W / 24 cores).
 CPU_SENSITIVITY_WATTS_PER_CORE = 6.875
 
+# PROPOSED_HERE: SGT-400 proxy uses the 2024 Siemens brochure's 10,720 kJ/kWh
+# at 14.3 MWe, converted and rounded to 10,161 Btu/kWh. The brochure's basis
+# is treated as ASSUMED LHV because the extracted specification does not state
+# LHV/HHV. The equipment installed at S10 is unknown.
+SGT400_PROXY_FULL_LOAD_BTU_PER_KWH = 10161.0
+# PROPOSED_HERE: scale the repository's aeroderivative part-load curve so its
+# full-load point matches the SGT-400 proxy. The in-repo curve is
+# 11,000/9,800/9,000/8,500 Btu/kWh at 25/50/75/100% load
+# (core/models.py:965–979).
+SGT400_PROXY_CURVE_SCALE = SGT400_PROXY_FULL_LOAD_BTU_PER_KWH / 8500.0
+SGT400_PROXY_FUEL_BLOCK = {
+    "fuel_type": "natural_gas",
+    "fuel_units": "MMBtu",
+    "heat_rate_basis": "LHV",
+    "part_load_heat_rate_btu_per_kwh": [
+        [0.25, 11000.0 * SGT400_PROXY_CURVE_SCALE],
+        [0.50, 9800.0 * SGT400_PROXY_CURVE_SCALE],
+        [0.75, 9000.0 * SGT400_PROXY_CURVE_SCALE],
+        [1.00, 8500.0 * SGT400_PROXY_CURVE_SCALE],
+    ],
+    "synchronized_no_load_fuel_mmbtu_per_h": 1.20,
+    "hot_standby_fuel_mmbtu_per_h": 0.25,
+    "start_fuel_mmbtu_hot": 8.0,
+    "start_fuel_mmbtu_warm": 12.0,
+    "start_fuel_mmbtu_cold": 20.0,
+    "low_load_threshold_pct": 50.0,
+    "provenance": {
+        "heat_rate_basis": (
+            "ASSUMED LHV, PROPOSED_HERE: the Siemens 2024 brochure does not "
+            "state the heat-rate basis in the extracted specification."
+        ),
+        "part_load_heat_rate_btu_per_kwh": (
+            "Full-load point CITED: Siemens Energy Gas Turbine Portfolio "
+            "Brochure 2024, SGT-400 14.3 MWe at 10,720 kJ/kWh; converted "
+            "10,720 × 0.947817 = 10,160.59824 Btu/kWh, rounded to 10,161. "
+            "Part-load shape PROPOSED_HERE: core/models.py "
+            "AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 10,161/8,500."
+        ),
+        "synchronized_no_load_fuel_mmbtu_per_h": (
+            "PROPOSED_HERE: retained from the in-repo aeroderivative fuel "
+            "parameters; not a Siemens SGT-400 vendor value."
+        ),
+        "hot_standby_fuel_mmbtu_per_h": (
+            "PROPOSED_HERE: retained from the in-repo aeroderivative fuel "
+            "parameters; not a Siemens SGT-400 vendor value."
+        ),
+        "start_fuel_mmbtu_hot": (
+            "PROPOSED_HERE: retained from the in-repo aeroderivative fuel "
+            "parameters; not a Siemens SGT-400 vendor value."
+        ),
+        "start_fuel_mmbtu_warm": (
+            "PROPOSED_HERE: retained from the in-repo aeroderivative fuel "
+            "parameters; not a Siemens SGT-400 vendor value."
+        ),
+        "start_fuel_mmbtu_cold": (
+            "PROPOSED_HERE: retained from the in-repo aeroderivative fuel "
+            "parameters; not a Siemens SGT-400 vendor value."
+        ),
+        "low_load_threshold_pct": (
+            "PROPOSED_HERE: retained from the in-repo aeroderivative fuel "
+            "parameters; not a Siemens SGT-400 vendor value."
+        ),
+    },
+}
+
+# CITED US public prices; the gas value is computed from the displayed
+# $5.331/Mcf 12-month average divided by EIA 2025 heat content 1.037 MMBtu/Mcf.
+# The currency year is intentionally mixed: fuel prices 2026, EIA O&M proxy 2023.
+S10_OPERATING_COST_INPUTS = {
+    "gas_price_usd_per_mmbtu": 5.331 / 1.037,
+    "gas_price_basis": "HHV",
+    "gas_price_usd_per_mmbtu_provenance": (
+        "CITED: EIA U.S. Natural Gas Industrial Price, Aug 2025–Jul 2026 "
+        "12-month mean $5.331/Mcf (https://www.eia.gov/dnav/ng/hist/n3035us3m.htm), "
+        "divided by EIA 2025 average heat content 1,037 Btu/cf = "
+        "1.037 MMBtu/Mcf (https://www.eia.gov/tools/faqs/faq.php?id=45&t=5)."
+    ),
+    "gas_price_basis_provenance": (
+        "CITED: EIA heat-content conversion above; price is recorded on an HHV basis."
+    ),
+    "diesel_price_usd_per_gal": 6.276,
+    "diesel_price_usd_per_gal_provenance": (
+        "CITED: EIA U.S. on-highway No. 2 diesel retail, week of 2026-10-19, "
+        "$6.276/gal, including taxes (https://www.eia.gov/petroleum/gasdiesel/). "
+        "Off-road generator fuel may exclude road taxes."
+    ),
+    "turbine_variable_om_usd_per_mwh": 5.70,
+    "turbine_variable_om_usd_per_mwh_provenance": (
+        "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, "
+        "Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 × 54 MW; "
+        "$5.70/MWh, 2023 dollars "
+        "(https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf)."
+    ),
+    "turbine_fixed_om_usd_per_kw_yr": 9.56,
+    "turbine_fixed_om_usd_per_kw_yr_provenance": (
+        "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, "
+        "Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 × 54 MW; "
+        "$9.56/kW-year, 2023 dollars; proxy for larger aeroderivative units."
+    ),
+    "turbine_start_cost_usd_per_start": None,
+    "turbine_start_cost_usd_per_start_provenance": (
+        "No cited non-fuel start-cost source; intentionally left null."
+    ),
+    "bess_degradation_usd_per_mwh": None,
+    "bess_degradation_usd_per_mwh_provenance": (
+        "No cited degradation-cost source; intentionally left null."
+    ),
+    "unserved_energy_value_usd_per_mwh": None,
+    "unserved_energy_value_usd_per_mwh_provenance": (
+        "No cited unserved-energy value; intentionally left null."
+    ),
+    "currency_year": "mixed: 2023 USD O&M; 2026 USD fuel prices",
+    "currency_year_provenance": (
+        "CITED: EIA AEO2025 O&M proxy is 2023 dollars; fuel prices are US "
+        "public prices observed in 2026. Values are not inflation-normalized."
+    ),
+}
+
 @dataclass(frozen=True)
 class GpuJob:
     start_s: float      # seconds from window start, clipped at 0
@@ -313,6 +431,7 @@ def build_scenario(
     template_name: str | None = None,
     initial_soc_fraction: float | None = None,
     soc_derivation: dict[str, Any] | None = None,
+    fuel_model: str | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Return (scenario spec dict, aggregate build report)."""
     if not jobs:
@@ -470,6 +589,13 @@ def build_scenario(
                 for index, unit in enumerate(spec.get("bess_units") or [])
             },
             "soc_derivation": soc_derivation,
+            "fuel_model": fuel_model,
+            "fuel_model_detail": (
+                "Siemens SGT-400 proxy; 15 MW class, 14.3 MWe vs 15 MW rating; "
+                "S10 equipment unknown; ASSUMED LHV, PROPOSED_HERE."
+                if fuel_model == "siemens-sgt-400-proxy"
+                else None
+            ),
         }
         spec["non_gpu_load_profile_mw"] = cpu_profile
         spec["description"] += (
@@ -506,6 +632,29 @@ def build_scenario(
                 "invocation": invocation,
             }
         )
+    if fuel_model is not None:
+        if fuel_model != "siemens-sgt-400-proxy":
+            raise ValueError(f"unsupported fuel model {fuel_model!r}")
+        for turbine in spec.get("turbine_units") or []:
+            turbine["fuel"] = copy.deepcopy(SGT400_PROXY_FUEL_BLOCK)
+        spec["operating_cost_inputs"] = copy.deepcopy(S10_OPERATING_COST_INPUTS)
+        spec["description"] += (
+            " Fuel model: proxy: 15 MW-class industrial; S10 equipment unknown; "
+            "14.3 MW vs 15 MW rating. Fuel basis ASSUMED LHV, PROPOSED_HERE; "
+            "price and O&M provenance are recorded in operating_cost_inputs."
+        )
+        report["fuel_model"] = {
+            "option": fuel_model,
+            "fuel_block": SGT400_PROXY_FUEL_BLOCK,
+            "operating_cost_inputs": S10_OPERATING_COST_INPUTS,
+            "full_load_conversion": {
+                "source_kj_per_kwh": 10720,
+                "conversion_factor_to_btu_per_kwh": 0.947817,
+                "converted_btu_per_kwh": 10720 * 0.947817,
+                "rounded_btu_per_kwh_for_curve": SGT400_PROXY_FULL_LOAD_BTU_PER_KWH,
+                "curve_scale": SGT400_PROXY_CURVE_SCALE,
+            },
+        }
     return spec, report
 
 
@@ -547,6 +696,12 @@ def main(argv: Optional[list[str]] = None) -> int:
                     default=sim_default / "config/scenarios/demo-islanded-ramp.json")
     ap.add_argument("--profile", default=DEFAULT_PROFILE)
     ap.add_argument("--partitions", default=",".join(DEFAULT_PARTITIONS))
+    ap.add_argument(
+        "--fuel-model",
+        choices=("siemens-sgt-400-proxy",),
+        default=None,
+        help="opt-in accounting-only turbine fuel and operating-cost model",
+    )
     ap.add_argument("--sim-root", type=Path, default=sim_default)
     ap.add_argument("--name", default=SCENARIO_NAME, help="scenario display name")
     ap.add_argument(
@@ -592,6 +747,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         template_name=args.template.name,
         initial_soc_fraction=args.initial_soc_fraction,
         soc_derivation=soc_derivation,
+        fuel_model=args.fuel_model,
     )
     report["skipped"] = dict(skipped)
     report["cpu_skipped"] = dict(cpu_skipped)
