@@ -1,0 +1,447 @@
+{
+  "base_demo": {
+    "arms": {
+      "baseline": {
+        "b9_payload_normalized_sha256": "7ac34caca5ba76c53fea696f076249e1c56c9110f4f14aded1b9f77d9adafc42",
+        "current_commitment_log_count": 8,
+        "current_commitment_log_sha256": "f208644ee01902db2161a740ddb771ce8376a287aa1bc71d280bd20754df45fd",
+        "current_normalized_identity_sha256": "7ac34caca5ba76c53fea696f076249e1c56c9110f4f14aded1b9f77d9adafc42",
+        "current_physical_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "current_raw_commit_fields": {
+          "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35-dirty",
+          "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35-dirty"
+        },
+        "current_raw_identity_digest": "c78606a7158517abb8778cf9b2fb0b3e3bb2dc2f7411f7ebd7f71b0b9dd663f6",
+        "d6c_fresh_commitment_log_count": 8,
+        "d6c_fresh_commitment_log_sha256": "f208644ee01902db2161a740ddb771ce8376a287aa1bc71d280bd20754df45fd",
+        "d6c_fresh_physical_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "normalized_identity_matches_x1": true
+      },
+      "informed": {
+        "b9_payload_normalized_sha256": "dd3f44a2f730c5f347113a3c01bcdb9ce6935db66f360b0c55d6eb2e1e4ac782",
+        "current_commitment_log_count": 11,
+        "current_commitment_log_sha256": "35166e43c54cffe3d4c81ac60faef2684d94ce26e7662eb611b246e800002c0d",
+        "current_normalized_identity_sha256": "dd3f44a2f730c5f347113a3c01bcdb9ce6935db66f360b0c55d6eb2e1e4ac782",
+        "current_physical_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+        "current_raw_commit_fields": {
+          "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35-dirty",
+          "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35-dirty"
+        },
+        "current_raw_identity_digest": "80412cda931fee1dfc42d374d0599fd3651a1718e4c6998496f66aa7cc1db889",
+        "d6c_fresh_commitment_log_count": 11,
+        "d6c_fresh_commitment_log_sha256": "35166e43c54cffe3d4c81ac60faef2684d94ce26e7662eb611b246e800002c0d",
+        "d6c_fresh_physical_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+        "normalized_identity_matches_x1": true
+      }
+    },
+    "compare_runs_condition_count": 10,
+    "compare_runs_verdict": "PASS",
+    "fresh_d6c_and_current_commitment_logs_equal": true,
+    "fresh_d6c_vs_current_record_differing_paths_after_commit_identity_run_metadata_normalization": [],
+    "saved_d6c_reference_baseline_commitment_log_sha256": "8f6b038c4b7feaa0830e28105708aa20852e0c4cfa4c767a5adb255168a6e2e3",
+    "saved_reference_commitment_log_digest_reproduced_by_fresh_d6c": false,
+    "scenario_id": "scenario-uneven-multisched-01",
+    "seed": 42,
+    "source_current_record": "existing run captured in PROTECTED_STUDY_GATES_PROGRESS.json before identity stop",
+    "source_d6c_replay": "fresh temporary worktree at d12ed881e6c0c0f553132aa3282f3e92baf5b18b, StudyRunExecutor.run_pair, 19.13 s",
+    "status": "BASE_RECORDED_D6C_REPLAY_MATCH"
+  },
+  "normalized_identity_constant": "IMPL_ISL_25_NORMALIZED_COMMIT",
+  "runs": [
+    {
+      "arms": {
+        "baseline": {
+          "metric_differences": {
+            "commitment_log": {
+              "actual_summary": {
+                "canonical_json_sha256": "72a8e76fb85b9751d6455404e28a987dd17356f03c170197d045d6acb3bc1c34",
+                "count": 48,
+                "serialized_bytes": 21390,
+                "type": "list"
+              },
+              "expected": {
+                "__summary__": "large metric value represented by exact canonical SHA-256",
+                "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+                "count": 48,
+                "serialized_bytes": 21318,
+                "type": "list"
+              }
+            }
+          },
+          "metrics": {
+            "bess_soc_final": 0.999999998,
+            "bess_soc_max": 0.999999999,
+            "bess_soc_min": 0.828342155,
+            "build_warnings": {
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "canonical_json_sha256": "96faf8be7ec346525882297f3353fa56e63c7c45413b47befdefef0269917964",
+              "count": 12,
+              "serialized_bytes": 418,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "canonical_json_sha256": "72a8e76fb85b9751d6455404e28a987dd17356f03c170197d045d6acb3bc1c34",
+              "count": 48,
+              "serialized_bytes": 21390,
+              "type": "list"
+            },
+            "commitment_log_record_count": 48,
+            "compute_trace_count": 17280,
+            "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "canonical_json_sha256": "854e01e2c7d479e14a892ae597d7896a0c3f583c567de818896be74c7902f44b",
+              "count": 1,
+              "serialized_bytes": 289,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "canonical_json_sha256": "a07ed6db2d13bf94ccc912cbac7c689b0aa5b0407f6ba5a62a5832d83ba26d1c",
+              "count": 4,
+              "serialized_bytes": 105,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 1974.088304814,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "canonical_json_sha256": "a09a8c1e20bdcb390eba593645ab52126859d89dac398ab893180e9c7a116d99",
+              "count": 4,
+              "serialized_bytes": 128,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "canonical_json_sha256": "1796786ffb1eedec862372a8ed1678dfef6901be8871315b6ea1d3f247783a27",
+              "count": 4,
+              "serialized_bytes": 105,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3394.620064264,
+            "dispatch_curtailment_mwh": 187.690139189,
+            "energy_balance": {
+              "canonical_json_sha256": "19bf6e054dafb4f9ec8bcb07f382b126275343bd6f7296da1bd8aa985fc9a7dc",
+              "count": 4,
+              "serialized_bytes": 131,
+              "type": "dict"
+            },
+            "forecast": {
+              "canonical_json_sha256": "83e396efec6d770fd040bf075da10bf756e869475f34dc112c1b697794368231",
+              "count": 2,
+              "serialized_bytes": 35,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "canonical_json_sha256": "0b17dd3210b0034458c5cd486a83c86236b6fc5ab2f280c52756d6f8718f9ffe",
+              "count": 2,
+              "serialized_bytes": 25,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "canonical_json_sha256": "cdba22499f187ca3a0f711e3a3f4e5963f87fdda4317d4457705b59e1d38d2dc",
+              "count": 4,
+              "serialized_bytes": 123,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.04693287037037037,
+            "invalid_frequency_tick_count": 811,
+            "measured_start_event_count": 12,
+            "measured_start_events": {
+              "canonical_json_sha256": "505ad17eda3073c71a3179cde8a146bf4987d097e74c9a57452e497e372bcfff",
+              "count": 12,
+              "serialized_bytes": 990,
+              "type": "list"
+            },
+            "mode": "baseline",
+            "peak_unserved_mw": 35.021533247,
+            "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-h1-k8s-ray-24h",
+            "served_mwh": 367.781736493,
+            "start_fuel_reconciliation": {
+              "canonical_json_sha256": "08a0c6e8453cd5b022568efd37e7db2878e1f809726079d3e70736f3fa99b81f",
+              "count": 6,
+              "serialized_bytes": 146,
+              "type": "dict"
+            },
+            "starts": {
+              "canonical_json_sha256": "d95c0926a1bf8003383ffbedf4256ba8f45e7fad4f373bb0ab48ae6637cf4787",
+              "count": 12,
+              "serialized_bytes": 5106,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 0,
+            "stop_floor_refusals": {
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "study_class": "addendum_h",
+            "tick_count": 17280,
+            "turbine_fuel_mmbtu": 6039.74023024,
+            "unserved_intervals": {
+              "canonical_json_sha256": "1878ed15a43b78788f7893c43261a47797169961a113298629a85408cd95e8b0",
+              "count": 20,
+              "serialized_bytes": 1818,
+              "type": "list"
+            },
+            "unserved_mwh": 0.894372986
+          },
+          "normalized_identity_matches_b9_payload": true,
+          "normalized_identity_sha256": "41a6541ebfd019d075484fc98a8e69650d98a54401b0f84fe7e2fa648498e44a",
+          "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+          "raw_commit_fields": {
+            "engine_commit": "6b0e426e125336d6afcfd534c472e30a15b0371d-dirty",
+            "harness_commit": "6b0e426e125336d6afcfd534c472e30a15b0371d-dirty"
+          },
+          "raw_identity_digest": "8427cde7d54381814ad27313b17c0d6b773e3e34203ac56ab4b2191d173d8638",
+          "status": "PASS",
+          "tick_count": 17280
+        },
+        "informed": {
+          "metric_differences": {
+            "commitment_log": {
+              "actual_summary": {
+                "canonical_json_sha256": "7d0dafc1bb03c88f9c70f54223de7b22e339d9770567f0640ab50ba22f1b6451",
+                "count": 59,
+                "serialized_bytes": 27614,
+                "type": "list"
+              },
+              "expected": {
+                "__summary__": "large metric value represented by exact canonical SHA-256",
+                "canonical_json_sha256": "936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995",
+                "count": 59,
+                "serialized_bytes": 27608,
+                "type": "list"
+              }
+            }
+          },
+          "metrics": {
+            "bess_soc_final": 0.999999989,
+            "bess_soc_max": 0.999999999,
+            "bess_soc_min": 0.877673489,
+            "build_warnings": {
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "canonical_json_sha256": "6868074c1866043027c1223ee35903d98cd56542246f6e263b7f281148c0f92c",
+              "count": 12,
+              "serialized_bytes": 434,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "canonical_json_sha256": "7d0dafc1bb03c88f9c70f54223de7b22e339d9770567f0640ab50ba22f1b6451",
+              "count": 59,
+              "serialized_bytes": 27614,
+              "type": "list"
+            },
+            "commitment_log_record_count": 59,
+            "compute_trace_count": 17280,
+            "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "canonical_json_sha256": "ecae63d4050998a847f91d7a9c1d9b73cb6934d867b02c7637bc6dc2a2579d65",
+              "count": 1,
+              "serialized_bytes": 297,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "canonical_json_sha256": "6d52900867f36d9ee0b038e2519e615b6ccfbd8ec09347e48efa98155242b710",
+              "count": 4,
+              "serialized_bytes": 104,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 1858.026440381,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "canonical_json_sha256": "b98822d007cda384bf1ca014e6f512a5fff2769fb815f25c9825c42c863bcb6d",
+              "count": 4,
+              "serialized_bytes": 122,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "canonical_json_sha256": "9a8c57a799205845f5809f0768bd19434524bcf0214a31c807bd3e78c96a9a5f",
+              "count": 4,
+              "serialized_bytes": 104,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3120.455542377,
+            "dispatch_curtailment_mwh": 176.779572526,
+            "energy_balance": {
+              "canonical_json_sha256": "2a0f2451404e48d01d722eca407fa8ff84aa1c48910f6152c6bf7f5feb37b925",
+              "count": 4,
+              "serialized_bytes": 131,
+              "type": "dict"
+            },
+            "forecast": {
+              "canonical_json_sha256": "83e396efec6d770fd040bf075da10bf756e869475f34dc112c1b697794368231",
+              "count": 2,
+              "serialized_bytes": 35,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "canonical_json_sha256": "0b17dd3210b0034458c5cd486a83c86236b6fc5ab2f280c52756d6f8718f9ffe",
+              "count": 2,
+              "serialized_bytes": 25,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "canonical_json_sha256": "3bf273393bdca9eafb91e0bd123338fb77ac19e6d71078bf86d5742b5a233210",
+              "count": 4,
+              "serialized_bytes": 130,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.004398148148148148,
+            "invalid_frequency_tick_count": 76,
+            "measured_start_event_count": 12,
+            "measured_start_events": {
+              "canonical_json_sha256": "726fc6b34f6337be2638cde069a5c4c46cdcda754fc2d3af459aba53495b58ef",
+              "count": 12,
+              "serialized_bytes": 990,
+              "type": "list"
+            },
+            "mode": "informed",
+            "peak_unserved_mw": 20.746308977,
+            "physical_identity_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-h1-k8s-ray-24h",
+            "served_mwh": 368.551976074,
+            "start_fuel_reconciliation": {
+              "canonical_json_sha256": "08a0c6e8453cd5b022568efd37e7db2878e1f809726079d3e70736f3fa99b81f",
+              "count": 6,
+              "serialized_bytes": 146,
+              "type": "dict"
+            },
+            "starts": {
+              "canonical_json_sha256": "b129befada9a6f7dda7af7b4cfc5670c1de6aba218e07fbcc4a136accb645237",
+              "count": 12,
+              "serialized_bytes": 5411,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 16340,
+            "stop_floor_refusals": {
+              "canonical_json_sha256": "4f9b85435a2627ae6f1694f8f4002407ad93f6a907eb24414ea2cc4b5a8b4f3f",
+              "count": 16340,
+              "serialized_bytes": 4267574,
+              "type": "list"
+            },
+            "study_class": "addendum_h",
+            "tick_count": 17280,
+            "turbine_fuel_mmbtu": 5848.898717938,
+            "unserved_intervals": {
+              "canonical_json_sha256": "5c03ef142e9ebbe96ce8f6e2b62747485adf56fa68d379a299f9fa05fc7f791f",
+              "count": 7,
+              "serialized_bytes": 641,
+              "type": "list"
+            },
+            "unserved_mwh": 0.124133405
+          },
+          "normalized_identity_matches_b9_payload": true,
+          "normalized_identity_sha256": "0935c6a0a2da435310920569969ef7149d4566fb0ef6f72dbd2a4ff744cf94ac",
+          "physical_identity_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+          "raw_commit_fields": {
+            "engine_commit": "6b0e426e125336d6afcfd534c472e30a15b0371d-dirty",
+            "harness_commit": "6b0e426e125336d6afcfd534c472e30a15b0371d-dirty"
+          },
+          "raw_identity_digest": "d93453cb2cdf6de1826beeda53aa870478b68261014a04a3460dcb4e9ff20774",
+          "status": "PASS",
+          "tick_count": 17280
+        }
+      },
+      "comparison_verdict": "PASS",
+      "condition_count": 10,
+      "condition_names_match_d6c": true,
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "conditions_values_match_d6c": true,
+      "elapsed_seconds": 255.3986098766327,
+      "failures": [
+        {
+          "differences": {
+            "commitment_log": {
+              "actual_summary": {
+                "canonical_json_sha256": "72a8e76fb85b9751d6455404e28a987dd17356f03c170197d045d6acb3bc1c34",
+                "count": 48,
+                "serialized_bytes": 21390,
+                "type": "list"
+              },
+              "expected": {
+                "__summary__": "large metric value represented by exact canonical SHA-256",
+                "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+                "count": 48,
+                "serialized_bytes": 21318,
+                "type": "list"
+              }
+            }
+          },
+          "gate": "metrics",
+          "mode": "baseline"
+        },
+        {
+          "differences": {
+            "commitment_log": {
+              "actual_summary": {
+                "canonical_json_sha256": "7d0dafc1bb03c88f9c70f54223de7b22e339d9770567f0640ab50ba22f1b6451",
+                "count": 59,
+                "serialized_bytes": 27614,
+                "type": "list"
+              },
+              "expected": {
+                "__summary__": "large metric value represented by exact canonical SHA-256",
+                "canonical_json_sha256": "936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995",
+                "count": 59,
+                "serialized_bytes": 27608,
+                "type": "list"
+              }
+            }
+          },
+          "gate": "metrics",
+          "mode": "informed"
+        }
+      ],
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "study_class": "addendum_h"
+    }
+  ],
+  "seed": 42,
+  "status": "STOP"
+}
