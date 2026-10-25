@@ -81,6 +81,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [S1 study harness](s1-study-harness.md) — bounded replay evidence, typed H-2 start-fuel failures, and a separate approval gate for certified-record changes.
 - [Forecast-history determinism](forecast-history-determinism.md) — H-1 informed physics matched with two retained snapshots and an unbounded logical history; the bound is diagnostic-only for this case.
 - [MCP identity and legacy artifacts](mcp-identity-and-legacy-artifacts.md) — boundary run identities must mirror executor replay normalization; legacy records need trace and guard hydration from stored artifacts.
+- [In-process study evidence](study-evidence-runners.md) — run MCP from the package working directory and compare identities through the exact executor path.
 - [Known-failure gates](known-failure-gates.md) — compare assertions and violation lists, not only node IDs; baseline failures can hide new regressions.
 - [S10 publication boundary](s10-data-publication-boundary.md) — user prohibits public-repo publication of S10; per-tick channel CSVs must remain local.
 - [Cooling envelope isolation](cooling-envelope-isolation.md) — the scalar cooling step-down can close GPU job envelopes when both paths share one CoolingModule.
