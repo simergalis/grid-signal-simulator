@@ -482,7 +482,7 @@ def build_scenario(
             f"follows a maintenance drain: repeated whole-cluster gang jobs step "
             f"the site between near-zero and full GPU load within seconds, then "
             f"production work refills in the evening. Shape is real; V100 power "
-            f"physics are not modelled. Source data CC BY-NC-ND 4.0 — internal use."
+            f"physics are not modelled."
         ),
         "hardware_profile_id": profile_id,
         "end_sim_time": float(DAY_S),
