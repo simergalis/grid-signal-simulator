@@ -662,7 +662,7 @@ export function ScenarioPlannerPage({ runId }: ScenarioPlannerPageProps) {
             return (
               <>
                 <div style={{ color: '#cbd5e1', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  Itemized operating cost — {operatingCost.currency_year ?? 'year not specified'}
+                  Operating cost (cited prices) — {operatingCost.currency_year ?? 'year not specified'}
                 </div>
                 <div style={{ color: '#64748b', fontSize: '10px', marginBottom: '10px' }}>
                   Separate from the §21.2 estimate; only configured, non-null line items are included in the total.
@@ -714,7 +714,14 @@ export function ScenarioPlannerPage({ runId }: ScenarioPlannerPageProps) {
 
       {/* ── Result ── */}
       {result && (
-        <>
+        <details
+          open={!runs[Math.min(selectedRunIdx, runs.length - 1)]?.operating_cost}
+          style={{ marginBottom: '16px' }}
+        >
+          <summary style={{ color: '#cbd5e1', fontSize: '12px', cursor: 'pointer', marginBottom: '10px' }}>
+            Indicative estimate (placeholder rates) — {result.run_id}
+          </summary>
+          <>
           {/* Cost delta hero */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
             <div style={{ background: '#1e293b', borderRadius: '8px', padding: '16px', border: `1px solid ${deltaColour}` }}>
@@ -786,7 +793,8 @@ export function ScenarioPlannerPage({ runId }: ScenarioPlannerPageProps) {
               </tbody>
             </table>
           </div>
-        </>
+          </>
+        </details>
       )}
 
       {!result && runs.length > 0 && (

@@ -87,6 +87,57 @@ def _advisory_wall_time(ctx: Any, sim_time_seconds: float) -> float:
     return _time_module.time()
 
 
+def _completed_diesel_fuel_gallons(ctx: Any) -> Optional[float]:
+    """Return measured diesel use only when the run has a configured fleet."""
+    if not ctx.sim_state.diesel_units:
+        return None
+    coordinator = ctx.sim_state.diesel_fleet_coordinator
+    if ctx.diesel_fuel_initial_gal is None or coordinator is None:
+        return None
+    return max(
+        0.0,
+        float(ctx.diesel_fuel_initial_gal) - float(coordinator.fuel_remaining_gal),
+    )
+
+
+def _rest_turbine_unit_payload(
+    static_spec: dict[str, Any],
+    turbine: Any,
+    physical_tick_unit: dict[str, Any],
+) -> dict[str, Any]:
+    """Overlay live turbine state while preserving the core tick's breaker value."""
+    return {
+        **static_spec,
+        "state": turbine.state.value,
+        # D6c / IMPL-ISL-27: copy the authoritative core TickResult value; the
+        # static ScenarioSpec breaker default is not a live physical state.
+        "breaker_closed": bool(physical_tick_unit["breaker_closed"]),
+        "output_mw": round(
+            turbine.output_mw()
+            if turbine.is_on_bus and not turbine.config.hot_standby
+            else 0.0,
+            4,
+        ),
+        "time_to_online_s": (
+            round(turbine._time_to_online_s, 1)
+            if turbine.state.value == "starting" else None
+        ),
+        "thermal_state": (
+            turbine._thermal_state.value
+            if hasattr(turbine, "_thermal_state") else None
+        ),
+        "start_phase": (
+            turbine._start_phase if turbine.state.value == "starting" else None
+        ),
+        "out_of_service_reason": turbine._out_of_service_reason,
+        "setpoint_mw": round(getattr(turbine, "_last_setpoint_mw", 0.0), 4),
+        "levelled_off": turbine._levelled_off_sustained,
+        "hot_start_s": turbine.config.hot_start_s,
+        "warm_start_s": turbine.config.warm_start_s,
+        "cold_start_s": turbine.config.cold_start_s,
+    }
+
+
 # GS-IMPL-PSP-002 §4.3 / TC-C13 — production harness guard.
 # In production, set GS_PRODUCTION_HARNESS=1 to block PMSTestDouble instantiation.
 # Read at call time (not module load) so tests can patch os.environ without
@@ -3034,45 +3085,16 @@ class RunManager:
                     # ctx.sim_state.turbines.  The two lists share the same ordering
                     # (both derived from the same ScenarioSpec turbine_units list).
                     turbine_units=tuple(
-                        {
-                            **static_spec,
-                            # Phase 2 live state overlay — keys match TurbineState values.
-                            "state": t.state.value,
-                            # output_mw: algebraic per-unit MW contribution.
-                            #   Phase C D-05: Σ of these across on-bus units == on_bus_output_mw.
-                            #   is_on_bus guards this so stale _current_output_mw from a
-                            #   tripped unit never leaks into the fleet total.
-                            # SYNCHRONISED and UNLOADING units are non-zero; all off-bus
-                            # units (OFFLINE / STARTING / OUT_OF_SERVICE / hot-standby) = 0.0.
-                            "output_mw": round(
-                                t.output_mw()
-                                if t.is_on_bus and not t.config.hot_standby
-                                else 0.0,
-                                4,
-                            ),
-                            "time_to_online_s": (
-                                round(t._time_to_online_s, 1)
-                                if t.state.value == "starting" else None
-                            ),
-                            "thermal_state": t._thermal_state.value if hasattr(t, "_thermal_state") else None,
-                            "start_phase": t._start_phase if t.state.value == "starting" else None,
-                            "out_of_service_reason": t._out_of_service_reason,
-                            # Phase E+: per-unit setpoint, levelled-off predicate,
-                            # and thermal start-time config for U-1 through U-6.
-                            "setpoint_mw":  round(getattr(t, '_last_setpoint_mw', 0.0), 4),
-                            # Phase E+ Item 4: sustained predicate — True only after
-                            # levelled_off_window_s dwell, matching the breaker-open gate.
-                            # The previous `not isnan(_levelled_off_since_s)` reported
-                            # True from tick 1 of dwell; the panel and gate disagreed.
-                            "levelled_off": t._levelled_off_sustained,
-                            "hot_start_s":  t.config.hot_start_s,
-                            "warm_start_s": t.config.warm_start_s,
-                            "cold_start_s": t.config.cold_start_s,
-                        }
-                        for static_spec, t in zip(ctx.turbine_unit_specs, ctx.sim_state.turbines)
+                        _rest_turbine_unit_payload(static_spec, turbine, physical_tick_unit)
+                        for static_spec, turbine, physical_tick_unit in zip(
+                            ctx.turbine_unit_specs,
+                            ctx.sim_state.turbines,
+                            tick_result.turbine_units,
+                        )
                     ) if (
                         ctx.sim_state is not None
                         and len(ctx.sim_state.turbines) == len(ctx.turbine_unit_specs)
+                        and len(tick_result.turbine_units) == len(ctx.turbine_unit_specs)
                     ) else ctx.turbine_unit_specs,
                     # Solar weather metadata — constant per run, stamped so the
                     # Solar PV modal can surface the Mistral forecast label without
@@ -3581,17 +3603,8 @@ class RunManager:
                     )
 
                 _fuel_summary = tick_dicts[-1] if tick_dicts else {}
-                _diesel_fuel_used_gal = None
-                _diesel_coordinator = ctx.sim_state.diesel_fleet_coordinator
-                if (
-                    ctx.diesel_fuel_initial_gal is not None
-                    and _diesel_coordinator is not None
-                ):
-                    _diesel_fuel_used_gal = max(
-                        0.0,
-                        float(ctx.diesel_fuel_initial_gal)
-                        - float(_diesel_coordinator.fuel_remaining_gal),
-                    )
+                # D6c: an empty coordinator is not a configured diesel fleet.
+                _diesel_fuel_used_gal = _completed_diesel_fuel_gallons(ctx)
                 _fuel_rows_for_cost = list(
                     _fuel_summary.get("turbine_fuel_telemetry", [])
                 )

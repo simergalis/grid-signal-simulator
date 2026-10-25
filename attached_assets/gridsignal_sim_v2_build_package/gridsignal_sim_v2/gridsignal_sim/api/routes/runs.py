@@ -738,6 +738,20 @@ async def start_run(
     )
 
 
+def _legacy_grid_import_mw(tick: dict) -> float:
+    """Return the legacy residual estimate only when the PCC is not islanded."""
+    coverage = tick.get("contingency_coverage")
+    if isinstance(coverage, dict) and coverage.get("grid_connected") is False:
+        # D6c: an islanded supply shortfall is unserved energy, never grid import.
+        return 0.0
+    return max(
+        0.0,
+        tick.get("net_demand_mw", 0.0)
+        - tick.get("turbine_output_mw", 0.0)
+        - tick.get("bess_output_mw", 0.0),
+    )
+
+
 @router.get(
     "",
     response_model=RunListResponse,
@@ -1138,6 +1152,8 @@ async def get_energy_summary(
     Derivation (dt = 5.0 s = TICK_INTERVAL_SIM_SECONDS):
         generation_mwh     = Σ turbine_output_mw × dt / 3600
         grid_import_mwh    = Σ max(0, net_demand − turbine − bess) × dt / 3600
+                             only for grid-connected ticks; islanded shortfall is
+                             unserved energy, not a PCC import.
         storage_charge_mwh = Σ bess_output_mw × dt / (3600 × RT_EFF)
                              (discharge / round_trip_efficiency = cost-model proxy
                               for energy put INTO the BESS; actual charge is not
@@ -1165,9 +1181,8 @@ async def get_energy_summary(
     for r in completed.tick_dicts:
         t = r.get("turbine_output_mw", 0.0)
         b = r.get("bess_output_mw",    0.0)
-        n = r.get("net_demand_mw",     0.0)
         generation_mwh  += t * DT_H
-        grid_import_mwh += max(0.0, n - t - b) * DT_H
+        grid_import_mwh += _legacy_grid_import_mw(r) * DT_H
         discharge_mwh   += b * DT_H
 
     storage_charge_mwh = discharge_mwh / RT_EFF if RT_EFF > 0 else discharge_mwh

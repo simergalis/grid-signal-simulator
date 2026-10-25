@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from api.routes.runs import get_energy_summary
+from api.routes.runs import _legacy_grid_import_mw, get_energy_summary
 from api.schemas import OperatingCostInputs, ScenarioSpec
 from core.asset_modules import TurbineModule
 from core.models import TurbineConfig, TurbineFuelParameters, TurbineState
@@ -20,7 +20,11 @@ from runtime.operating_cost import (
     NATURAL_GAS_LHV_TO_HHV_MMBTU,
     compute_operating_cost,
 )
-from runtime.run_manager import CompletedRun
+from runtime.run_manager import (
+    CompletedRun,
+    _completed_diesel_fuel_gallons,
+    _rest_turbine_unit_payload,
+)
 from runtime.verdict import VerdictResult
 
 
@@ -274,5 +278,116 @@ def test_tc_isl_61_scenario_planner_exposes_itemized_cost_table():
     )
     source = component.read_text()
     assert "operating_cost" in source
-    assert "Itemized operating cost" in source
+    # D6c replaces the old generic label and folds the legacy estimate when
+    # cited operating-cost data exists.
+    assert "Operating cost (cited prices)" in source
+    assert "Indicative estimate (placeholder rates)" in source
+    assert "<details" in source
+    assert "open={!runs[Math.min(selectedRunIdx, runs.length - 1)]?.operating_cost}" in source
     assert "Excluded from total:" in source
+
+
+def test_tc_isl_62_diesel_quantity_is_null_without_fleet_and_zero_for_idle_fleet():
+    """TC-ISL-62 — D6c keeps absence distinct from a configured idle fleet."""
+    def context(units):
+        return SimpleNamespace(
+            sim_state=SimpleNamespace(
+                diesel_units=units,
+                diesel_fleet_coordinator=SimpleNamespace(fuel_remaining_gal=100.0),
+            ),
+            diesel_fuel_initial_gal=100.0,
+        )
+
+    no_fleet_gallons = _completed_diesel_fuel_gallons(context([]))
+    idle_fleet_gallons = _completed_diesel_fuel_gallons(context([object()]))
+    assert no_fleet_gallons is None
+    assert idle_fleet_gallons == 0.0
+
+    def diesel_line(gallons):
+        result = compute_operating_cost(
+            _inputs(),
+            _ticks(),
+            interval_seconds=3600.0,
+            turbine_fuel_by_unit_mmbtu={"gt-1": 20.0},
+            fuel_basis_by_unit={"gt-1": "LHV"},
+            fuel_quantity_complete=True,
+            diesel_fuel_gallons=gallons,
+            turbine_rated_mw=15.0,
+            turbine_start_count=2,
+        )
+        return result, next(line for line in result["lines"] if line["key"] == "diesel_fuel")
+
+    no_fleet_result, no_fleet_line = diesel_line(no_fleet_gallons)
+    assert no_fleet_line["quantity"] is None
+    assert no_fleet_line["amount_usd"] is None
+    assert "diesel_fuel" not in no_fleet_result["total_includes"]
+    assert any(row["key"] == "diesel_fuel" for row in no_fleet_result["total_excludes"])
+
+    idle_result, idle_line = diesel_line(idle_fleet_gallons)
+    assert idle_line["quantity"] == 0.0
+    assert idle_line["amount_usd"] == 0.0
+    assert "diesel_fuel" in idle_result["total_includes"]
+
+
+def test_tc_isl_63_rest_breaker_uses_physical_tick_for_offline_starting_and_synced():
+    """TC-ISL-63 — D6c reports the core tick breaker state, not the static default."""
+    states = (
+        (TurbineState.OFFLINE, False),
+        (TurbineState.STARTING, False),
+        (TurbineState.SYNCHRONISED, True),
+    )
+    for index, (state, physical_breaker) in enumerate(states):
+        module = TurbineModule(
+            TurbineConfig(asset_id=f"d6c-breaker-{index}", rated_mw=10.0)
+        )
+        module.state = state
+        payload = _rest_turbine_unit_payload(
+            {"asset_id": module.config.asset_id, "breaker_closed": not physical_breaker},
+            module,
+            {"asset_id": module.config.asset_id, "breaker_closed": physical_breaker},
+        )
+        assert payload["breaker_closed"] is physical_breaker
+
+
+def test_tc_isl_64_energy_summary_only_counts_import_on_grid_connected_ticks():
+    """TC-ISL-64 — D6c excludes islanded shortfall but preserves the grid-tied formula."""
+    base_tick = {
+        "net_demand_mw": 10.0,
+        "turbine_output_mw": 3.0,
+        "bess_output_mw": 2.0,
+        "contingency_coverage": {"grid_connected": False},
+    }
+    assert _legacy_grid_import_mw(base_tick) == 0.0
+    grid_tick = {
+        **base_tick,
+        "contingency_coverage": {"grid_connected": True},
+    }
+    assert _legacy_grid_import_mw(grid_tick) == 5.0
+
+    async def summary(grid_connected):
+        completed = CompletedRun(
+            run_id=f"d6c-grid-{grid_connected}",
+            scenario_id="d6c-grid-test",
+            scenario_name="D6c grid-import test",
+            completed_at=datetime.now(timezone.utc),
+            verdict=VerdictResult("PASS", 1, 0, 0),
+            tick_dicts=[{
+                **base_tick,
+                "contingency_coverage": {"grid_connected": grid_connected},
+            }],
+            dropped_ticks=0,
+        )
+
+        class Manager:
+            def get_context(self, _run_id):
+                return None
+
+            def get_completed(self, _run_id):
+                return completed
+
+        return await get_energy_summary(completed.run_id, manager=Manager())
+
+    islanded = asyncio.run(summary(False))
+    grid_tied = asyncio.run(summary(True))
+    assert islanded["grid_import_mwh"] == 0.0
+    assert grid_tied["grid_import_mwh"] == pytest.approx(0.0069)
