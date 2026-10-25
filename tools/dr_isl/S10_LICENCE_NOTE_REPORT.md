@@ -100,3 +100,18 @@ No other S10/SuperCloud licence or internal-use note was found in app UI strings
 - The report-only commit hash is included in the completion summary.
 
 No publish, deploy, push, or workflow restart was performed.
+
+## Remaining S10 catalogue comment removal
+
+Lloyd's 2026-10-25 ruling authorized removal of the remaining S10-specific licence wording in the catalogue comment. An exact-string replacement found one occurrence of `; source data CC BY-NC-ND 4.0, internal use.` and replaced it with a period. The descriptive portion of the comment remains.
+
+- File: `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/api/routes/scenarios.py:1435`
+- Before: `# S10 — one real day (2021-08-11 UTC) of MIT SuperCloud GPU jobs at true start/end times, scaled to 50 MW H100-equivalent; source data CC BY-NC-ND 4.0, internal use.`
+- After: `# S10 — one real day (2021-08-11 UTC) of MIT SuperCloud GPU jobs at true start/end times, scaled to 50 MW H100-equivalent.`
+- `python -m py_compile api/routes/scenarios.py`: passed.
+- `build_seeded_store()` returned `S10_mit_supercloud_2021-08-11`; its description and scenario data were unchanged.
+- Focused tests: 6 passed (`test_tc_isl_65_s10_list_and_get_scenario_use_tracked_source`, `test_tc160_list_scenarios_marks_all_six_study_scenarios`, and study-harness TC-ISL-67, -69, -72, -73).
+- Full suite (`PYTHONHASHSEED=1`): 2,255 passed, 15 failed, 3 skipped, 23 xfailed, 3 subtests passed, 54 warnings. Compared with `tools/dr_isl/PHASE_6C_FAILING_TESTS.txt`, there were 0 added failures; the only baseline ID absent was the waived `tests/test_gpu_load_profile.py::test_gpu_load_profile`.
+- The 15 failures matched the other Phase 6c baseline IDs: `test_I4_delivery_fault_causes_frequency_deviation`, `test_R4_fields_present_on_turbine_config`, `test_tc173_executor_run_validates_from_truncated_record_and_sidecar`, `test_live_diesel_is_less_aggressive_than_disabled_before_curtailment`, `test_hybrid_covered_demand_does_not_release_bess_reserve`, `test_fabric_scenario_names`, `test_B1a_islanded_delivery_fault_visible_in_delivery_channel`, `test_fixed_target_survives_a_step_load_and_output_remains_rate_limited`, the three `tests/test_gridley.py` failures, `test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait`, `test_api_gate_clean_api_passes`, `test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load`, and `test_tc84f_demo_20mw_contingency_state_changes_after_trip`.
+- This comment-only edit does not change the seeded S10 record or simulation behavior.
+- Descriptive source commit: `d63a50e` (`Remove remaining S10 catalogue licence wording`); it contains only the catalogue comment and the related project-memory update.
