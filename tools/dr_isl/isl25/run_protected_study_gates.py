@@ -55,6 +55,62 @@ def comparable_metric_value(value: object, expected: object) -> object:
     return value
 
 
+def typed_payload_differences(expected: object, actual: object, path: str = "") -> list[dict]:
+    if type(expected) is not type(actual):
+        return [
+            {
+                "path": path,
+                "expected_type": type(expected).__name__,
+                "expected_value": expected,
+                "actual_type": type(actual).__name__,
+                "actual_value": actual,
+            }
+        ]
+    if isinstance(expected, dict):
+        differences: list[dict] = []
+        for key in sorted(set(expected) | set(actual)):
+            child = f"{path}.{key}" if path else key
+            if key not in expected or key not in actual:
+                differences.append(
+                    {
+                        "path": child,
+                        "expected_value": expected.get(key, "<missing>"),
+                        "actual_value": actual.get(key, "<missing>"),
+                    }
+                )
+            else:
+                differences.extend(
+                    typed_payload_differences(expected[key], actual[key], child)
+                )
+        return differences
+    if isinstance(expected, list):
+        differences = []
+        for index, (expected_item, actual_item) in enumerate(zip(expected, actual)):
+            differences.extend(
+                typed_payload_differences(
+                    expected_item, actual_item, f"{path}[{index}]"
+                )
+            )
+        if len(expected) != len(actual):
+            differences.append(
+                {
+                    "path": path,
+                    "expected_length": len(expected),
+                    "actual_length": len(actual),
+                }
+            )
+        return differences
+    if expected != actual:
+        return [
+            {
+                "path": path,
+                "expected_value": expected,
+                "actual_value": actual,
+            }
+        ]
+    return []
+
+
 def write_progress(value: dict, output: Path) -> None:
     output.write_text(
         json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
@@ -87,18 +143,18 @@ def main() -> int:
     )
     expected = {row["scenario_id"]: row for row in expected_data["scenarios"]}
     identity_diagnosis = json.loads(
-        (ROOT / "tools/dr_isl/isl25/IDENTITY_DIAGNOSIS.json").read_text()
+        (ROOT / "tools/dr_isl/isl25/RUN_PATH_IDENTITIES.json").read_text()
     )
     normalized_payloads = {
-        (row["scenario_id"], row["mode"]): row["payload_before"]
-        for row in identity_diagnosis["results"]
+        (row["scenario_id"], row["mode"]): row
+        for row in identity_diagnosis["runs"]
     }
     executor = StudyRunExecutor(output_dir=Path("/tmp/isl25-protected-study-runs"))
     progress: dict = {
         "seed": 42,
         "cache": "fresh temporary directory; no prior run can be reused",
         "reference": "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json",
-        "identity_reference": "IDENTITY_DIAGNOSIS.json payload_before with both commit fields normalized",
+        "identity_reference": "RUN_PATH_IDENTITIES.json exact StudyRunExecutor run-pair path payload with both commit fields normalized",
         "canonical_large_metric_encoding": {
             "sort_keys": True,
             "separators": [",", ":"],
@@ -126,7 +182,8 @@ def main() -> int:
         for mode in ("baseline", "informed"):
             record = pair["runs"][mode]
             reference_arm = reference_scenario[mode]
-            normalized_reference = normalized_payloads[(scenario_id, mode)]
+            normalized_reference_row = normalized_payloads[(scenario_id, mode)]
+            normalized_reference = normalized_reference_row["payload"]
             actual_identity = record.get("identity")
             normalized_actual = dict(actual_identity or {})
             normalized_actual["engine_commit"] = normalized_reference[
@@ -141,6 +198,9 @@ def main() -> int:
                 actual_identity_bytes
             ).hexdigest()
             identity_matches = actual_identity_bytes == expected_identity_bytes
+            identity_payload_differences = typed_payload_differences(
+                normalized_reference, normalized_actual
+            )
             if not identity_matches:
                 scenario_result["failures"].append(
                     {
@@ -150,6 +210,7 @@ def main() -> int:
                             expected_identity_bytes
                         ).hexdigest(),
                         "actual_sha256": normalized_identity_digest,
+                        "differing_fields": identity_payload_differences,
                     }
                 )
             if record.get("physical_identity_sha256") != reference_arm[
@@ -165,16 +226,25 @@ def main() -> int:
                 )
             expected_metrics = reference_arm["metrics_current"]
             actual_metrics = {
-                field: comparable_metric_value(record.get(field), expected_value)
+                field: (
+                    summarize_large_metric(normalized_actual)
+                    if field == "identity"
+                    else comparable_metric_value(record.get(field), expected_value)
+                )
                 for field, expected_value in expected_metrics.items()
+            }
+            expected_metrics_without_identity = {
+                field: value
+                for field, value in expected_metrics.items()
+                if field != "identity"
             }
             metric_differences = {
                 field: {
-                    "expected": expected_value,
+                    "expected": expected_metrics_without_identity[field],
                     "actual": actual_metrics[field],
                 }
-                for field, expected_value in expected_metrics.items()
-                if actual_metrics[field] != expected_value
+                for field in expected_metrics_without_identity
+                if actual_metrics[field] != expected_metrics_without_identity[field]
             }
             if metric_differences:
                 scenario_result["failures"].append(
@@ -187,7 +257,11 @@ def main() -> int:
             scenario_result["arms"][mode] = {
                 "raw_identity_digest": record.get("identity_digest"),
                 "normalized_identity_sha256": normalized_identity_digest,
+                "expected_normalized_identity_sha256": normalized_reference_row[
+                    "base_payload_sha256"
+                ],
                 "normalized_identity_matches_reference": identity_matches,
+                "normalized_identity_differing_fields": identity_payload_differences,
                 "raw_commit_fields": {
                     "engine_commit": (actual_identity or {}).get("engine_commit"),
                     "harness_commit": (actual_identity or {}).get("harness_commit"),
@@ -196,6 +270,7 @@ def main() -> int:
                     "physical_identity_sha256"
                 ),
                 "metrics": actual_metrics,
+                "raw_identity_metric_d6c_summary": expected_metrics.get("identity"),
                 "metric_differences": metric_differences,
                 "status": record.get("status"),
                 "tick_count": record.get("tick_count"),

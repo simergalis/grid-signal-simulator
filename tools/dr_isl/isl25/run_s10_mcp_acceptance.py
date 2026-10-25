@@ -25,6 +25,9 @@ READ_TOKEN = "isl25-local-read"
 RUN_TOKEN = "isl25-local-run"
 
 sys.path.insert(0, str(PACKAGE))
+# The app resolves catalogue and fabric fixture paths relative to the package
+# root, matching the configured web workflow's working directory.
+os.chdir(PACKAGE)
 os.environ["GRIDSIGNAL_MCP_READ_TOKEN"] = READ_TOKEN
 os.environ["GRIDSIGNAL_MCP_RUN_TOKEN"] = RUN_TOKEN
 os.environ["GRIDSIGNAL_MCP_MAX_WORKERS"] = "1"
@@ -79,6 +82,15 @@ def compare_demand_inputs(left: list[dict], right: list[dict]) -> dict:
             for left_row, right_row in zip(left, right)
         )
     return result
+
+
+def seed_manifest_seed_values(manifest: dict) -> dict:
+    """Compare deterministic seed selections, not each request's timestamp."""
+    return {
+        key: value
+        for key, value in manifest.items()
+        if key != "resolved_at_utc"
+    }
 
 
 def normalize_tick(row: dict) -> dict:
@@ -461,6 +473,20 @@ def main() -> int:
                         evidence["runs"][seed_key][
                             "seed_manifests_equal_between_arms"
                         ] = (
+                            seed_manifest_seed_values(
+                                evidence["runs"][seed_key]["baseline"][
+                                    "seed_manifest"
+                                ]
+                            )
+                            == seed_manifest_seed_values(
+                                evidence["runs"][seed_key]["informed"][
+                                    "seed_manifest"
+                                ]
+                            )
+                        )
+                        evidence["runs"][seed_key][
+                            "seed_manifests_byte_identical"
+                        ] = (
                             evidence["runs"][seed_key]["baseline"][
                                 "seed_manifest"
                             ]
@@ -468,6 +494,9 @@ def main() -> int:
                                 "seed_manifest"
                             ]
                         )
+                        evidence["runs"][seed_key][
+                            "seed_manifest_ignored_metadata_field"
+                        ] = "resolved_at_utc"
                         if (
                             demand_inputs["tick_count_baseline"]
                             != demand_inputs["tick_count_informed"]
