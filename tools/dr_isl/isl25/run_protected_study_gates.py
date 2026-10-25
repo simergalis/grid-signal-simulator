@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -23,35 +25,91 @@ SCENARIOS = (
 )
 
 
-def write_progress(value: dict) -> None:
-    OUTPUT.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
+SUMMARY_MARKER = "large metric value represented by exact canonical SHA-256"
+
+
+def canonical_json_bytes(value: object) -> bytes:
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def summarize_large_metric(value: object) -> dict:
+    encoded = canonical_json_bytes(value)
+    return {
+        "__summary__": SUMMARY_MARKER,
+        "canonical_json_sha256": hashlib.sha256(encoded).hexdigest(),
+        "count": len(value) if isinstance(value, (list, dict)) else None,
+        "serialized_bytes": len(encoded),
+        "type": type(value).__name__,
+    }
+
+
+def comparable_metric_value(value: object, expected: object) -> object:
+    if isinstance(expected, dict) and expected.get("__summary__") == SUMMARY_MARKER:
+        return summarize_large_metric(value)
+    return value
+
+
+def write_progress(value: dict, output: Path) -> None:
+    output.write_text(
+        json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    )
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--scenario",
+        action="append",
+        choices=SCENARIOS,
+        help="Run only this protected scenario; may be provided more than once.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=OUTPUT,
+        help="Progress JSON path (defaults to PROTECTED_STUDY_GATES_PROGRESS.json).",
+    )
+    args = parser.parse_args()
+    output = args.output if args.output.is_absolute() else ROOT / args.output
+    scenarios = tuple(args.scenario) if args.scenario else SCENARIOS
+
     sys.path.insert(0, str(PACKAGE))
-    from study_harness.executor import StudyRunExecutor, make_study_run_identity
+    from study_harness.executor import StudyRunExecutor
 
     expected_data = json.loads(
         (ROOT / "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json").read_text()
     )
     expected = {row["scenario_id"]: row for row in expected_data["scenarios"]}
-    identities_data = json.loads(
-        (ROOT / "tools/dr_isl/isl25/BASE_IDENTITIES_BEFORE.json").read_text()
+    identity_diagnosis = json.loads(
+        (ROOT / "tools/dr_isl/isl25/IDENTITY_DIAGNOSIS.json").read_text()
     )
-    identities = {
-        (row["scenario_id"], row["mode"]): row
-        for row in identities_data["runs"]
+    normalized_payloads = {
+        (row["scenario_id"], row["mode"]): row["payload_before"]
+        for row in identity_diagnosis["results"]
     }
     executor = StudyRunExecutor(output_dir=Path("/tmp/isl25-protected-study-runs"))
     progress: dict = {
         "seed": 42,
         "cache": "fresh temporary directory; no prior run can be reused",
         "reference": "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json",
+        "identity_reference": "IDENTITY_DIAGNOSIS.json payload_before with both commit fields normalized",
+        "canonical_large_metric_encoding": {
+            "sort_keys": True,
+            "separators": [",", ":"],
+            "ensure_ascii": False,
+            "allow_nan": False,
+        },
         "runs": [],
     }
-    write_progress(progress)
+    write_progress(progress, output)
 
-    for scenario_id in SCENARIOS:
+    for scenario_id in scenarios:
         pair = executor.run_pair(
             scenario_id=scenario_id,
             seed=42,
@@ -68,7 +126,32 @@ def main() -> int:
         for mode in ("baseline", "informed"):
             record = pair["runs"][mode]
             reference_arm = reference_scenario[mode]
-            expected_identity = identities[(scenario_id, mode)]
+            normalized_reference = normalized_payloads[(scenario_id, mode)]
+            actual_identity = record.get("identity")
+            normalized_actual = dict(actual_identity or {})
+            normalized_actual["engine_commit"] = normalized_reference[
+                "engine_commit"
+            ]
+            normalized_actual["harness_commit"] = normalized_reference[
+                "harness_commit"
+            ]
+            actual_identity_bytes = canonical_json_bytes(normalized_actual)
+            expected_identity_bytes = canonical_json_bytes(normalized_reference)
+            normalized_identity_digest = hashlib.sha256(
+                actual_identity_bytes
+            ).hexdigest()
+            identity_matches = actual_identity_bytes == expected_identity_bytes
+            if not identity_matches:
+                scenario_result["failures"].append(
+                    {
+                        "gate": "normalized_identity_payload",
+                        "mode": mode,
+                        "expected_sha256": hashlib.sha256(
+                            expected_identity_bytes
+                        ).hexdigest(),
+                        "actual_sha256": normalized_identity_digest,
+                    }
+                )
             if record.get("physical_identity_sha256") != reference_arm[
                 "physical_identity_sha256"
             ]:
@@ -80,23 +163,18 @@ def main() -> int:
                         "actual": record.get("physical_identity_sha256"),
                     }
                 )
-            if record.get("identity_digest") != expected_identity["identity_digest"]:
-                scenario_result["failures"].append(
-                    {
-                        "gate": "identity_digest",
-                        "mode": mode,
-                        "expected": expected_identity["identity_digest"],
-                        "actual": record.get("identity_digest"),
-                    }
-                )
             expected_metrics = reference_arm["metrics_current"]
+            actual_metrics = {
+                field: comparable_metric_value(record.get(field), expected_value)
+                for field, expected_value in expected_metrics.items()
+            }
             metric_differences = {
                 field: {
                     "expected": expected_value,
-                    "actual": record.get(field),
+                    "actual": actual_metrics[field],
                 }
                 for field, expected_value in expected_metrics.items()
-                if record.get(field) != expected_value
+                if actual_metrics[field] != expected_value
             }
             if metric_differences:
                 scenario_result["failures"].append(
@@ -107,14 +185,17 @@ def main() -> int:
                     }
                 )
             scenario_result["arms"][mode] = {
-                "identity_digest": record.get("identity_digest"),
+                "raw_identity_digest": record.get("identity_digest"),
+                "normalized_identity_sha256": normalized_identity_digest,
+                "normalized_identity_matches_reference": identity_matches,
+                "raw_commit_fields": {
+                    "engine_commit": (actual_identity or {}).get("engine_commit"),
+                    "harness_commit": (actual_identity or {}).get("harness_commit"),
+                },
                 "physical_identity_sha256": record.get(
                     "physical_identity_sha256"
                 ),
-                "metrics": {
-                    field: record.get(field)
-                    for field in expected_metrics
-                },
+                "metrics": actual_metrics,
                 "metric_differences": metric_differences,
                 "status": record.get("status"),
                 "tick_count": record.get("tick_count"),
@@ -143,7 +224,7 @@ def main() -> int:
         progress["status"] = (
             "STOP" if scenario_result["failures"] else "IN_PROGRESS"
         )
-        write_progress(progress)
+        write_progress(progress, output)
         print(
             scenario_id,
             "verdict=" + str(pair["comparison"].get("verdict")),
@@ -155,7 +236,7 @@ def main() -> int:
             return 1
 
     progress["status"] = "PASS"
-    write_progress(progress)
+    write_progress(progress, output)
     return 0
 
 

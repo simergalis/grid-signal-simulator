@@ -1,0 +1,91 @@
+{
+  "all_match": true,
+  "encoding": {
+    "allow_nan": false,
+    "encoding": "UTF-8",
+    "ensure_ascii": false,
+    "separators": [
+      ",",
+      ":"
+    ],
+    "sort_keys": true
+  },
+  "h1_evidence": "COMMITMENT_LOG_DIAGNOSIS.json contains the retained current-log canonical summaries and fresh-D6c equality check.",
+  "h1_simulation_rerun": false,
+  "results": [
+    {
+      "actual": {
+        "canonical_json_sha256": "8f6b038c4b7feaa0830e28105708aa20852e0c4cfa4c767a5adb255168a6e2e3",
+        "count": 8,
+        "serialized_bytes": 3541,
+        "type": "list"
+      },
+      "arm": "baseline",
+      "expected": {
+        "canonical_json_sha256": "8f6b038c4b7feaa0830e28105708aa20852e0c4cfa4c767a5adb255168a6e2e3",
+        "count": 8,
+        "serialized_bytes": 3541,
+        "type": "list"
+      },
+      "match": true,
+      "scenario_id": "scenario-uneven-multisched-01"
+    },
+    {
+      "actual": {
+        "canonical_json_sha256": "35166e43c54cffe3d4c81ac60faef2684d94ce26e7662eb611b246e800002c0d",
+        "count": 11,
+        "serialized_bytes": 5627,
+        "type": "list"
+      },
+      "arm": "informed",
+      "expected": {
+        "canonical_json_sha256": "35166e43c54cffe3d4c81ac60faef2684d94ce26e7662eb611b246e800002c0d",
+        "count": 11,
+        "serialized_bytes": 5627,
+        "type": "list"
+      },
+      "match": true,
+      "scenario_id": "scenario-uneven-multisched-01"
+    },
+    {
+      "actual": {
+        "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+        "count": 48,
+        "serialized_bytes": 21318,
+        "type": "list"
+      },
+      "arm": "baseline",
+      "current_equals_fresh_d6c": true,
+      "decision_fields_differ": false,
+      "expected": {
+        "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+        "count": 48,
+        "serialized_bytes": 21318,
+        "type": "list"
+      },
+      "match": true,
+      "reused_current_run_evidence": true,
+      "scenario_id": "scenario-h1-k8s-ray-24h"
+    },
+    {
+      "actual": {
+        "canonical_json_sha256": "936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995",
+        "count": 59,
+        "serialized_bytes": 27608,
+        "type": "list"
+      },
+      "arm": "informed",
+      "current_equals_fresh_d6c": true,
+      "decision_fields_differ": false,
+      "expected": {
+        "canonical_json_sha256": "936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995",
+        "count": 59,
+        "serialized_bytes": 27608,
+        "type": "list"
+      },
+      "match": true,
+      "reused_current_run_evidence": true,
+      "scenario_id": "scenario-h1-k8s-ray-24h"
+    }
+  ]
+}
