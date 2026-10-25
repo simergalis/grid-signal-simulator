@@ -1,0 +1,60 @@
+{
+  "base_commit": "d12ed88",
+  "base_nonfuel_sha256": "808873c0bd14974ae4a605c49df4a43e7ba349831689d00399c5a2063da68f9e",
+  "base_physical_sha256": "4e33ec591dbf46a41a8d3518f891a7b7f7b1096ad3ca7bbf2a7afc27ab3f2029",
+  "current_commit": "774fae597f6fe75cf05d21c549a6c0d18c20890c",
+  "current_nonfuel_sha256": "e0ccf0e15265d70738e53c74d273e8ab223d9b30b4439797b8188cb76be7aaba",
+  "current_physical_sha256": "ad91ced6445f21aa4a9a9b4ccb2fb4dd5114d42f2eae3ab5e0be5769fceaf508",
+  "diff_tick_count": 10570,
+  "differing_fields": {
+    "turbine_units[1].breaker_closed": {
+      "after": false,
+      "before": true,
+      "count": 71,
+      "first_sim_time_seconds": 5.0,
+      "first_tick_index": 1
+    },
+    "turbine_units[2].breaker_closed": {
+      "after": false,
+      "before": true,
+      "count": 3177,
+      "first_sim_time_seconds": 5.0,
+      "first_tick_index": 1
+    },
+    "turbine_units[3].breaker_closed": {
+      "after": false,
+      "before": true,
+      "count": 8110,
+      "first_sim_time_seconds": 5.0,
+      "first_tick_index": 1
+    },
+    "turbine_units[4].breaker_closed": {
+      "after": false,
+      "before": true,
+      "count": 8391,
+      "first_sim_time_seconds": 5.0,
+      "first_tick_index": 1
+    }
+  },
+  "every_difference_breaker_or_diesel": true,
+  "method": "Exact physical_tick_json bytes supplied to PhysicalIdentityHasher; first run rows retained as canonical JSON bytes in memory, second compared streaming; no per-tick file.",
+  "physical_quantity_differences": {
+    "bess_output_mw": [],
+    "bess_soc_fraction": [],
+    "frequency_hz": [],
+    "frequency_valid": [],
+    "p_compute_demand_mw": [],
+    "p_cooling_demand_mw": [],
+    "p_demand_mw": [],
+    "p_dispatch_curtailed_mw": [],
+    "p_generation_mw": [],
+    "p_non_gpu_demand_mw": [],
+    "p_served_mw": [],
+    "p_unserved_mw": [],
+    "turbine_output_mw": [],
+    "turbine_start_count": []
+  },
+  "scenario_id": "S10_mit_supercloud_2021-08-11",
+  "tick_count_base": 17280,
+  "tick_count_current": 17280
+}
