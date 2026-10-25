@@ -2,7 +2,7 @@
 
 ## Status
 
-**STOPPED at the pinned-S10 physical-hash gate.** This is a read-only diagnosis of the D6c hash change; no application code, tests, or scenarios were changed for this follow-up. D6c acceptance work did not continue beyond the requested comparison.
+**Initial status: stopped at the pinned-S10 physical-hash gate.** This opening section records the read-only diagnosis at that stop. After Lloyd accepted the updated pinned reference, D6c resumed and completed the acceptance gates documented below; no application code, tests, or scenarios were changed during that resumed acceptance.
 
 ## D6c.X1 — direct pinned-run comparison
 
