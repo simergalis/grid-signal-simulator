@@ -1,0 +1,61 @@
+{
+  "added_vs_phase6c": [],
+  "failing_ids": [
+    "tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation",
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config",
+    "tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar",
+    "tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment",
+    "tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve",
+    "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names",
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel",
+    "tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited",
+    "tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context",
+    "tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants",
+    "tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude",
+    "tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait",
+    "tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes",
+    "tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load",
+    "tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip"
+  ],
+  "hash_seed": 987654321,
+  "removed_vs_phase6c": [
+    "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+  ],
+  "skipped_xfail_nodes": [
+    "tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4b_depleted_bess_islanded_delivery_error_amplifies_drop",
+    "tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4c_grid_connected_delivery_fault_frequency_invariant",
+    "tests/test_13_4_criteria.py::TestB3BindingConstraint::test_B3_binding_constraint_when_shortfall_exceeds_rating",
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_positive_target_below_floor_clamped_up",
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_target_above_floor_unchanged",
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_exactly_at_floor_accepted",
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_clamped_target_leads_to_correct_ramp",
+    "tests/test_13_5_criteria.py::TestR5MinRunTime::test_R5_stop_before_min_run_holds_at_p_min_stable",
+    "tests/test_13_5_criteria.py::TestR5MinRunTime::test_R5_stop_after_min_run_is_allowed",
+    "tests/test_13_5_criteria.py::TestR5MinRunTime::test_R5_run_start_time_recorded_on_first_start",
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_restart_inside_cooling_window_dropped",
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_restart_after_cooling_window_succeeds",
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_checkpoint_valley_zero_stop_start_cycles",
+    "tests/test_formulas.py::test_turbine_ramps_at_configured_rate",
+    "tests/test_formulas.py::test_d8_staging_sizes_against_dispatch_required_not_p_total",
+    "tests/test_formulas.py::test_d10_demo_20mw_bess_fires_and_tapers",
+    "tests/test_p1b_p2.py::TestTC81UnitAvailabilityBoundary::test_tc81_new_phase2_states_exist",
+    "tests/test_p1b_p2.py::TestTC81UnitAvailabilityBoundary::test_tc81_mutual_exclusion_guard_passes_for_valid_split",
+    "tests/test_p1b_p2.py::TestTC81UnitAvailabilityBoundary::test_tc81_mutual_exclusion_guard_raises_on_b1a_defect",
+    "tests/test_p1b_p2.py::TestTC81UnitAvailabilityBoundary::test_tc81_mutual_exclusion_guard_raises_on_at_target_defect",
+    "tests/test_scenario_fc100_islanded_v2.py::test_fc100_reference_is_registered_and_exercises_all_hot_standby_ramp",
+    "tests/test_tc87_tc92.py::test_tc87_served_plus_explicit_shed_equals_demand",
+    "tests/test_tc87_tc92.py::test_tc88_supply_shortfall_implies_frequency_excursion",
+    "tests/test_tc87_tc92.py::test_tc89_unstaged_collapse_supply_shortfall",
+    "tests/test_tc87_tc92.py::test_tc90_staged_no_unserved",
+    "tests/test_tc87_tc92.py::test_tc91_anchor_clamp_supply_shortfall"
+  ],
+  "terminal_counts": {
+    "failed": 15,
+    "passed": 2255,
+    "skipped": 3,
+    "subtests_passed": 3,
+    "warnings": 54,
+    "xfailed": 23
+  },
+  "testcase_count": 2296
+}

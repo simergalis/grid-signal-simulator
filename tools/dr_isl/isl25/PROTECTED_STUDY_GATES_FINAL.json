@@ -1,0 +1,181 @@
+{
+  "base_and_h1_simulation_rerun": false,
+  "commitment_logs": {
+    "all_match_d6c": true,
+    "h1_simulation_rerun": false,
+    "runs": [
+      {
+        "actual": {
+          "canonical_json_sha256": "8f6b038c4b7feaa0830e28105708aa20852e0c4cfa4c767a5adb255168a6e2e3",
+          "count": 8,
+          "serialized_bytes": 3541,
+          "type": "list"
+        },
+        "arm": "baseline",
+        "expected": {
+          "canonical_json_sha256": "8f6b038c4b7feaa0830e28105708aa20852e0c4cfa4c767a5adb255168a6e2e3",
+          "count": 8,
+          "serialized_bytes": 3541,
+          "type": "list"
+        },
+        "match": true,
+        "scenario_id": "scenario-uneven-multisched-01"
+      },
+      {
+        "actual": {
+          "canonical_json_sha256": "35166e43c54cffe3d4c81ac60faef2684d94ce26e7662eb611b246e800002c0d",
+          "count": 11,
+          "serialized_bytes": 5627,
+          "type": "list"
+        },
+        "arm": "informed",
+        "expected": {
+          "canonical_json_sha256": "35166e43c54cffe3d4c81ac60faef2684d94ce26e7662eb611b246e800002c0d",
+          "count": 11,
+          "serialized_bytes": 5627,
+          "type": "list"
+        },
+        "match": true,
+        "scenario_id": "scenario-uneven-multisched-01"
+      },
+      {
+        "actual": {
+          "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+          "count": 48,
+          "serialized_bytes": 21318,
+          "type": "list"
+        },
+        "arm": "baseline",
+        "current_equals_fresh_d6c": true,
+        "decision_fields_differ": false,
+        "expected": {
+          "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+          "count": 48,
+          "serialized_bytes": 21318,
+          "type": "list"
+        },
+        "match": true,
+        "reused_current_run_evidence": true,
+        "scenario_id": "scenario-h1-k8s-ray-24h"
+      },
+      {
+        "actual": {
+          "canonical_json_sha256": "936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995",
+          "count": 59,
+          "serialized_bytes": 27608,
+          "type": "list"
+        },
+        "arm": "informed",
+        "current_equals_fresh_d6c": true,
+        "decision_fields_differ": false,
+        "expected": {
+          "canonical_json_sha256": "936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995",
+          "count": 59,
+          "serialized_bytes": 27608,
+          "type": "list"
+        },
+        "match": true,
+        "reused_current_run_evidence": true,
+        "scenario_id": "scenario-h1-k8s-ray-24h"
+      }
+    ]
+  },
+  "existing_scenario_ctx_step_hashes_all_match_d6c": true,
+  "existing_scenario_match_by_id": {
+    "S10_mit_supercloud_2021-08-11": true,
+    "demo-islanded-ramp": true,
+    "scenario-100mw-fuel-cell-bess-diesel": true,
+    "scenario-equinix-sj-1": true,
+    "scenario-fc100-islanded-v2": true,
+    "scenario-fc100-islanded-zero-hot-v2": true,
+    "scenario-hybrid-ai-100mw-addendum-i": true,
+    "scenario-turbine-01": true
+  },
+  "h2_run_pair_completed": true,
+  "h2_verification_file": "tools/dr_isl/isl25/H2_PROTECTED_GATE_VERIFIED.json",
+  "identity_diagnostic_correction": "IDENTITY_DIAGNOSIS.json payload_before was not the exact make_study_run_identity payload from StudyRunExecutor run_pair; its numeric JSON types were ints, while exact run-path payloads are floats for declared float fields. The exact run-path b9/current payloads are byte-identical.",
+  "identity_payloads_all_six_match": true,
+  "identity_source": "Exact StudyRunExecutor run-pair path at b9c268f and current application code; same constant substituted for engine_commit and harness_commit; sorted compact UTF-8 JSON, ensure_ascii=False.",
+  "scenarios": [
+    {
+      "arms": {
+        "baseline": {
+          "identity_payload_bytes": 7373,
+          "identity_payload_matches_b9": true,
+          "identity_payload_sha256_normalized": "233d16a239b2020d9e71edf1a20a6897eb5fef8579bc7b0db0a554d823193eca",
+          "physical_hash_matches_d6c": true,
+          "physical_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+          "reported_metrics_match": true,
+          "tick_count": null
+        },
+        "informed": {
+          "identity_payload_bytes": 7373,
+          "identity_payload_matches_b9": true,
+          "identity_payload_sha256_normalized": "6767facb028330378dcea19332c49189e7afc815da286adeb97ebf228d6b6e81",
+          "physical_hash_matches_d6c": true,
+          "physical_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+          "reported_metrics_match": true,
+          "tick_count": null
+        }
+      },
+      "compare_runs_condition_count": 10,
+      "compare_runs_verdict": "PASS",
+      "label": "base_demo",
+      "scenario_id": "scenario-uneven-multisched-01"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "identity_payload_bytes": 2177,
+          "identity_payload_matches_b9": true,
+          "identity_payload_sha256_normalized": "d669c1378eeb338ab2a24f28dfbb495f1d775680fc6a1d684e704d6f82d718fd",
+          "physical_hash_matches_d6c": true,
+          "physical_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+          "reported_metrics_match": true,
+          "tick_count": 17280
+        },
+        "informed": {
+          "identity_payload_bytes": 2177,
+          "identity_payload_matches_b9": true,
+          "identity_payload_sha256_normalized": "e774b002389627eeb1ff953418f364d9b77f30353409d227e04f2f8737c48b3d",
+          "physical_hash_matches_d6c": true,
+          "physical_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+          "reported_metrics_match": true,
+          "tick_count": 17280
+        }
+      },
+      "compare_runs_condition_count": 10,
+      "compare_runs_verdict": "PASS",
+      "label": "h1_24h",
+      "scenario_id": "scenario-h1-k8s-ray-24h"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "identity_payload_bytes": 2181,
+          "identity_payload_matches_b9": true,
+          "identity_payload_sha256_normalized": "b4a20e4f40db4b94eabbb6baa347c7fb4f45c78711b0296aaa1d5bcc35438707",
+          "physical_hash_matches_d6c": true,
+          "physical_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+          "reported_metrics_match": true,
+          "tick_count": 17280
+        },
+        "informed": {
+          "identity_payload_bytes": 2181,
+          "identity_payload_matches_b9": true,
+          "identity_payload_sha256_normalized": "7c2fd7bde9ed927c0b44740cb46a3ad4c510f88483a95906a0b8a8bc8800a44b",
+          "physical_hash_matches_d6c": true,
+          "physical_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+          "reported_metrics_match": true,
+          "tick_count": 17280
+        }
+      },
+      "compare_runs_condition_count": 10,
+      "compare_runs_verdict": "PASS",
+      "label": "h2_24h",
+      "scenario_id": "scenario-h2-slurm-24h"
+    }
+  ],
+  "seed": 42,
+  "status": "PASS"
+}

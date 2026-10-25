@@ -1,0 +1,112 @@
+{
+  "all_ids_present": true,
+  "all_pass": true,
+  "ids_present": [
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73
+  ],
+  "runs": {
+    "HASH1": [
+      {
+        "id": "TC-ISL-65",
+        "nodeid": "tests/test_mcp_server.py::test_tc_isl_65_s10_list_and_get_scenario_use_tracked_source",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-66",
+        "nodeid": "tests/test_mcp_server.py::test_tc_isl_66_s10_start_run_metrics_and_compare_are_reachable",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-70",
+        "nodeid": "tests/test_mcp_server.py::test_tc_isl_70_unprotected_s10_invalid_ticks_are_informational",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-67",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_67_s10_expansion_uses_canonical_json_without_fuel_overlay",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-68",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_68_s10_pair_shares_probe_and_non_gpu_profile",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-69",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_69_s10_source_events_are_part_of_run_identity",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-72",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_72_cache_identity_isolates_s10_source_event_edits",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-73",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_73_existing_base_and_h_identities_match_prechange_evidence",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-71",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_71_rest_physics_parity_enforces_rounding_and_discrete_fields",
+        "outcome": "PASS"
+      }
+    ],
+    "HASH2": [
+      {
+        "id": "TC-ISL-65",
+        "nodeid": "tests/test_mcp_server.py::test_tc_isl_65_s10_list_and_get_scenario_use_tracked_source",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-66",
+        "nodeid": "tests/test_mcp_server.py::test_tc_isl_66_s10_start_run_metrics_and_compare_are_reachable",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-70",
+        "nodeid": "tests/test_mcp_server.py::test_tc_isl_70_unprotected_s10_invalid_ticks_are_informational",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-67",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_67_s10_expansion_uses_canonical_json_without_fuel_overlay",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-68",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_68_s10_pair_shares_probe_and_non_gpu_profile",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-69",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_69_s10_source_events_are_part_of_run_identity",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-72",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_72_cache_identity_isolates_s10_source_event_edits",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-73",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_73_existing_base_and_h_identities_match_prechange_evidence",
+        "outcome": "PASS"
+      },
+      {
+        "id": "TC-ISL-71",
+        "nodeid": "tests/test_study_harness.py::test_tc_isl_71_rest_physics_parity_enforces_rounding_and_discrete_fields",
+        "outcome": "PASS"
+      }
+    ]
+  },
+  "suite": "Full test suite JUnit results; test code unchanged in this continuation."
+}

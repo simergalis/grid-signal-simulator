@@ -1,0 +1,732 @@
+{
+  "arms": {
+    "baseline": {
+      "expected_normalized_identity_sha256": "b4a20e4f40db4b94eabbb6baa347c7fb4f45c78711b0296aaa1d5bcc35438707",
+      "metrics": {
+        "bess_soc_final": 0.999999998,
+        "bess_soc_max": 0.999999999,
+        "bess_soc_min": 0.950386947,
+        "build_warnings": [
+          {
+            "code": "islanded_frequency_protection_unconfigured",
+            "message": "islanded run without frequency protection configured"
+          }
+        ],
+        "cache_hit": false,
+        "commitment": {
+          "distinct_event_count": 44,
+          "log_complete": true,
+          "omitted_record_count": 0,
+          "reserve_floor_distinct_event_count": 0,
+          "reserve_floor_log_complete": true,
+          "reserve_floor_omitted_record_count": 0,
+          "reserve_floor_refusal_count": 0,
+          "reserve_floor_suppressed_repeat_count": 0,
+          "reserve_floor_visible_distinct_event_count": 0,
+          "same_unit_restart_within_min_down_window_count": 0,
+          "suppressed_repeat_count": 0,
+          "visible_distinct_event_count": 44
+        },
+        "commitment_log": {
+          "__summary__": "large metric value represented by exact canonical SHA-256",
+          "canonical_json_sha256": "d40102b994ac6d20eed6dc6257a18136a6e63008fb0b01cdcf328280f0b2af16",
+          "count": 44,
+          "serialized_bytes": 19678,
+          "type": "list"
+        },
+        "commitment_log_record_count": 44,
+        "compute_trace_count": 17280,
+        "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+        "constraints_valid": true,
+        "daily_breakdown": [
+          {
+            "bess_soc_end": 0.999999998,
+            "curtailed_mwh": 349.917690813,
+            "day": 1,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 4.552430556,
+              "load_fuel_mmbtu": 5136.719001539,
+              "no_load_fuel_mmbtu": 65.231666667,
+              "start_fuel_mmbtu": 124.0
+            },
+            "fuel_mmbtu": 5330.503098761,
+            "kind": "weekday",
+            "unserved_mwh": 5.011418076
+          }
+        ],
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+          "gt-hot-01": 221.207657519,
+          "gt-hot-02": 179.962055406,
+          "gt-spin-01": 1639.723878254,
+          "gt-spin-02": 1639.723878254
+        },
+        "dispatch_curtailment_attributable_fuel_mmbtu": 3680.617469434,
+        "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 4.362152778,
+          "load_fuel_mmbtu": 4712.832474807,
+          "no_load_fuel_mmbtu": 61.375,
+          "start_fuel_mmbtu": 60.0
+        },
+        "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+          "gt-hot-01": 345.279002588,
+          "gt-hot-02": 232.498541667,
+          "gt-spin-01": 2130.396041667,
+          "gt-spin-02": 2130.396041667
+        },
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4838.569627585,
+        "dispatch_curtailment_mwh": 349.917690813,
+        "energy_balance": {
+          "closure_status": true,
+          "max_abs_physical_ledger_defect_mw": 0.0,
+          "served_demand_mwh": 138.948956374,
+          "unserved_demand_mwh": 5.011418076
+        },
+        "forecast": {
+          "miss_count": 0,
+          "miss_peak_mw": 0.0
+        },
+        "forecast_misses": {
+          "count": 0,
+          "peak_mw": 0.0
+        },
+        "frequency_feedback_configured": false,
+        "fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 4.552430556,
+          "load_fuel_mmbtu": 5136.719001539,
+          "no_load_fuel_mmbtu": 65.231666667,
+          "start_fuel_mmbtu": 124.0
+        },
+        "fuel_reconciled": true,
+        "hard_violations": [],
+        "interval_seconds": 5.0,
+        "invalid_frequency_fraction": 0.03177083333333333,
+        "invalid_frequency_tick_count": 549,
+        "measured_start_event_count": 11,
+        "measured_start_events": [
+          {
+            "charged": true,
+            "sim_time_s": 29150.0,
+            "tier_fuel_mmbtu": 8.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 36035.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 36405.0,
+            "tier_fuel_mmbtu": 8.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 43235.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 43590.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 50435.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 50790.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 57635.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 57990.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 64835.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 65190.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          }
+        ],
+        "mode": "baseline",
+        "peak_unserved_mw": 44.86838787,
+        "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+        "protection_configured": false,
+        "replay_strategy": "baseline demand trace replay",
+        "scenario_id": "scenario-h2-slurm-24h",
+        "served_mwh": 138.948956374,
+        "start_fuel_reconciliation": {
+          "measured_event_count": 11,
+          "measured_start_fuel_mmbtu": 124.0,
+          "passed": true,
+          "recorded_event_count": 11,
+          "release_charged": true,
+          "tier_sum_mmbtu": null
+        },
+        "starts": {
+          "__summary__": "large metric value represented by exact canonical SHA-256",
+          "canonical_json_sha256": "6a0367a3c2245010274546028464c973ed941110acb8751af220b4a01d005ebe",
+          "count": 11,
+          "serialized_bytes": 4826,
+          "type": "list"
+        },
+        "status": "PASS",
+        "stop_floor_refusal_count": 0,
+        "stop_floor_refusals": [],
+        "study_class": "addendum_h",
+        "tick_count": 17280,
+        "turbine_fuel_mmbtu": 5330.503098761,
+        "unserved_intervals": [
+          {
+            "end_sim_time_s": 29410.0,
+            "peak_unserved_mw": 38.098732218014646,
+            "start_sim_time_s": 29125.0
+          },
+          {
+            "end_sim_time_s": 29460.0,
+            "peak_unserved_mw": 4.37595409165764,
+            "start_sim_time_s": 29450.0
+          },
+          {
+            "end_sim_time_s": 36415.0,
+            "peak_unserved_mw": 40.894865912415625,
+            "start_sim_time_s": 36310.0
+          },
+          {
+            "end_sim_time_s": 43620.0,
+            "peak_unserved_mw": 41.9036584956214,
+            "start_sim_time_s": 43510.0
+          },
+          {
+            "end_sim_time_s": 50815.0,
+            "peak_unserved_mw": 40.390845418775996,
+            "start_sim_time_s": 50710.0
+          },
+          {
+            "end_sim_time_s": 58025.0,
+            "peak_unserved_mw": 44.86838786968556,
+            "start_sim_time_s": 57910.0
+          },
+          {
+            "end_sim_time_s": 65215.0,
+            "peak_unserved_mw": 40.390845418775996,
+            "start_sim_time_s": 65110.0
+          }
+        ],
+        "unserved_mwh": 5.011418076
+      },
+      "non_identity_metric_differences": {},
+      "non_identity_metrics_match_d6c": true,
+      "normalized_identity_byte_identical": true,
+      "normalized_identity_bytes": 2181,
+      "normalized_identity_metric_summary": {
+        "__summary__": "large metric value represented by exact canonical SHA-256",
+        "canonical_json_sha256": "b4a20e4f40db4b94eabbb6baa347c7fb4f45c78711b0296aaa1d5bcc35438707",
+        "count": 8,
+        "serialized_bytes": 2181,
+        "type": "dict"
+      },
+      "normalized_identity_sha256": "b4a20e4f40db4b94eabbb6baa347c7fb4f45c78711b0296aaa1d5bcc35438707",
+      "physical_identity_matches_d6c": true,
+      "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+      "raw_commit_fields": {
+        "engine_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty",
+        "harness_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty"
+      },
+      "raw_identity_digest": "651fb09a304ecb2ed1bc66236dda05c909e3dba9940f518a578db0584245c783",
+      "raw_identity_metric_summary_excluded_from_metric_delta": "Commit-sensitive run identity is checked separately using the normalized full payload; raw D6c summary is not compared byte-for-byte.",
+      "status": "PASS",
+      "tick_count": 17280
+    },
+    "informed": {
+      "expected_normalized_identity_sha256": "7c2fd7bde9ed927c0b44740cb46a3ad4c510f88483a95906a0b8a8bc8800a44b",
+      "metrics": {
+        "bess_soc_final": 0.999999987,
+        "bess_soc_max": 0.999999998,
+        "bess_soc_min": 0.950386947,
+        "build_warnings": [
+          {
+            "code": "islanded_frequency_protection_unconfigured",
+            "message": "islanded run without frequency protection configured"
+          }
+        ],
+        "cache_hit": false,
+        "commitment": {
+          "distinct_event_count": 65,
+          "log_complete": true,
+          "omitted_record_count": 0,
+          "reserve_floor_distinct_event_count": 14904,
+          "reserve_floor_log_complete": true,
+          "reserve_floor_omitted_record_count": 0,
+          "reserve_floor_refusal_count": 14904,
+          "reserve_floor_suppressed_repeat_count": 0,
+          "reserve_floor_visible_distinct_event_count": 14904,
+          "same_unit_restart_within_min_down_window_count": 0,
+          "suppressed_repeat_count": 11198,
+          "visible_distinct_event_count": 65
+        },
+        "commitment_log": {
+          "__summary__": "large metric value represented by exact canonical SHA-256",
+          "canonical_json_sha256": "e633d967ca39163de1cdc37f97369cc1e678e8846ce8dde4c73ed766c3744f3c",
+          "count": 65,
+          "serialized_bytes": 30192,
+          "type": "list"
+        },
+        "commitment_log_record_count": 65,
+        "compute_trace_count": 17280,
+        "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+        "constraints_valid": true,
+        "daily_breakdown": [
+          {
+            "bess_soc_end": 0.999999987,
+            "curtailed_mwh": 342.977539092,
+            "day": 1,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 3.761458333,
+              "load_fuel_mmbtu": 5106.733034717,
+              "no_load_fuel_mmbtu": 64.855,
+              "start_fuel_mmbtu": 152.0
+            },
+            "fuel_mmbtu": 5327.34949305,
+            "kind": "weekday",
+            "unserved_mwh": 0.859772492
+          }
+        ],
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+          "gt-hot-01": 536.782073718,
+          "gt-hot-02": 164.270090991,
+          "gt-spin-01": 1645.630131731,
+          "gt-spin-02": 1260.841712162
+        },
+        "dispatch_curtailment_attributable_fuel_mmbtu": 3607.524008603,
+        "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 3.642013889,
+          "load_fuel_mmbtu": 4675.898162461,
+          "no_load_fuel_mmbtu": 60.895,
+          "start_fuel_mmbtu": 152.0
+        },
+        "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+          "gt-hot-01": 737.513194445,
+          "gt-hot-02": 293.579930556,
+          "gt-spin-01": 2152.666217898,
+          "gt-spin-02": 1708.675833457
+        },
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4892.43517635,
+        "dispatch_curtailment_mwh": 342.977539092,
+        "energy_balance": {
+          "closure_status": true,
+          "max_abs_physical_ledger_defect_mw": 0.0,
+          "served_demand_mwh": 143.100601957,
+          "unserved_demand_mwh": 0.859772492
+        },
+        "forecast": {
+          "miss_count": 39,
+          "miss_peak_mw": 13.130749227
+        },
+        "forecast_misses": {
+          "count": 39,
+          "peak_mw": 13.130749226769357
+        },
+        "frequency_feedback_configured": false,
+        "fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 3.761458333,
+          "load_fuel_mmbtu": 5106.733034717,
+          "no_load_fuel_mmbtu": 64.855,
+          "start_fuel_mmbtu": 152.0
+        },
+        "fuel_reconciled": true,
+        "hard_violations": [],
+        "interval_seconds": 5.0,
+        "invalid_frequency_fraction": 0.023842592592592592,
+        "invalid_frequency_tick_count": 412,
+        "measured_start_event_count": 14,
+        "measured_start_events": [
+          {
+            "charged": true,
+            "sim_time_s": 25415.0,
+            "tier_fuel_mmbtu": 8.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 28755.0,
+            "tier_fuel_mmbtu": 8.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 28760.0,
+            "tier_fuel_mmbtu": 8.0,
+            "unit_id": "gt-spin-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 35955.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-spin-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 35960.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 43155.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-spin-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 43160.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 49450.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-spin-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 50355.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 50385.0,
+            "tier_fuel_mmbtu": 8.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 57555.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 57560.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 64755.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-01"
+          },
+          {
+            "charged": true,
+            "sim_time_s": 64760.0,
+            "tier_fuel_mmbtu": 12.0,
+            "unit_id": "gt-hot-02"
+          }
+        ],
+        "mode": "informed",
+        "peak_unserved_mw": 42.36838787,
+        "physical_identity_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+        "protection_configured": false,
+        "replay_strategy": "baseline demand trace replay",
+        "scenario_id": "scenario-h2-slurm-24h",
+        "served_mwh": 143.100601957,
+        "start_fuel_reconciliation": {
+          "measured_event_count": 14,
+          "measured_start_fuel_mmbtu": 152.0,
+          "passed": true,
+          "recorded_event_count": 14,
+          "release_charged": true,
+          "tier_sum_mmbtu": null
+        },
+        "starts": {
+          "__summary__": "large metric value represented by exact canonical SHA-256",
+          "canonical_json_sha256": "5c2d2454512d09cbedd7c05296b8518b0ab24482a35a2233177d4cbb62cfa23c",
+          "count": 14,
+          "serialized_bytes": 6424,
+          "type": "list"
+        },
+        "status": "PASS",
+        "stop_floor_refusal_count": 14904,
+        "stop_floor_refusals": {
+          "__summary__": "large metric value represented by exact canonical SHA-256",
+          "canonical_json_sha256": "6472690b044be27bafce8d2cc402c390579263df398c76901cfe60087a83b61b",
+          "count": 14904,
+          "serialized_bytes": 3880205,
+          "type": "list"
+        },
+        "study_class": "addendum_h",
+        "tick_count": 17280,
+        "turbine_fuel_mmbtu": 5327.34949305,
+        "unserved_intervals": [
+          {
+            "end_sim_time_s": 29165.0,
+            "peak_unserved_mw": 19.287968405751712,
+            "start_sim_time_s": 29130.0
+          },
+          {
+            "end_sim_time_s": 29235.0,
+            "peak_unserved_mw": 1.8802011558611156,
+            "start_sim_time_s": 29215.0
+          },
+          {
+            "end_sim_time_s": 36350.0,
+            "peak_unserved_mw": 38.394865912415625,
+            "start_sim_time_s": 36310.0
+          },
+          {
+            "end_sim_time_s": 43555.0,
+            "peak_unserved_mw": 39.4036584956214,
+            "start_sim_time_s": 43510.0
+          },
+          {
+            "end_sim_time_s": 50725.0,
+            "peak_unserved_mw": 26.640845418775996,
+            "start_sim_time_s": 50710.0
+          },
+          {
+            "end_sim_time_s": 57940.0,
+            "peak_unserved_mw": 42.36838786968556,
+            "start_sim_time_s": 57910.0
+          },
+          {
+            "end_sim_time_s": 65140.0,
+            "peak_unserved_mw": 37.890845418775996,
+            "start_sim_time_s": 65110.0
+          }
+        ],
+        "unserved_mwh": 0.859772492
+      },
+      "non_identity_metric_differences": {},
+      "non_identity_metrics_match_d6c": true,
+      "normalized_identity_byte_identical": true,
+      "normalized_identity_bytes": 2181,
+      "normalized_identity_metric_summary": {
+        "__summary__": "large metric value represented by exact canonical SHA-256",
+        "canonical_json_sha256": "7c2fd7bde9ed927c0b44740cb46a3ad4c510f88483a95906a0b8a8bc8800a44b",
+        "count": 8,
+        "serialized_bytes": 2181,
+        "type": "dict"
+      },
+      "normalized_identity_sha256": "7c2fd7bde9ed927c0b44740cb46a3ad4c510f88483a95906a0b8a8bc8800a44b",
+      "physical_identity_matches_d6c": true,
+      "physical_identity_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+      "raw_commit_fields": {
+        "engine_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty",
+        "harness_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty"
+      },
+      "raw_identity_digest": "c78785d7e88c3d7ee4d08d6f861f4377862798f432a2aa1c0c71dfa88cac7a85",
+      "raw_identity_metric_summary_excluded_from_metric_delta": "Commit-sensitive run identity is checked separately using the normalized full payload; raw D6c summary is not compared byte-for-byte.",
+      "status": "PASS",
+      "tick_count": 17280
+    }
+  },
+  "comparison": {
+    "condition_inputs": {
+      "baseline_energy_balance": {
+        "baseline_energy_balance": true,
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "baseline_fuel_reconciled": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_fuel_reconciled": true,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "baseline_valid": {
+        "baseline_constraints_valid": true,
+        "baseline_frequency_feedback_configured": false,
+        "baseline_frequency_valid": true,
+        "baseline_hard_violations": [],
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "build_parity": {
+        "baseline_engine_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty",
+        "baseline_frequency_feedback_configured": false,
+        "baseline_harness_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty",
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_engine_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty",
+        "informed_frequency_feedback_configured": false,
+        "informed_harness_commit": "901a87a14b7cce7cb4555b534d03a7a225a0898c-dirty",
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "identical_compute_trace": {
+        "baseline_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "informed_energy_balance": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_energy_balance": true,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "informed_fuel_reconciled": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_fuel_reconciled": true,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "informed_peak_unserved_no_worse": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_peak_unserved_mw": 44.86838787,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_peak_unserved_mw": 42.36838787,
+        "informed_protection_configured": false,
+        "tolerance_mw": 1e-09
+      },
+      "informed_unserved_energy_no_worse": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "baseline_unserved_mwh": 5.011418076,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false,
+        "informed_unserved_mwh": 0.859772492,
+        "tolerance_mwh": 1e-09
+      },
+      "informed_valid": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_constraints_valid": true,
+        "informed_frequency_feedback_configured": false,
+        "informed_frequency_valid": true,
+        "informed_hard_violations": [],
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      }
+    },
+    "condition_order": [
+      "build_parity",
+      "baseline_valid",
+      "informed_valid",
+      "baseline_energy_balance",
+      "informed_energy_balance",
+      "baseline_fuel_reconciled",
+      "informed_fuel_reconciled",
+      "identical_compute_trace",
+      "informed_unserved_energy_no_worse",
+      "informed_peak_unserved_no_worse"
+    ],
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "frequency_inputs": {
+      "baseline_frequency_feedback_configured": false,
+      "baseline_invalid_frequency_fraction": 0.03177083333333333,
+      "baseline_invalid_frequency_tick_count": 549,
+      "baseline_protection_configured": false,
+      "informed_frequency_feedback_configured": false,
+      "informed_invalid_frequency_fraction": 0.023842592592592592,
+      "informed_invalid_frequency_tick_count": 412,
+      "informed_protection_configured": false
+    },
+    "informed_vs_baseline": {
+      "baseline_peak_unserved_mw": 44.86838787,
+      "baseline_unserved_mwh": 5.011418076,
+      "informed_peak_unserved_mw": 42.36838787,
+      "informed_unserved_mwh": 0.859772492
+    },
+    "verdict": "PASS"
+  },
+  "failures": [],
+  "identity_encoding": {
+    "allow_nan": false,
+    "encoding": "UTF-8",
+    "ensure_ascii": false,
+    "separators": [
+      ",",
+      ":"
+    ],
+    "sort_keys": true
+  },
+  "identity_reference": "tools/dr_isl/isl25/RUN_PATH_IDENTITIES.json, built via StudyRunExecutor exact run-pair identity path at b9c268f and current code; commits normalized to IMPL_ISL_25_NORMALIZED_COMMIT",
+  "reference": "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json",
+  "scenario_id": "scenario-h2-slurm-24h",
+  "source_run": "H2_PROTECTED_GATE.json prior completed run; cache records reused for read-only revalidation; no simulation rerun",
+  "status": "PASS",
+  "study_class": "addendum_h"
+}
