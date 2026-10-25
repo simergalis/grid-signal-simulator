@@ -32,3 +32,20 @@ Ran the H1 pair at seed 42. Both normalized identity payloads match the b9c268f 
 | Informed | 59 entries; 27,608 bytes; `936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995` | 59 entries; 27,614 bytes; `7d0dafc1bb03c88f9c70f54223de7b22e339d9770567f0640ab50ba22f1b6451` |
 
 The saved D6c evidence contains only the commitment-log digests, not the event rows, so the underlying event-level difference cannot be located from that evidence. No D6c H1 replay was run. Per the acceptance stop rule, work stopped at H1; H2, S10 MCP runs, TC-ISL-65–73, existing-scenario hash reruns, and both full-suite runs were not started. No application, test, or scenario files were changed. The progress evidence is `tools/dr_isl/isl25/PROTECTED_STUDY_GATES_RESUMED.json`.
+
+## IMPL-ISL-25 STOP follow-up — H1 commitment-log diagnosis (Y1–Y3)
+
+Ran `StudyRunExecutor.run_pair` in a temporary, clean worktree at D6c HEAD `d12ed881e6c0c0f553132aa3282f3e92baf5b18b`, seed 42. The pair completed in 266.496 s; `compare_runs` was PASS with 10 conditions. The fresh D6c physical hashes match the current H1 hashes exactly.
+
+Entry-by-entry, the fresh D6c and current H1 `commitment_log` lists are equal in both arms: baseline 48/48 entries, informed 59/59. There are zero differing entries or fields. Action, target unit, simulation time, reason, acceptance, state transition, and source fields therefore also have zero decision differences.
+
+`tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json` stores only summary objects for these H1 logs (baseline at lines 736–742; informed at lines 1113–1119), not the event rows, so those saved rows cannot be diffed entry by entry. However, serializing the current logs with `ensure_ascii=False`, sorted keys, and compact separators reproduces the saved D6c hashes and byte counts exactly:
+
+| Arm | Entries | `ensure_ascii=False` — saved D6c hash / bytes | Default `ensure_ascii=True` — earlier resumed-summary hash / bytes |
+|---|---:|---|---|
+| Baseline | 48 | `939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd` / 21,318 | `72a8e76fb85b9751d6455404e28a987dd17356f03c170197d045d6acb3bc1c34` / 21,390 |
+| Informed | 59 | `936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995` / 27,608 | `7d0dafc1bb03c88f9c70f54223de7b22e339d9770567f0640ab50ba22f1b6451` / 27,614 |
+
+The discrepancy is JSON escaping in the earlier evidence summarizer, not run metadata or event values: `/tmp/isl25_protected_resume.py:13–15` calls `json.dumps` without specifying `ensure_ascii`, so Python defaults to `True`; the saved digests reproduce with `False`. The reason strings contain the Unicode `≤` character, constructed in `core/commitment.py:408–409`. The baseline log contains 24 such characters (72 extra bytes when escaped); the informed log contains 2 (6 extra bytes). No `run_id`, commit string, timestamp, wall-clock, float-formatting, or dict-order variation was found in the event lists.
+
+The apparent H1 commitment-log metric failure recorded in the preceding section is resolved as a serializer mismatch. This diagnostic ends here as requested: no H2 run, S10 MCP run, test, suite, or application change was made. The full entry-level comparison and both serialization measurements are in `tools/dr_isl/isl25/COMMITMENT_LOG_DIAGNOSIS.json`.
