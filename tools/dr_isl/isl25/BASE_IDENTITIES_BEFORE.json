@@ -1,0 +1,78 @@
+{
+  "note": "Identity digests captured before IMPL-ISL-25 source edits; D6c evidence stores physical hashes/metrics but not RunIdentity digests.",
+  "runs": [
+    {
+      "condition_count": 10,
+      "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "identity_digest": "cba5bbf1af1dfb5ed107a80e76d94cf5bd8fa2b9eecd523edfa62221cc9b57b6",
+      "metrics_identical_to_d6c": true,
+      "mode": "baseline",
+      "physical_identity_sha256_d6c": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+      "scenario_id": "scenario-uneven-multisched-01",
+      "seed": 42,
+      "verdict": "PASS"
+    },
+    {
+      "condition_count": 10,
+      "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "identity_digest": "20093e88b19f7d51ae4d8d077e045356b6e30c33ec40e5ec3e42a3afae5d1f28",
+      "metrics_identical_to_d6c": true,
+      "mode": "informed",
+      "physical_identity_sha256_d6c": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+      "scenario_id": "scenario-uneven-multisched-01",
+      "seed": 42,
+      "verdict": "PASS"
+    },
+    {
+      "condition_count": 10,
+      "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "identity_digest": "32f103d58b51bd4cff7a55593b92a5ea982a64cf08fef80ebd146c4887089e72",
+      "metrics_identical_to_d6c": true,
+      "mode": "baseline",
+      "physical_identity_sha256_d6c": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "seed": 42,
+      "verdict": "PASS"
+    },
+    {
+      "condition_count": 10,
+      "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "identity_digest": "f9791d186f08b35d219b61f2384a91517693fd086b4397379195a55ada11b4ad",
+      "metrics_identical_to_d6c": true,
+      "mode": "informed",
+      "physical_identity_sha256_d6c": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "seed": 42,
+      "verdict": "PASS"
+    },
+    {
+      "condition_count": 10,
+      "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "identity_digest": "6d938f1c5579bc6d13950a10766ac268367248c94bac0e2528adfc1304feee73",
+      "metrics_identical_to_d6c": true,
+      "mode": "baseline",
+      "physical_identity_sha256_d6c": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+      "scenario_id": "scenario-h2-slurm-24h",
+      "seed": 42,
+      "verdict": "PASS"
+    },
+    {
+      "condition_count": 10,
+      "engine_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "harness_commit": "b9c268f1cc895686e912e3132b154e3b24731e35",
+      "identity_digest": "ea3cf785e2993248ec7b3803f403e70ad8b4a05ddbaeac79eb25140050b6253a",
+      "metrics_identical_to_d6c": true,
+      "mode": "informed",
+      "physical_identity_sha256_d6c": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+      "scenario_id": "scenario-h2-slurm-24h",
+      "seed": 42,
+      "verdict": "PASS"
+    }
+  ],
+  "source_head": "b9c268f1cc895686e912e3132b154e3b24731e35"
+}

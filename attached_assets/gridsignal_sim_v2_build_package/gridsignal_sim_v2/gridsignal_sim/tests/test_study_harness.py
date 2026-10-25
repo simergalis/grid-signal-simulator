@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from api.schemas import ScenarioSpec
 from study_harness.acceptance import AcceptanceCondition, compare_metrics
 from study_harness.artifacts import ArtifactWriter
 from study_harness.errors import (
@@ -15,7 +16,12 @@ from study_harness.errors import (
     StartFuelReconciliationError,
 )
 import study_harness.executor as executor_module
-from study_harness.executor import StudyRunExecutor
+from study_harness.executor import (
+    BASE_DEMO_SCENARIO_ID,
+    SUPER_CLOUD_REPLAY_SCENARIO_ID,
+    StudyRunExecutor,
+    make_study_run_identity,
+)
 from study_harness.manifest import RunManifestCache, make_run_identity
 from study_harness.metrics import collect_metrics
 from runtime.turbine_commitment import ForecastDrivenTurbineController
@@ -23,6 +29,41 @@ from runtime.seed_resolution import (
     resolve_run_seed_manifest,
     seed_consumers_for_spec,
 )
+
+
+S10_FLOAT_TICK_FIELDS = (
+    "p_demand_mw",
+    "p_served_mw",
+    "p_unserved_mw",
+    "p_generation_mw",
+    "p_dispatch_curtailed_mw",
+    "turbine_output_mw",
+    "bess_output_mw",
+    "bess_soc_fraction",
+    "frequency_hz",
+    "p_compute_demand_mw",
+    "p_cooling_demand_mw",
+    "p_non_gpu_demand_mw",
+)
+S10_DISCRETE_TICK_FIELDS = (
+    "frequency_valid",
+    "turbine_start_count",
+)
+
+
+def _assert_s10_rest_tick_parity(rest: dict, mcp: dict) -> None:
+    """D6b.3(a): check REST's four-decimal serialization boundary."""
+    for field in S10_FLOAT_TICK_FIELDS:
+        assert abs(float(rest[field]) - float(mcp[field])) <= 0.00005, field
+    for field in S10_DISCRETE_TICK_FIELDS:
+        assert rest[field] == mcp[field], field
+    rest_units = rest["turbine_units"]
+    mcp_units = mcp["turbine_units"]
+    assert len(rest_units) == len(mcp_units)
+    for left, right in zip(rest_units, mcp_units, strict=True):
+        assert left["asset_id"] == right["asset_id"]
+        assert left["state"] == right["state"]
+        assert abs(float(left["output_mw"]) - float(right["output_mw"])) <= 0.00005
 
 
 def _row(
@@ -626,3 +667,222 @@ def test_tc_ssh08_04_executor_run_pair_refuses_unknown_provenance(
     assert raised.value.informed_engine_commit == "unknown"
     assert raised.value.baseline_harness_commit == "harness-sha"
     assert raised.value.informed_harness_commit == "harness-sha"
+
+
+def test_tc_isl_67_s10_expansion_uses_canonical_json_without_fuel_overlay(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-67: S10 keeps its own validated JSON and authored fuel blocks."""
+    package_root = Path(__file__).resolve().parents[1]
+    scenario_path = (
+        package_root
+        / "config"
+        / "scenarios"
+        / f"{SUPER_CLOUD_REPLAY_SCENARIO_ID}.json"
+    )
+    expected = ScenarioSpec.model_validate_json(
+        scenario_path.read_bytes()
+    ).model_dump(mode="json")
+    executor = StudyRunExecutor(output_dir=tmp_path)
+
+    def unexpected_fuel_overlay(_units):
+        pytest.fail("S10 must not use the base/H study fuel overlay")
+
+    monkeypatch.setattr(
+        executor_module,
+        "apply_study_fuel_model",
+        unexpected_fuel_overlay,
+    )
+    expanded = executor._expanded_spec(
+        SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        parameter_overrides=None,
+        duration_seconds=None,
+    )
+    assert expanded == expected
+    assert len(expanded["turbine_units"]) == 5
+    assert expanded["operating_cost_inputs"]
+    assert len(expanded["workload_events"]) == 239
+    assert len(expanded["non_gpu_load_profile_mw"]) == 320
+
+
+def test_tc_isl_68_s10_pair_shares_probe_and_non_gpu_profile(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-68: both arms share one probe trace, seed manifest and profile."""
+    executor = StudyRunExecutor(output_dir=tmp_path)
+    replay_events = [{"sim_time_seconds": 0.0, "job_id": "shared-probe"}]
+    demand_replay = [{"sim_time_seconds": 0.0, "mw": 0.25}]
+    calls: list[dict] = []
+
+    def fake_probe(spec, *, run_id, seed_manifest):
+        assert len(spec["workload_events"]) == 239
+        assert len(spec["non_gpu_load_profile_mw"]) == 320
+        assert seed_manifest["root_seed"] == 42
+        assert run_id.endswith("-study-s1-probe")
+        return replay_events, demand_replay
+
+    def fake_run_mode(**kwargs):
+        calls.append(kwargs)
+        return {"mode": kwargs["mode"]}
+
+    monkeypatch.setattr(executor, "_probe", fake_probe)
+    monkeypatch.setattr(executor, "_run_mode", fake_run_mode)
+    monkeypatch.setattr(
+        "study_harness.acceptance.compare_metrics",
+        lambda _baseline, _informed: {"verdict": "PASS"},
+    )
+    result = executor.run_pair(
+        scenario_id=SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        seed=42,
+        duration_seconds=5.0,
+    )
+    assert result["study_class"] == "supercloud_replay"
+    assert [call["mode"] for call in calls] == ["baseline", "informed"]
+    assert calls[0]["spec"] is calls[1]["spec"]
+    assert calls[0]["replay_events"] is calls[1]["replay_events"] is replay_events
+    assert calls[0]["demand_replay"] is calls[1]["demand_replay"] is demand_replay
+    assert (
+        calls[0]["spec"]["non_gpu_load_profile_mw"]
+        == calls[1]["spec"]["non_gpu_load_profile_mw"]
+    )
+    assert calls[0]["seed_manifest"] == calls[1]["seed_manifest"]
+
+
+def test_tc_isl_69_s10_source_events_are_part_of_run_identity(
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-69: canonical source events distinguish S10 identity."""
+    executor = StudyRunExecutor(output_dir=tmp_path)
+    spec = executor._expanded_spec(
+        SUPER_CLOUD_REPLAY_SCENARIO_ID, None, None
+    )
+    identity = make_study_run_identity(
+        scenario_id=SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        mode="baseline",
+        spec=spec,
+        seed=42,
+        tick_seconds=executor.tick_seconds,
+        engine_commit=executor.engine_commit,
+        harness_commit=executor.harness_commit,
+    )
+    assert (
+        identity.parameter_set["workload_events_sha256"]
+        == executor_module._canonical_workload_events_sha256(spec)
+    )
+    assert "workload_events" not in identity.parameter_set
+    changed = json.loads(json.dumps(spec))
+    changed["workload_events"].append({"event_id": "identity-only-change"})
+    changed_identity = make_study_run_identity(
+        scenario_id=SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        mode="baseline",
+        spec=changed,
+        seed=42,
+        tick_seconds=executor.tick_seconds,
+        engine_commit=executor.engine_commit,
+        harness_commit=executor.harness_commit,
+    )
+    assert changed_identity.digest != identity.digest
+
+
+def test_tc_isl_72_cache_identity_isolates_s10_source_event_edits(
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-72: S10 source edits affect its key; other classes add no field."""
+    executor = StudyRunExecutor(output_dir=tmp_path)
+    s10 = executor._expanded_spec(SUPER_CLOUD_REPLAY_SCENARIO_ID, None, 5.0)
+    s10_changed = json.loads(json.dumps(s10))
+    s10_changed["workload_events"].append({"event_id": "changed"})
+    s10_identity = make_study_run_identity(
+        scenario_id=SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        mode="baseline",
+        spec=s10,
+        seed=42,
+        tick_seconds=executor.tick_seconds,
+        engine_commit=executor.engine_commit,
+        harness_commit=executor.harness_commit,
+    )
+    changed_identity = make_study_run_identity(
+        scenario_id=SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        mode="baseline",
+        spec=s10_changed,
+        seed=42,
+        tick_seconds=executor.tick_seconds,
+        engine_commit=executor.engine_commit,
+        harness_commit=executor.harness_commit,
+    )
+    assert s10_identity.digest != changed_identity.digest
+    for scenario_id in (BASE_DEMO_SCENARIO_ID, "scenario-h1-k8s-ray-24h"):
+        spec = executor._expanded_spec(scenario_id, None, 5.0)
+        identity = make_study_run_identity(
+            scenario_id=scenario_id,
+            mode="baseline",
+            spec=spec,
+            seed=42,
+            tick_seconds=executor.tick_seconds,
+            engine_commit=executor.engine_commit,
+            harness_commit=executor.harness_commit,
+        )
+        assert "workload_events_sha256" not in identity.parameter_set
+
+
+def test_tc_isl_73_existing_base_and_h_identities_match_prechange_evidence(
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-73: existing identity payload construction remains byte-identical."""
+    repository_root = Path(__file__).resolve().parents[5]
+    reference = json.loads(
+        (
+            repository_root
+            / "tools"
+            / "dr_isl"
+            / "isl25"
+            / "BASE_IDENTITIES_BEFORE.json"
+        ).read_text()
+    )
+    executor = StudyRunExecutor(output_dir=tmp_path)
+    for expected in reference["runs"]:
+        spec = executor._expanded_spec(expected["scenario_id"], None, None)
+        seed_manifest = executor.resolve_seed_manifest(spec, expected["seed"])
+        identity = make_study_run_identity(
+            scenario_id=expected["scenario_id"],
+            mode=expected["mode"],
+            spec=spec,
+            seed=seed_manifest["root_seed"],
+            tick_seconds=executor.tick_seconds,
+            engine_commit=expected["engine_commit"],
+            harness_commit=expected["harness_commit"],
+        )
+        assert identity.digest == expected["identity_digest"]
+
+
+def test_tc_isl_71_rest_physics_parity_enforces_rounding_and_discrete_fields() -> None:
+    """TC-ISL-71: apply D6b's 0.00005 tolerance and exact discrete comparisons."""
+    rest = {
+        **{field: 1.0 for field in S10_FLOAT_TICK_FIELDS},
+        "frequency_valid": True,
+        "turbine_start_count": 1,
+        "turbine_units": [
+            {"asset_id": "gt-01", "state": "synchronised", "output_mw": 4.0}
+        ],
+    }
+    mcp = {
+        **rest,
+        "p_demand_mw": 1.000049999,
+        "turbine_units": [
+            {
+                "asset_id": "gt-01",
+                "state": "synchronised",
+                "output_mw": 4.000049999,
+            }
+        ],
+    }
+    _assert_s10_rest_tick_parity(rest, mcp)
+
+    over_tolerance = {**mcp, "p_demand_mw": 1.000051}
+    with pytest.raises(AssertionError, match="p_demand_mw"):
+        _assert_s10_rest_tick_parity(rest, over_tolerance)
+    discrete_mismatch = {**mcp, "frequency_valid": False}
+    with pytest.raises(AssertionError, match="frequency_valid"):
+        _assert_s10_rest_tick_parity(rest, discrete_mismatch)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import gzip
+import hashlib
 import json
 import os
 import subprocess
@@ -47,6 +48,10 @@ from runtime.operating_cost import compute_operating_cost
 BASE_DEMO_SCENARIO_ID = "scenario-uneven-multisched-01"
 STUDY_CLASS_ADDENDUM_H = "addendum_h"
 STUDY_CLASS_BASE_DEMO = "base_demo"
+# PROPOSED_HERE: isolate the operational, single-day SuperCloud replay from
+# certified study classes. Source: DR-2026-10-20-ISLAND-COLLAPSE IMPL-ISL-25.
+SUPER_CLOUD_REPLAY_SCENARIO_ID = "S10_mit_supercloud_2021-08-11"
+STUDY_CLASS_SUPERCLOUD_REPLAY = "supercloud_replay"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
 # PROPOSED_HERE: bump the study identity when resolved RNG inputs become part
 # of a run's reproducibility contract. Source: DR Phase 6 D4.
@@ -74,10 +79,35 @@ def study_class_for_scenario(scenario_id: str) -> str:
         return STUDY_CLASS_ADDENDUM_H
     if scenario_id == BASE_DEMO_SCENARIO_ID:
         return STUDY_CLASS_BASE_DEMO
+    if scenario_id == SUPER_CLOUD_REPLAY_SCENARIO_ID:
+        return STUDY_CLASS_SUPERCLOUD_REPLAY
     raise UnsupportedScenarioError(
         scenario_id=scenario_id,
-        supported_ids=[*REFERENCE_IDS, BASE_DEMO_SCENARIO_ID],
+        supported_ids=[
+            *REFERENCE_IDS,
+            BASE_DEMO_SCENARIO_ID,
+            SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        ],
     )
+
+
+def _canonical_scenario_spec(path: Path) -> dict[str, Any]:
+    """Load a tracked scenario through the same schema normalization path."""
+    return ScenarioSpec.model_validate_json(path.read_bytes()).model_dump(
+        mode="json"
+    )
+
+
+def _canonical_workload_events_sha256(spec: Mapping[str, Any]) -> str:
+    """Hash normalized source events before the executor replaces them by replay."""
+    encoded = json.dumps(
+        spec.get("workload_events"),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def make_study_run_identity(
@@ -94,6 +124,12 @@ def make_study_run_identity(
     identity_parameters["turbine_commitment_mode"] = mode
     identity_parameters.pop("kube_clusters", None)
     identity_parameters.pop("slurm_config", None)
+    if scenario_id == SUPER_CLOUD_REPLAY_SCENARIO_ID:
+        # PROPOSED_HERE: S10's source event timeline is an identity input even
+        # though the common study executor replaces it with a replay trace.
+        identity_parameters["workload_events_sha256"] = (
+            _canonical_workload_events_sha256(spec)
+        )
     # The replay trace is an execution input; its content is separately hashed.
     identity_parameters.pop("workload_events", None)
     identity_parameters["study_class"] = study_class_for_scenario(scenario_id)
@@ -291,6 +327,16 @@ class StudyRunExecutor:
             spec = expand_phase2b_reference_spec(
                 _load_compact_spec(scenario_id)
             )
+        elif study_class == STUDY_CLASS_SUPERCLOUD_REPLAY:
+            scenario_path = (
+                Path(__file__).resolve().parents[1]
+                / "config"
+                / "scenarios"
+                / f"{SUPER_CLOUD_REPLAY_SCENARIO_ID}.json"
+            )
+            # IMPL-ISL-25: use S10's own tracked inputs; its fuel and operating
+            # cost blocks are authored data, not the base/H study overlay.
+            spec = _canonical_scenario_spec(scenario_path)
         else:
             base_path = (
                 Path(__file__).resolve().parents[1]
@@ -300,9 +346,7 @@ class StudyRunExecutor:
             )
             # DR D8 supersedes DR-2026-09-24-BASE-STUDY Phase 1.2 raw loading.
             # H references deliberately retain their separate expansion above.
-            spec = ScenarioSpec.model_validate_json(
-                base_path.read_bytes()
-            ).model_dump(mode="json")
+            spec = _canonical_scenario_spec(base_path)
             spec["turbine_units"] = apply_study_fuel_model(
                 spec.get("turbine_units", [])
             )
@@ -401,7 +445,8 @@ class StudyRunExecutor:
             identity = make_study_run_identity(
                 scenario_id=scenario_id,
                 mode=mode,
-                spec=run_spec,
+                # Hash authored S10 events, not the replay copy inserted above.
+                spec=spec,
                 seed=seed_manifest["root_seed"],
                 tick_seconds=self.tick_seconds,
                 engine_commit=self.engine_commit,

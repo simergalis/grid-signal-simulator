@@ -60,8 +60,9 @@ def test_mcp_tools_are_reachable_over_streamable_http(
         assert initialized.json()["result"]["capabilities"]["tools"] == {}
 
         scenarios = _call(client, "list_scenarios", {}, READ_TOKEN)
-        assert scenarios["scenarios"]["total"] == 5
-        assert scenarios["scenarios"]["returned"] == 5
+        # IMPL-ISL-25 adds the operational S10 replay without reordering entries.
+        assert scenarios["scenarios"]["total"] == 6
+        assert scenarios["scenarios"]["returned"] == 6
         assert scenarios["scenarios"]["has_more"] is False
 
         metrics = _call(
@@ -170,7 +171,8 @@ def test_run_token_can_discover_read_tools_for_one_connector(
         assert {"get_scenario", "start_run"} <= tool_names
 
         scenarios = _call(client, "list_scenarios", {}, RUN_TOKEN)
-        assert scenarios["scenarios"]["total"] == 5
+        # IMPL-ISL-25: S10 is the sixth additive MCP study-list entry.
+        assert scenarios["scenarios"]["total"] == 6
 
 
 def test_mcp_cache_hit_and_build_parity_error(
@@ -419,7 +421,7 @@ def _wait_for_run(client: TestClient, run_id: str) -> dict:
     pytest.fail(f"run {run_id} did not finish within 90 seconds")
 
 
-def test_tc160_list_scenarios_marks_all_five_study_classes(
+def test_tc160_list_scenarios_marks_all_six_study_scenarios(
     monkeypatch,
 ) -> None:
     monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
@@ -427,7 +429,9 @@ def test_tc160_list_scenarios_marks_all_five_study_classes(
     with TestClient(app) as client:
         result = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
 
-        assert result["total"] == result["returned"] == 5
+        # IMPL-ISL-25: the four H entries and base demo keep their positions;
+        # the operational S10 replay is appended.
+        assert result["total"] == result["returned"] == 6
         by_id = {item["scenario_id"]: item for item in result["items"]}
         assert set(by_id) == set(server_module.STUDY_SCENARIOS)
         assert all(item["study_supported"] is True for item in by_id.values())
@@ -437,6 +441,9 @@ def test_tc160_list_scenarios_marks_all_five_study_classes(
         base = by_id[server_module.BASE_SCENARIO]
         assert base["kind"] == "base"
         assert base["study_class"] == "base_demo"
+        s10 = by_id[server_module.SUPER_CLOUD_REPLAY_SCENARIO_ID]
+        assert s10["kind"] == "supercloud_replay"
+        assert s10["study_class"] == "supercloud_replay"
 
         # Committed H records predate the field; responses derive the class
         # without backfilling provenance into stored artifacts.
@@ -459,6 +466,153 @@ def test_tc160_list_scenarios_marks_all_five_study_classes(
         assert status["harness_commit"] == "unknown"
         assert metrics["engine_commit"] == "unknown"
         assert metrics["harness_commit"] == "unknown"
+
+
+def test_tc_isl_65_s10_list_and_get_scenario_use_tracked_source(
+    monkeypatch,
+) -> None:
+    """TC-ISL-65: MCP discovers S10 and returns its own tracked JSON."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
+    with TestClient(app) as client:
+        listing = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
+        items = listing["items"]
+        assert [item["scenario_id"] for item in items] == list(
+            server_module.STUDY_SCENARIOS
+        )
+        assert items[-1]["scenario_id"] == "S10_mit_supercloud_2021-08-11"
+        assert items[-1]["kind"] == "supercloud_replay"
+        assert items[-1]["study_class"] == "supercloud_replay"
+
+        result = _call(
+            client,
+            "get_scenario",
+            {"scenario_id": "S10_mit_supercloud_2021-08-11"},
+            READ_TOKEN,
+        )
+        assert result["source"] == str(
+            server_module._scenario_path(
+                "S10_mit_supercloud_2021-08-11"
+            ).relative_to(server_module.REPO_ROOT)
+        )
+        assert result["spec"]["name"] == "S10_mit_supercloud_2021-08-11"
+        assert len(result["spec"]["workload_events"]) == 239
+        assert len(result["spec"]["non_gpu_load_profile_mw"]) == 320
+
+
+def test_tc_isl_66_s10_start_run_metrics_and_compare_are_reachable(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-66: both S10 arms use the normal MCP run and metrics tools."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    isolated._rate_limiter = RateLimiter(100)
+    run_ids: dict[str, str] = {}
+    try:
+        with TestClient(app) as client:
+            for mode in ("baseline", "informed"):
+                started = _call(
+                    client,
+                    "start_run",
+                    {
+                        "scenario_id": "S10_mit_supercloud_2021-08-11",
+                        "mode": mode,
+                        "parameter_overrides": {"end_sim_time": 5.0},
+                        "seed": 42,
+                        "reuse_cache": False,
+                    },
+                    RUN_TOKEN,
+                )
+                run_ids[mode] = started["run_id"]
+                completed = _wait_for_run(client, started["run_id"])
+                assert completed["status"] == "COMPLETED", completed.get("error")
+                assert completed["study_class"] == "supercloud_replay"
+                metrics = _call(
+                    client,
+                    "get_run_metrics",
+                    {"run_id": started["run_id"], "section": "energy"},
+                    READ_TOKEN,
+                )
+                assert metrics["study_class"] == "supercloud_replay"
+                assert "operating_cost" in metrics["energy"]
+                assert metrics["energy"]["frequency_feedback_configured"] is False
+
+            comparison = _call(
+                client,
+                "compare_runs",
+                {
+                    "baseline_run_id": run_ids["baseline"],
+                    "informed_run_id": run_ids["informed"],
+                },
+                READ_TOKEN,
+            )
+            assert comparison["study_class"] == "supercloud_replay"
+            assert comparison["verdict"] in {"PASS", "FAIL"}
+            assert len(comparison["conditions"]["items"]) == 10
+            assert (
+                comparison["frequency_inputs"][
+                    "baseline_frequency_feedback_configured"
+                ]
+                is False
+            )
+            assert (
+                comparison["frequency_inputs"][
+                    "informed_frequency_feedback_configured"
+                ]
+                is False
+            )
+    finally:
+        isolated._pool.shutdown(wait=True)
+
+
+def test_tc_isl_70_unprotected_s10_invalid_ticks_are_informational(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-70: S10 keeps all ten gates with feedback=False frequency validity."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    baseline_id = "tc-isl-70-s10-baseline"
+    informed_id = "tc-isl-70-s10-informed"
+    for run_id, mode in ((baseline_id, "baseline"), (informed_id, "informed")):
+        record = _comparison_record("same-engine", "same-harness")
+        record.update(
+            {
+                "study_class": "supercloud_replay",
+                "frequency_feedback_configured": False,
+                "protection_configured": False,
+                "invalid_frequency_tick_count": 12,
+                "invalid_frequency_fraction": 0.25,
+            }
+        )
+        isolated._runs[run_id] = RunState(
+            run_id,
+            server_module.SUPER_CLOUD_REPLAY_SCENARIO_ID,
+            mode,
+            f"{mode}-identity",
+            status="COMPLETED",
+            record=record,
+        )
+    try:
+        with TestClient(app) as client:
+            result = _call(
+                client,
+                "compare_runs",
+                {
+                    "baseline_run_id": baseline_id,
+                    "informed_run_id": informed_id,
+                },
+                READ_TOKEN,
+            )
+        assert result["verdict"] == "PASS"
+        assert len(result["conditions"]["items"]) == 10
+        assert all(item["passed"] for item in result["conditions"]["items"])
+        assert result["frequency_inputs"]["baseline_invalid_frequency_tick_count"] == 12
+        assert result["frequency_inputs"]["informed_invalid_frequency_fraction"] == 0.25
+    finally:
+        isolated._pool.shutdown(wait=True)
 
 
 def test_tc161_start_run_accepts_the_base_demo_scenario(

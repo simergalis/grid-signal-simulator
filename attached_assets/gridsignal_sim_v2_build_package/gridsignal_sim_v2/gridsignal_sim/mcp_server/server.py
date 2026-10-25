@@ -37,6 +37,8 @@ from study_harness.errors import (
 from study_harness.executor import (
     BASE_DEMO_SCENARIO_ID,
     STUDY_CLASS_BASE_DEMO,
+    STUDY_CLASS_SUPERCLOUD_REPLAY,
+    SUPER_CLOUD_REPLAY_SCENARIO_ID,
     StudyRunExecutor,
     make_study_run_identity,
     seed_cache_bypass_reason,
@@ -64,8 +66,13 @@ REFERENCE_SCENARIOS = (
     "scenario-h2-slurm-7d",
 )
 BASE_SCENARIO = BASE_DEMO_SCENARIO_ID
-# PROPOSED_HERE: This is the explicit MCP allowlist for the five S1 study scenarios.
-STUDY_SCENARIOS = (*REFERENCE_SCENARIOS, BASE_SCENARIO)
+# PROPOSED_HERE: additive allowlist entry for the operational one-day S10 replay;
+# existing scenario order and study-class assignments remain unchanged.
+STUDY_SCENARIOS = (
+    *REFERENCE_SCENARIOS,
+    BASE_SCENARIO,
+    SUPER_CLOUD_REPLAY_SCENARIO_ID,
+)
 SCENARIO_IDS = STUDY_SCENARIOS
 
 
@@ -337,7 +344,15 @@ class StudyService:
                     "scenario_id": scenario_id,
                     "name": spec.get("name", scenario_id),
                     "description": spec.get("description", ""),
-                    "kind": "addendum_h" if scenario_id in REFERENCE_SCENARIOS else "base",
+                    "kind": (
+                        "addendum_h"
+                        if scenario_id in REFERENCE_SCENARIOS
+                        else (
+                            STUDY_CLASS_SUPERCLOUD_REPLAY
+                            if scenario_id == SUPER_CLOUD_REPLAY_SCENARIO_ID
+                            else "base"
+                        )
+                    ),
                     "study_supported": scenario_id in STUDY_SCENARIOS,
                     "study_class": study_class_for_scenario(scenario_id),
                 }
