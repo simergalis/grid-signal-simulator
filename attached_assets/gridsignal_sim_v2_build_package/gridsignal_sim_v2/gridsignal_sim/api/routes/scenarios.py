@@ -1432,7 +1432,7 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
          "lead-time-nextgen-rack-liquid-inference.json"),
         ("addendum-h-lead-time-profile-validation",
          "addendum-h-lead-time-profile-validation.json"),
-        # S10 — one real day (2021-08-11 UTC) of MIT SuperCloud GPU jobs at true start/end times, scaled to 50 MW H100-equivalent; source data CC BY-NC-ND 4.0, internal use.
+        # S10 — one real day (2021-08-11 UTC) of MIT SuperCloud GPU jobs at true start/end times, scaled to 50 MW H100-equivalent.
         ("S10_mit_supercloud_2021-08-11", "S10_mit_supercloud_2021-08-11.json"),
     ]
     _DISPLAY_NAME_OVERRIDES = {
