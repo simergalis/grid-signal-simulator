@@ -1,0 +1,71 @@
+{
+  "all_match": true,
+  "reference": "tools/dr_isl/d6b/D6B_3_EXISTING_SCENARIO_HASHES.json",
+  "run": "direct ctx.step() with seed 1729, pinned wall clock 1792454400.0",
+  "scenarios": [
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "616a769cd5b79c243eb7d4d91ff062651e8c2c6e5351f468f0bc4e3a29eab6a7",
+      "matches_d6b": true,
+      "physical_sha256": "616a769cd5b79c243eb7d4d91ff062651e8c2c6e5351f468f0bc4e3a29eab6a7",
+      "scenario_id": "scenario-equinix-sj-1",
+      "tick_count": 720
+    },
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "f293c4ad161357df6fef9a5e01dbb78098bfcd331c2e7e8ca286c56c9a8ef13e",
+      "matches_d6b": true,
+      "physical_sha256": "f293c4ad161357df6fef9a5e01dbb78098bfcd331c2e7e8ca286c56c9a8ef13e",
+      "scenario_id": "demo-islanded-ramp",
+      "tick_count": 2160
+    },
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "f230ae8f141183e1e6bcdb8dda0eb8f4920bf5674167bba972e4a72f37c64353",
+      "matches_d6b": true,
+      "physical_sha256": "f230ae8f141183e1e6bcdb8dda0eb8f4920bf5674167bba972e4a72f37c64353",
+      "scenario_id": "S10_mit_supercloud_2021-08-11",
+      "tick_count": 17280
+    },
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "b0196383e7b4ef1110f700c762a827ce45460acdfa6792484d0d0074e61d344e",
+      "matches_d6b": true,
+      "physical_sha256": "b0196383e7b4ef1110f700c762a827ce45460acdfa6792484d0d0074e61d344e",
+      "scenario_id": "scenario-turbine-01",
+      "tick_count": 720
+    },
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "2400c1a448bd74fc37248e610c13b026f77e5634672f35142041719ded7ae0c4",
+      "matches_d6b": true,
+      "physical_sha256": "2400c1a448bd74fc37248e610c13b026f77e5634672f35142041719ded7ae0c4",
+      "scenario_id": "scenario-hybrid-ai-100mw-addendum-i",
+      "tick_count": 120
+    },
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "59f042706562f949250e5eb721bdd817a30e9fd1953f16db52ef003ef3488b98",
+      "matches_d6b": true,
+      "physical_sha256": "59f042706562f949250e5eb721bdd817a30e9fd1953f16db52ef003ef3488b98",
+      "scenario_id": "scenario-100mw-fuel-cell-bess-diesel",
+      "tick_count": 252
+    },
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "d381f9837605c79f8d773c98044856877d42d0cd7b7d51b99cd6db8a98610314",
+      "matches_d6b": true,
+      "physical_sha256": "d381f9837605c79f8d773c98044856877d42d0cd7b7d51b99cd6db8a98610314",
+      "scenario_id": "scenario-fc100-islanded-v2",
+      "tick_count": 264
+    },
+    {
+      "balance_failure_count": 0,
+      "expected_d6b_sha256": "952856bb0068913efe767d80ec200f4ca5c0dc8807f5555664e79c4b18965559",
+      "matches_d6b": true,
+      "physical_sha256": "952856bb0068913efe767d80ec200f4ca5c0dc8807f5555664e79c4b18965559",
+      "scenario_id": "scenario-fc100-islanded-zero-hot-v2",
+      "tick_count": 264
+    }
+  ]
+}

@@ -1,0 +1,2303 @@
+{
+  "all_scenarios_pass": true,
+  "evidence_representation": "Scalar metric values retained; large list/dict metric values replaced with type/count/canonical-JSON SHA-256 to avoid committing bulky event data.",
+  "reuse_cache": false,
+  "scenarios": [
+    {
+      "baseline": {
+        "different_fields": [],
+        "metric_fields_compared": 42,
+        "metric_fields_identical": true,
+        "metrics_current": {
+          "bess_soc_final": 0.999999999,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.746789342,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 8,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 0,
+            "visible_distinct_event_count": 8
+          },
+          "commitment_log": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "8f6b038c4b7feaa0830e28105708aa20852e0c4cfa4c767a5adb255168a6e2e3",
+            "count": 8,
+            "serialized_bytes": 3541,
+            "type": "list"
+          },
+          "commitment_log_record_count": 8,
+          "compute_trace_count": 1440,
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999999,
+              "curtailed_mwh": 8.136511735,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 0.039236111,
+                "load_fuel_mmbtu": 690.133782974,
+                "no_load_fuel_mmbtu": 8.19,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 714.363019086,
+              "kind": "weekday",
+              "unserved_mwh": 0.351692658
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 14.277890997,
+            "gt-hot-02": 11.637943604,
+            "gt-spin-01": 29.816221037,
+            "gt-spin-02": 29.711129581
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.0,
+            "load_fuel_mmbtu": 287.502680246,
+            "no_load_fuel_mmbtu": 3.726666667,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 54.624513889,
+            "gt-hot-02": 50.639930556,
+            "gt-spin-01": 93.186666667,
+            "gt-spin-02": 92.778235801
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+          "dispatch_curtailment_mwh": 8.136511735,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.203838044,
+            "unserved_demand_mwh": 0.351692658
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.039236111,
+            "load_fuel_mmbtu": 690.133782974,
+            "no_load_fuel_mmbtu": 8.19,
+            "start_fuel_mmbtu": 16.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "identity": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "1d6b96fbd9acd46a42eb5f297233d9e9eb9a3eabcca57719f9b53562833fc1de",
+            "count": 8,
+            "serialized_bytes": 7407,
+            "type": "dict"
+          },
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.03680555555555556,
+          "invalid_frequency_tick_count": 53,
+          "measured_start_event_count": 2,
+          "measured_start_events": [
+            {
+              "charged": true,
+              "sim_time_s": 125.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 440.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "mode": "baseline",
+          "peak_unserved_mw": 22.309362466,
+          "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-uneven-multisched-01",
+          "served_mwh": 64.203838044,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "passed": true,
+            "recorded_event_count": 2,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "starts": [
+            {
+              "accepted": true,
+              "action": "release",
+              "bess_soc_fraction": 0.941913,
+              "changed_state": true,
+              "controller_approved": null,
+              "forecast_mw": 0.0,
+              "from_state": "offline",
+              "peak_forecast_mw": 0.0,
+              "reason": "automatic contingency cascade release",
+              "refusal_reason": null,
+              "sim_time_s": 120.0,
+              "source": "automatic_contingency",
+              "suppressed_repeat_count": 0,
+              "synchronized_capacity_mw": 50.0,
+              "thermal_tier": "hot",
+              "to_state": "starting",
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "accepted": true,
+              "action": "release",
+              "bess_soc_fraction": 0.905892,
+              "changed_state": true,
+              "controller_approved": null,
+              "forecast_mw": 0.0,
+              "from_state": "offline",
+              "peak_forecast_mw": 0.0,
+              "reason": "automatic contingency cascade release",
+              "refusal_reason": null,
+              "sim_time_s": 435.0,
+              "source": "automatic_contingency",
+              "suppressed_repeat_count": 0,
+              "synchronized_capacity_mw": 75.0,
+              "thermal_tier": "hot",
+              "to_state": "starting",
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "status": "PASS",
+          "stop_floor_refusal_count": 0,
+          "stop_floor_refusals": [],
+          "study_class": "base_demo",
+          "tick_count": 1440,
+          "turbine_fuel_mmbtu": 714.363019086,
+          "unserved_intervals": [
+            {
+              "end_sim_time_s": 465.0,
+              "peak_unserved_mw": 22.30936246553462,
+              "start_sim_time_s": 325.0
+            },
+            {
+              "end_sim_time_s": 1855.0,
+              "peak_unserved_mw": 4.628919357798523,
+              "start_sim_time_s": 1850.0
+            }
+          ],
+          "unserved_mwh": 0.351692658
+        },
+        "metrics_reference": {
+          "bess_soc_final": 0.999999999,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.746789342,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 8,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 0,
+            "visible_distinct_event_count": 8
+          },
+          "commitment_log_record_count": 8,
+          "compute_trace_count": 1440,
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999999,
+              "curtailed_mwh": 8.136511735,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 0.039236111,
+                "load_fuel_mmbtu": 690.133782974,
+                "no_load_fuel_mmbtu": 8.19,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 714.363019086,
+              "kind": "weekday",
+              "unserved_mwh": 0.351692658
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 14.277890997,
+            "gt-hot-02": 11.637943604,
+            "gt-spin-01": 29.816221037,
+            "gt-spin-02": 29.711129581
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.0,
+            "load_fuel_mmbtu": 287.502680246,
+            "no_load_fuel_mmbtu": 3.726666667,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 54.624513889,
+            "gt-hot-02": 50.639930556,
+            "gt-spin-01": 93.186666667,
+            "gt-spin-02": 92.778235801
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+          "dispatch_curtailment_mwh": 8.136511735,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.203838044,
+            "unserved_demand_mwh": 0.351692658
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.039236111,
+            "load_fuel_mmbtu": 690.133782974,
+            "no_load_fuel_mmbtu": 8.19,
+            "start_fuel_mmbtu": 16.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.03680555555555556,
+          "invalid_frequency_tick_count": 53,
+          "measured_start_event_count": 2,
+          "mode": "baseline",
+          "peak_unserved_mw": 22.309362466,
+          "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-uneven-multisched-01",
+          "served_mwh": 64.203838044,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "passed": true,
+            "recorded_event_count": 2,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 0,
+          "stop_floor_refusals_detail_count": 0,
+          "study_class": "base_demo",
+          "tick_count": 1440,
+          "turbine_fuel_mmbtu": 714.363019086,
+          "unserved_intervals_detail_count": 2,
+          "unserved_mwh": 0.351692658
+        },
+        "nonmetric_record_fields_excluded": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "raw_record_differences": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "status": "PASS"
+      },
+      "comparison_verdict": "PASS",
+      "condition_count": 10,
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "conditions_match_reference": true,
+      "informed": {
+        "different_fields": [],
+        "metric_fields_compared": 42,
+        "metric_fields_identical": true,
+        "metrics_current": {
+          "bess_soc_final": 0.999999999,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.859751061,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 11,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 1377,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 1377,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 1377,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 1374,
+            "visible_distinct_event_count": 11
+          },
+          "commitment_log": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "35166e43c54cffe3d4c81ac60faef2684d94ce26e7662eb611b246e800002c0d",
+            "count": 11,
+            "serialized_bytes": 5627,
+            "type": "list"
+          },
+          "commitment_log_record_count": 11,
+          "compute_trace_count": 1440,
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999999,
+              "curtailed_mwh": 5.278943188,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 0.000347222,
+                "load_fuel_mmbtu": 642.554567148,
+                "no_load_fuel_mmbtu": 6.843333333,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 665.398247704,
+              "kind": "weekday",
+              "unserved_mwh": 0.020719074
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 1.242273356,
+            "gt-hot-02": 1.182962935,
+            "gt-spin-01": 26.368861337,
+            "gt-spin-02": 26.22775275
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 55.021850379,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.0,
+            "load_fuel_mmbtu": 139.390513585,
+            "no_load_fuel_mmbtu": 1.753333333,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 9.303598121,
+            "gt-hot-02": 9.038611111,
+            "gt-spin-01": 61.708845913,
+            "gt-spin-02": 61.092791773
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 141.143846919,
+          "dispatch_curtailment_mwh": 5.278943188,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.534811628,
+            "unserved_demand_mwh": 0.020719074
+          },
+          "forecast": {
+            "miss_count": 4,
+            "miss_peak_mw": 3.208264895
+          },
+          "forecast_misses": {
+            "count": 4,
+            "peak_mw": 3.2082648946925474
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.000347222,
+            "load_fuel_mmbtu": 642.554567148,
+            "no_load_fuel_mmbtu": 6.843333333,
+            "start_fuel_mmbtu": 16.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "identity": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "005e245fdf0b7d6f0999307397ffef05ac017f3a04be7d72997beab9feb95bf4",
+            "count": 8,
+            "serialized_bytes": 7407,
+            "type": "dict"
+          },
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.0,
+          "invalid_frequency_tick_count": 0,
+          "measured_start_event_count": 2,
+          "measured_start_events": [
+            {
+              "charged": true,
+              "sim_time_s": 5.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 10.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "mode": "informed",
+          "peak_unserved_mw": 7.52325057,
+          "physical_identity_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-uneven-multisched-01",
+          "served_mwh": 64.534811628,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "passed": true,
+            "recorded_event_count": 2,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "starts": [
+            {
+              "accepted": true,
+              "action": "release",
+              "bess_soc_fraction": 0.95,
+              "changed_state": true,
+              "controller_approved": true,
+              "forecast_mw": 0.0,
+              "from_state": "offline",
+              "peak_forecast_mw": 113.3091,
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "refusal_reason": null,
+              "sim_time_s": 0.0,
+              "source": "forecast_commitment",
+              "suppressed_repeat_count": 0,
+              "synchronized_capacity_mw": 50.0,
+              "thermal_tier": "hot",
+              "to_state": "starting",
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "accepted": true,
+              "action": "release",
+              "bess_soc_fraction": 0.950386,
+              "changed_state": true,
+              "controller_approved": true,
+              "forecast_mw": 0.0,
+              "from_state": "offline",
+              "peak_forecast_mw": 113.3091,
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "refusal_reason": null,
+              "sim_time_s": 5.0,
+              "source": "forecast_commitment",
+              "suppressed_repeat_count": 0,
+              "synchronized_capacity_mw": 50.0,
+              "thermal_tier": "hot",
+              "to_state": "starting",
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "status": "PASS",
+          "stop_floor_refusal_count": 1377,
+          "stop_floor_refusals": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "402e20fbe8242076fcc401f13707625af401c7fc4849a3ba076c883f461daae1",
+            "count": 1377,
+            "serialized_bytes": 356005,
+            "type": "list"
+          },
+          "study_class": "base_demo",
+          "tick_count": 1440,
+          "turbine_fuel_mmbtu": 665.398247704,
+          "unserved_intervals": [
+            {
+              "end_sim_time_s": 345.0,
+              "peak_unserved_mw": 7.5232505700275,
+              "start_sim_time_s": 335.0
+            }
+          ],
+          "unserved_mwh": 0.020719074
+        },
+        "metrics_reference": {
+          "bess_soc_final": 0.999999999,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.859751061,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 11,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 1377,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 1377,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 1377,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 1374,
+            "visible_distinct_event_count": 11
+          },
+          "commitment_log_record_count": 11,
+          "compute_trace_count": 1440,
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999999,
+              "curtailed_mwh": 5.278943188,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 0.000347222,
+                "load_fuel_mmbtu": 642.554567148,
+                "no_load_fuel_mmbtu": 6.843333333,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 665.398247704,
+              "kind": "weekday",
+              "unserved_mwh": 0.020719074
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 1.242273356,
+            "gt-hot-02": 1.182962935,
+            "gt-spin-01": 26.368861337,
+            "gt-spin-02": 26.22775275
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 55.021850379,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.0,
+            "load_fuel_mmbtu": 139.390513585,
+            "no_load_fuel_mmbtu": 1.753333333,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 9.303598121,
+            "gt-hot-02": 9.038611111,
+            "gt-spin-01": 61.708845913,
+            "gt-spin-02": 61.092791773
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 141.143846919,
+          "dispatch_curtailment_mwh": 5.278943188,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.534811628,
+            "unserved_demand_mwh": 0.020719074
+          },
+          "forecast": {
+            "miss_count": 4,
+            "miss_peak_mw": 3.208264895
+          },
+          "forecast_misses": {
+            "count": 4,
+            "peak_mw": 3.2082648946925474
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.000347222,
+            "load_fuel_mmbtu": 642.554567148,
+            "no_load_fuel_mmbtu": 6.843333333,
+            "start_fuel_mmbtu": 16.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.0,
+          "invalid_frequency_tick_count": 0,
+          "measured_start_event_count": 2,
+          "mode": "informed",
+          "peak_unserved_mw": 7.52325057,
+          "physical_identity_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-uneven-multisched-01",
+          "served_mwh": 64.534811628,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "passed": true,
+            "recorded_event_count": 2,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 1377,
+          "stop_floor_refusals_detail_count": 1377,
+          "study_class": "base_demo",
+          "tick_count": 1440,
+          "turbine_fuel_mmbtu": 665.398247704,
+          "unserved_intervals_detail_count": 1,
+          "unserved_mwh": 0.020719074
+        },
+        "nonmetric_record_fields_excluded": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "physical_identity_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+        "raw_record_differences": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "status": "PASS"
+      },
+      "scenario_id": "scenario-uneven-multisched-01",
+      "verdict_matches_reference": true
+    },
+    {
+      "baseline": {
+        "different_fields": [],
+        "metric_fields_compared": 42,
+        "metric_fields_identical": true,
+        "metrics_current": {
+          "bess_soc_final": 0.999999998,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.828342155,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 48,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 0,
+            "visible_distinct_event_count": 48
+          },
+          "commitment_log": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+            "count": 48,
+            "serialized_bytes": 21318,
+            "type": "list"
+          },
+          "commitment_log_record_count": 48,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999998,
+              "curtailed_mwh": 187.690139189,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 4.142013889,
+                "load_fuel_mmbtu": 5847.168216351,
+                "no_load_fuel_mmbtu": 72.43,
+                "start_fuel_mmbtu": 116.0
+              },
+              "fuel_mmbtu": 6039.74023024,
+              "kind": "weekday",
+              "unserved_mwh": 0.894372986
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 79.517141839,
+            "gt-hot-02": 34.708880519,
+            "gt-spin-01": 929.988576652,
+            "gt-spin-02": 929.873705803
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 1974.088304814,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.865277778,
+            "load_fuel_mmbtu": 3347.181453153,
+            "no_load_fuel_mmbtu": 43.573333333,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 154.755902778,
+            "gt-hot-02": 96.221875,
+            "gt-spin-01": 1572.100972222,
+            "gt-spin-02": 1571.541314265
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3394.620064264,
+          "dispatch_curtailment_mwh": 187.690139189,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 367.781736493,
+            "unserved_demand_mwh": 0.894372986
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.142013889,
+            "load_fuel_mmbtu": 5847.168216351,
+            "no_load_fuel_mmbtu": 72.43,
+            "start_fuel_mmbtu": 116.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "identity": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "1b2d696e5a56f0e8d311d5412488f177de7b0db4f0a75eda23604c2297d1d15a",
+            "count": 8,
+            "serialized_bytes": 2211,
+            "type": "dict"
+          },
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.04693287037037037,
+          "invalid_frequency_tick_count": 811,
+          "measured_start_event_count": 12,
+          "measured_start_events": [
+            {
+              "charged": true,
+              "sim_time_s": 28960.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 30685.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 36060.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 37880.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 43260.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 45080.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 50460.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 52280.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 57660.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 59480.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 64860.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 66680.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "mode": "baseline",
+          "peak_unserved_mw": 35.021533247,
+          "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h1-k8s-ray-24h",
+          "served_mwh": 367.781736493,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 12,
+            "measured_start_fuel_mmbtu": 116.0,
+            "passed": true,
+            "recorded_event_count": 12,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "starts": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "d95c0926a1bf8003383ffbedf4256ba8f45e7fad4f373bb0ab48ae6637cf4787",
+            "count": 12,
+            "serialized_bytes": 5106,
+            "type": "list"
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 0,
+          "stop_floor_refusals": [],
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 6039.74023024,
+          "unserved_intervals": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "1878ed15a43b78788f7893c43261a47797169961a113298629a85408cd95e8b0",
+            "count": 20,
+            "serialized_bytes": 1818,
+            "type": "list"
+          },
+          "unserved_mwh": 0.894372986
+        },
+        "metrics_reference": {
+          "bess_soc_final": 0.999999998,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.828342155,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 48,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 0,
+            "visible_distinct_event_count": 48
+          },
+          "commitment_log_record_count": 48,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999998,
+              "curtailed_mwh": 187.690139189,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 4.142013889,
+                "load_fuel_mmbtu": 5847.168216351,
+                "no_load_fuel_mmbtu": 72.43,
+                "start_fuel_mmbtu": 116.0
+              },
+              "fuel_mmbtu": 6039.74023024,
+              "kind": "weekday",
+              "unserved_mwh": 0.894372986
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 79.517141839,
+            "gt-hot-02": 34.708880519,
+            "gt-spin-01": 929.988576652,
+            "gt-spin-02": 929.873705803
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 1974.088304814,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.865277778,
+            "load_fuel_mmbtu": 3347.181453153,
+            "no_load_fuel_mmbtu": 43.573333333,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 154.755902778,
+            "gt-hot-02": 96.221875,
+            "gt-spin-01": 1572.100972222,
+            "gt-spin-02": 1571.541314265
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3394.620064264,
+          "dispatch_curtailment_mwh": 187.690139189,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 367.781736493,
+            "unserved_demand_mwh": 0.894372986
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.142013889,
+            "load_fuel_mmbtu": 5847.168216351,
+            "no_load_fuel_mmbtu": 72.43,
+            "start_fuel_mmbtu": 116.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.04693287037037037,
+          "invalid_frequency_tick_count": 811,
+          "measured_start_event_count": 12,
+          "mode": "baseline",
+          "peak_unserved_mw": 35.021533247,
+          "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h1-k8s-ray-24h",
+          "served_mwh": 367.781736493,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 12,
+            "measured_start_fuel_mmbtu": 116.0,
+            "passed": true,
+            "recorded_event_count": 12,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 0,
+          "stop_floor_refusals_detail_count": 0,
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 6039.74023024,
+          "unserved_intervals_detail_count": 20,
+          "unserved_mwh": 0.894372986
+        },
+        "nonmetric_record_fields_excluded": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+        "raw_record_differences": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "status": "PASS"
+      },
+      "comparison_verdict": "PASS",
+      "condition_count": 10,
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "conditions_match_reference": true,
+      "informed": {
+        "different_fields": [],
+        "metric_fields_compared": 42,
+        "metric_fields_identical": true,
+        "metrics_current": {
+          "bess_soc_final": 0.999999989,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.877673489,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 59,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 16338,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 16340,
+            "reserve_floor_suppressed_repeat_count": 2,
+            "reserve_floor_visible_distinct_event_count": 16338,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 14027,
+            "visible_distinct_event_count": 59
+          },
+          "commitment_log": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "936b820fb671d0d805ff9700fc4ce4c9f71a53f2190b6d9f86da0580fabe6995",
+            "count": 59,
+            "serialized_bytes": 27608,
+            "type": "list"
+          },
+          "commitment_log_record_count": 59,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999989,
+              "curtailed_mwh": 176.779572526,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 4.110069444,
+                "load_fuel_mmbtu": 5660.766981827,
+                "no_load_fuel_mmbtu": 68.021666667,
+                "start_fuel_mmbtu": 116.0
+              },
+              "fuel_mmbtu": 5848.898717938,
+              "kind": "weekday",
+              "unserved_mwh": 0.124133405
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 32.505522721,
+            "gt-hot-02": 2.203778644,
+            "gt-spin-01": 911.921257907,
+            "gt-spin-02": 911.395881109
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 1858.026440381,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.875694444,
+            "load_fuel_mmbtu": 3076.704847933,
+            "no_load_fuel_mmbtu": 39.875,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 64.949375,
+            "gt-hot-02": 22.640694444,
+            "gt-spin-01": 1517.310386732,
+            "gt-spin-02": 1515.555086201
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3120.455542377,
+          "dispatch_curtailment_mwh": 176.779572526,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 368.551976074,
+            "unserved_demand_mwh": 0.124133405
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.110069444,
+            "load_fuel_mmbtu": 5660.766981827,
+            "no_load_fuel_mmbtu": 68.021666667,
+            "start_fuel_mmbtu": 116.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "identity": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "727688b3a57a3c1b97f6702a153188d97a1272785565d3e9cf66dfc9fcda351c",
+            "count": 8,
+            "serialized_bytes": 2211,
+            "type": "dict"
+          },
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.004398148148148148,
+          "invalid_frequency_tick_count": 76,
+          "measured_start_event_count": 12,
+          "measured_start_events": [
+            {
+              "charged": true,
+              "sim_time_s": 28860.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 30330.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 36060.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 37495.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 43260.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 44695.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 50460.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 51895.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 57660.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 59095.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 64860.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 66295.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "mode": "informed",
+          "peak_unserved_mw": 20.746308977,
+          "physical_identity_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h1-k8s-ray-24h",
+          "served_mwh": 368.551976074,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 12,
+            "measured_start_fuel_mmbtu": 116.0,
+            "passed": true,
+            "recorded_event_count": 12,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "starts": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "b129befada9a6f7dda7af7b4cfc5670c1de6aba218e07fbcc4a136accb645237",
+            "count": 12,
+            "serialized_bytes": 5411,
+            "type": "list"
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 16340,
+          "stop_floor_refusals": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "4f9b85435a2627ae6f1694f8f4002407ad93f6a907eb24414ea2cc4b5a8b4f3f",
+            "count": 16340,
+            "serialized_bytes": 4267574,
+            "type": "list"
+          },
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 5848.898717938,
+          "unserved_intervals": [
+            {
+              "end_sim_time_s": 30660.0,
+              "peak_unserved_mw": 3.783533866069419,
+              "start_sim_time_s": 30650.0
+            },
+            {
+              "end_sim_time_s": 36040.0,
+              "peak_unserved_mw": 4.552312656116847,
+              "start_sim_time_s": 36030.0
+            },
+            {
+              "end_sim_time_s": 37865.0,
+              "peak_unserved_mw": 6.706977469665091,
+              "start_sim_time_s": 37850.0
+            },
+            {
+              "end_sim_time_s": 45060.0,
+              "peak_unserved_mw": 14.968336793567588,
+              "start_sim_time_s": 45050.0
+            },
+            {
+              "end_sim_time_s": 52260.0,
+              "peak_unserved_mw": 6.873673087220638,
+              "start_sim_time_s": 52250.0
+            },
+            {
+              "end_sim_time_s": 57635.0,
+              "peak_unserved_mw": 0.7155264052397072,
+              "start_sim_time_s": 57630.0
+            },
+            {
+              "end_sim_time_s": 66670.0,
+              "peak_unserved_mw": 20.746308977465503,
+              "start_sim_time_s": 66650.0
+            }
+          ],
+          "unserved_mwh": 0.124133405
+        },
+        "metrics_reference": {
+          "bess_soc_final": 0.999999989,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.877673489,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 59,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 16338,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 16340,
+            "reserve_floor_suppressed_repeat_count": 2,
+            "reserve_floor_visible_distinct_event_count": 16338,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 14027,
+            "visible_distinct_event_count": 59
+          },
+          "commitment_log_record_count": 59,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999989,
+              "curtailed_mwh": 176.779572526,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 4.110069444,
+                "load_fuel_mmbtu": 5660.766981827,
+                "no_load_fuel_mmbtu": 68.021666667,
+                "start_fuel_mmbtu": 116.0
+              },
+              "fuel_mmbtu": 5848.898717938,
+              "kind": "weekday",
+              "unserved_mwh": 0.124133405
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 32.505522721,
+            "gt-hot-02": 2.203778644,
+            "gt-spin-01": 911.921257907,
+            "gt-spin-02": 911.395881109
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 1858.026440381,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.875694444,
+            "load_fuel_mmbtu": 3076.704847933,
+            "no_load_fuel_mmbtu": 39.875,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 64.949375,
+            "gt-hot-02": 22.640694444,
+            "gt-spin-01": 1517.310386732,
+            "gt-spin-02": 1515.555086201
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3120.455542377,
+          "dispatch_curtailment_mwh": 176.779572526,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 368.551976074,
+            "unserved_demand_mwh": 0.124133405
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.110069444,
+            "load_fuel_mmbtu": 5660.766981827,
+            "no_load_fuel_mmbtu": 68.021666667,
+            "start_fuel_mmbtu": 116.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.004398148148148148,
+          "invalid_frequency_tick_count": 76,
+          "measured_start_event_count": 12,
+          "mode": "informed",
+          "peak_unserved_mw": 20.746308977,
+          "physical_identity_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h1-k8s-ray-24h",
+          "served_mwh": 368.551976074,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 12,
+            "measured_start_fuel_mmbtu": 116.0,
+            "passed": true,
+            "recorded_event_count": 12,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 16340,
+          "stop_floor_refusals_detail_count": 16340,
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 5848.898717938,
+          "unserved_intervals_detail_count": 7,
+          "unserved_mwh": 0.124133405
+        },
+        "nonmetric_record_fields_excluded": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "physical_identity_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+        "raw_record_differences": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "status": "PASS"
+      },
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "verdict_matches_reference": true
+    },
+    {
+      "baseline": {
+        "different_fields": [],
+        "metric_fields_compared": 42,
+        "metric_fields_identical": true,
+        "metrics_current": {
+          "bess_soc_final": 0.999999998,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.950386947,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 44,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 0,
+            "visible_distinct_event_count": 44
+          },
+          "commitment_log": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "d40102b994ac6d20eed6dc6257a18136a6e63008fb0b01cdcf328280f0b2af16",
+            "count": 44,
+            "serialized_bytes": 19678,
+            "type": "list"
+          },
+          "commitment_log_record_count": 44,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999998,
+              "curtailed_mwh": 349.917690813,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 4.552430556,
+                "load_fuel_mmbtu": 5136.719001539,
+                "no_load_fuel_mmbtu": 65.231666667,
+                "start_fuel_mmbtu": 124.0
+              },
+              "fuel_mmbtu": 5330.503098761,
+              "kind": "weekday",
+              "unserved_mwh": 5.011418076
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 221.207657519,
+            "gt-hot-02": 179.962055406,
+            "gt-spin-01": 1639.723878254,
+            "gt-spin-02": 1639.723878254
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 3680.617469434,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.362152778,
+            "load_fuel_mmbtu": 4712.832474807,
+            "no_load_fuel_mmbtu": 61.375,
+            "start_fuel_mmbtu": 60.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 345.279002588,
+            "gt-hot-02": 232.498541667,
+            "gt-spin-01": 2130.396041667,
+            "gt-spin-02": 2130.396041667
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4838.569627585,
+          "dispatch_curtailment_mwh": 349.917690813,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 138.948956374,
+            "unserved_demand_mwh": 5.011418076
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.552430556,
+            "load_fuel_mmbtu": 5136.719001539,
+            "no_load_fuel_mmbtu": 65.231666667,
+            "start_fuel_mmbtu": 124.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "identity": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "8c1b54c2c3061ec79a032ef976834aacf24e430c8dd2840cbbd4c53d835ad2a6",
+            "count": 8,
+            "serialized_bytes": 2215,
+            "type": "dict"
+          },
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.03177083333333333,
+          "invalid_frequency_tick_count": 549,
+          "measured_start_event_count": 11,
+          "measured_start_events": [
+            {
+              "charged": true,
+              "sim_time_s": 29150.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 36035.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 36405.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 43235.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 43590.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 50435.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 50790.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 57635.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 57990.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 64835.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 65190.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "mode": "baseline",
+          "peak_unserved_mw": 44.86838787,
+          "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h2-slurm-24h",
+          "served_mwh": 138.948956374,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 11,
+            "measured_start_fuel_mmbtu": 124.0,
+            "passed": true,
+            "recorded_event_count": 11,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "starts": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "6a0367a3c2245010274546028464c973ed941110acb8751af220b4a01d005ebe",
+            "count": 11,
+            "serialized_bytes": 4826,
+            "type": "list"
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 0,
+          "stop_floor_refusals": [],
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 5330.503098761,
+          "unserved_intervals": [
+            {
+              "end_sim_time_s": 29410.0,
+              "peak_unserved_mw": 38.098732218014646,
+              "start_sim_time_s": 29125.0
+            },
+            {
+              "end_sim_time_s": 29460.0,
+              "peak_unserved_mw": 4.37595409165764,
+              "start_sim_time_s": 29450.0
+            },
+            {
+              "end_sim_time_s": 36415.0,
+              "peak_unserved_mw": 40.894865912415625,
+              "start_sim_time_s": 36310.0
+            },
+            {
+              "end_sim_time_s": 43620.0,
+              "peak_unserved_mw": 41.9036584956214,
+              "start_sim_time_s": 43510.0
+            },
+            {
+              "end_sim_time_s": 50815.0,
+              "peak_unserved_mw": 40.390845418775996,
+              "start_sim_time_s": 50710.0
+            },
+            {
+              "end_sim_time_s": 58025.0,
+              "peak_unserved_mw": 44.86838786968556,
+              "start_sim_time_s": 57910.0
+            },
+            {
+              "end_sim_time_s": 65215.0,
+              "peak_unserved_mw": 40.390845418775996,
+              "start_sim_time_s": 65110.0
+            }
+          ],
+          "unserved_mwh": 5.011418076
+        },
+        "metrics_reference": {
+          "bess_soc_final": 0.999999998,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_min": 0.950386947,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 44,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 0,
+            "visible_distinct_event_count": 44
+          },
+          "commitment_log_record_count": 44,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999998,
+              "curtailed_mwh": 349.917690813,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 4.552430556,
+                "load_fuel_mmbtu": 5136.719001539,
+                "no_load_fuel_mmbtu": 65.231666667,
+                "start_fuel_mmbtu": 124.0
+              },
+              "fuel_mmbtu": 5330.503098761,
+              "kind": "weekday",
+              "unserved_mwh": 5.011418076
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 221.207657519,
+            "gt-hot-02": 179.962055406,
+            "gt-spin-01": 1639.723878254,
+            "gt-spin-02": 1639.723878254
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 3680.617469434,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.362152778,
+            "load_fuel_mmbtu": 4712.832474807,
+            "no_load_fuel_mmbtu": 61.375,
+            "start_fuel_mmbtu": 60.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 345.279002588,
+            "gt-hot-02": 232.498541667,
+            "gt-spin-01": 2130.396041667,
+            "gt-spin-02": 2130.396041667
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4838.569627585,
+          "dispatch_curtailment_mwh": 349.917690813,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 138.948956374,
+            "unserved_demand_mwh": 5.011418076
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "forecast_misses": {
+            "count": 0,
+            "peak_mw": 0.0
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.552430556,
+            "load_fuel_mmbtu": 5136.719001539,
+            "no_load_fuel_mmbtu": 65.231666667,
+            "start_fuel_mmbtu": 124.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.03177083333333333,
+          "invalid_frequency_tick_count": 549,
+          "measured_start_event_count": 11,
+          "mode": "baseline",
+          "peak_unserved_mw": 44.86838787,
+          "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h2-slurm-24h",
+          "served_mwh": 138.948956374,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 11,
+            "measured_start_fuel_mmbtu": 124.0,
+            "passed": true,
+            "recorded_event_count": 11,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 0,
+          "stop_floor_refusals_detail_count": 0,
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 5330.503098761,
+          "unserved_intervals_detail_count": 7,
+          "unserved_mwh": 5.011418076
+        },
+        "nonmetric_record_fields_excluded": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+        "raw_record_differences": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "status": "PASS"
+      },
+      "comparison_verdict": "PASS",
+      "condition_count": 10,
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "conditions_match_reference": true,
+      "informed": {
+        "different_fields": [],
+        "metric_fields_compared": 42,
+        "metric_fields_identical": true,
+        "metrics_current": {
+          "bess_soc_final": 0.999999987,
+          "bess_soc_max": 0.999999998,
+          "bess_soc_min": 0.950386947,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 65,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 14904,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 14904,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 14904,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 11198,
+            "visible_distinct_event_count": 65
+          },
+          "commitment_log": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "e633d967ca39163de1cdc37f97369cc1e678e8846ce8dde4c73ed766c3744f3c",
+            "count": 65,
+            "serialized_bytes": 30192,
+            "type": "list"
+          },
+          "commitment_log_record_count": 65,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999987,
+              "curtailed_mwh": 342.977539092,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 3.761458333,
+                "load_fuel_mmbtu": 5106.733034717,
+                "no_load_fuel_mmbtu": 64.855,
+                "start_fuel_mmbtu": 152.0
+              },
+              "fuel_mmbtu": 5327.34949305,
+              "kind": "weekday",
+              "unserved_mwh": 0.859772492
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 536.782073718,
+            "gt-hot-02": 164.270090991,
+            "gt-spin-01": 1645.630131731,
+            "gt-spin-02": 1260.841712162
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 3607.524008603,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.642013889,
+            "load_fuel_mmbtu": 4675.898162461,
+            "no_load_fuel_mmbtu": 60.895,
+            "start_fuel_mmbtu": 152.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 737.513194445,
+            "gt-hot-02": 293.579930556,
+            "gt-spin-01": 2152.666217898,
+            "gt-spin-02": 1708.675833457
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4892.43517635,
+          "dispatch_curtailment_mwh": 342.977539092,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 143.100601957,
+            "unserved_demand_mwh": 0.859772492
+          },
+          "forecast": {
+            "miss_count": 39,
+            "miss_peak_mw": 13.130749227
+          },
+          "forecast_misses": {
+            "count": 39,
+            "peak_mw": 13.130749226769357
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.761458333,
+            "load_fuel_mmbtu": 5106.733034717,
+            "no_load_fuel_mmbtu": 64.855,
+            "start_fuel_mmbtu": 152.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "identity": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "3b4a0a0968dd255d6172201d8312847a40003ab288df483dd14c221b3b92d768",
+            "count": 8,
+            "serialized_bytes": 2215,
+            "type": "dict"
+          },
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.023842592592592592,
+          "invalid_frequency_tick_count": 412,
+          "measured_start_event_count": 14,
+          "measured_start_events": [
+            {
+              "charged": true,
+              "sim_time_s": 25415.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 28755.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 28760.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-spin-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 35955.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-spin-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 35960.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 43155.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-spin-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 43160.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 49450.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-spin-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 50355.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 50385.0,
+              "tier_fuel_mmbtu": 8.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 57555.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 57560.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 64755.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-01"
+            },
+            {
+              "charged": true,
+              "sim_time_s": 64760.0,
+              "tier_fuel_mmbtu": 12.0,
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "mode": "informed",
+          "peak_unserved_mw": 42.36838787,
+          "physical_identity_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h2-slurm-24h",
+          "served_mwh": 143.100601957,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 14,
+            "measured_start_fuel_mmbtu": 152.0,
+            "passed": true,
+            "recorded_event_count": 14,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "starts": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "5c2d2454512d09cbedd7c05296b8518b0ab24482a35a2233177d4cbb62cfa23c",
+            "count": 14,
+            "serialized_bytes": 6424,
+            "type": "list"
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 14904,
+          "stop_floor_refusals": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "6472690b044be27bafce8d2cc402c390579263df398c76901cfe60087a83b61b",
+            "count": 14904,
+            "serialized_bytes": 3880205,
+            "type": "list"
+          },
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 5327.34949305,
+          "unserved_intervals": [
+            {
+              "end_sim_time_s": 29165.0,
+              "peak_unserved_mw": 19.287968405751712,
+              "start_sim_time_s": 29130.0
+            },
+            {
+              "end_sim_time_s": 29235.0,
+              "peak_unserved_mw": 1.8802011558611156,
+              "start_sim_time_s": 29215.0
+            },
+            {
+              "end_sim_time_s": 36350.0,
+              "peak_unserved_mw": 38.394865912415625,
+              "start_sim_time_s": 36310.0
+            },
+            {
+              "end_sim_time_s": 43555.0,
+              "peak_unserved_mw": 39.4036584956214,
+              "start_sim_time_s": 43510.0
+            },
+            {
+              "end_sim_time_s": 50725.0,
+              "peak_unserved_mw": 26.640845418775996,
+              "start_sim_time_s": 50710.0
+            },
+            {
+              "end_sim_time_s": 57940.0,
+              "peak_unserved_mw": 42.36838786968556,
+              "start_sim_time_s": 57910.0
+            },
+            {
+              "end_sim_time_s": 65140.0,
+              "peak_unserved_mw": 37.890845418775996,
+              "start_sim_time_s": 65110.0
+            }
+          ],
+          "unserved_mwh": 0.859772492
+        },
+        "metrics_reference": {
+          "bess_soc_final": 0.999999987,
+          "bess_soc_max": 0.999999998,
+          "bess_soc_min": 0.950386947,
+          "build_warnings": [
+            {
+              "code": "islanded_frequency_protection_unconfigured",
+              "message": "islanded run without frequency protection configured"
+            }
+          ],
+          "cache_hit": false,
+          "commitment": {
+            "distinct_event_count": 65,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_distinct_event_count": 14904,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "reserve_floor_refusal_count": 14904,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_visible_distinct_event_count": 14904,
+            "same_unit_restart_within_min_down_window_count": 0,
+            "suppressed_repeat_count": 11198,
+            "visible_distinct_event_count": 65
+          },
+          "commitment_log_record_count": 65,
+          "compute_trace_count": 17280,
+          "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "constraints_valid": true,
+          "daily_breakdown": [
+            {
+              "bess_soc_end": 0.999999987,
+              "curtailed_mwh": 342.977539092,
+              "day": 1,
+              "fuel_by_component_mmbtu": {
+                "hot_standby_fuel_mmbtu": 3.761458333,
+                "load_fuel_mmbtu": 5106.733034717,
+                "no_load_fuel_mmbtu": 64.855,
+                "start_fuel_mmbtu": 152.0
+              },
+              "fuel_mmbtu": 5327.34949305,
+              "kind": "weekday",
+              "unserved_mwh": 0.859772492
+            }
+          ],
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 536.782073718,
+            "gt-hot-02": 164.270090991,
+            "gt-spin-01": 1645.630131731,
+            "gt-spin-02": 1260.841712162
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 3607.524008603,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.642013889,
+            "load_fuel_mmbtu": 4675.898162461,
+            "no_load_fuel_mmbtu": 60.895,
+            "start_fuel_mmbtu": 152.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-hot-01": 737.513194445,
+            "gt-hot-02": 293.579930556,
+            "gt-spin-01": 2152.666217898,
+            "gt-spin-02": 1708.675833457
+          },
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4892.43517635,
+          "dispatch_curtailment_mwh": 342.977539092,
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 143.100601957,
+            "unserved_demand_mwh": 0.859772492
+          },
+          "forecast": {
+            "miss_count": 39,
+            "miss_peak_mw": 13.130749227
+          },
+          "forecast_misses": {
+            "count": 39,
+            "peak_mw": 13.130749226769357
+          },
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.761458333,
+            "load_fuel_mmbtu": 5106.733034717,
+            "no_load_fuel_mmbtu": 64.855,
+            "start_fuel_mmbtu": 152.0
+          },
+          "fuel_reconciled": true,
+          "hard_violations": [],
+          "interval_seconds": 5.0,
+          "invalid_frequency_fraction": 0.023842592592592592,
+          "invalid_frequency_tick_count": 412,
+          "measured_start_event_count": 14,
+          "mode": "informed",
+          "peak_unserved_mw": 42.36838787,
+          "physical_identity_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+          "protection_configured": false,
+          "replay_strategy": "baseline demand trace replay",
+          "scenario_id": "scenario-h2-slurm-24h",
+          "served_mwh": 143.100601957,
+          "start_fuel_reconciliation": {
+            "measured_event_count": 14,
+            "measured_start_fuel_mmbtu": 152.0,
+            "passed": true,
+            "recorded_event_count": 14,
+            "release_charged": true,
+            "tier_sum_mmbtu": null
+          },
+          "status": "PASS",
+          "stop_floor_refusal_count": 14904,
+          "stop_floor_refusals_detail_count": 14904,
+          "study_class": "addendum_h",
+          "tick_count": 17280,
+          "turbine_fuel_mmbtu": 5327.34949305,
+          "unserved_intervals_detail_count": 7,
+          "unserved_mwh": 0.859772492
+        },
+        "nonmetric_record_fields_excluded": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "physical_identity_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+        "raw_record_differences": [
+          "commitment_log",
+          "identity",
+          "measured_start_events",
+          "starts",
+          "stop_floor_refusals",
+          "stop_floor_refusals_detail_count",
+          "unserved_intervals",
+          "unserved_intervals_detail_count"
+        ],
+        "status": "PASS"
+      },
+      "scenario_id": "scenario-h2-slurm-24h",
+      "verdict_matches_reference": true
+    }
+  ],
+  "seed": 42,
+  "source_reference": "tools/dr_isl/d6f/STUDY_GATES.json"
+}

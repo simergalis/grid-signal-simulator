@@ -1,0 +1,207 @@
+{
+  "breaker_closed_check": {
+    "off_bus_breaker_true": 0,
+    "off_bus_rows": 19749,
+    "off_bus_states": {
+      "OFFLINE": 17274,
+      "STARTING": 2475
+    },
+    "on_bus_states": {
+      "SYNCHRONISED": 66209,
+      "UNLOADING": 442
+    }
+  },
+  "energy_mwh": {
+    "demand": 621.8577602777779,
+    "dispatch_curtailment": 45.77106902777778,
+    "generation": 662.0930581944444,
+    "served": 616.3219894444445,
+    "unserved": 5.535770972222222
+  },
+  "grid_import_cost_delta_usd": -664.2925,
+  "grid_import_mwh_after_d6c": 0.0,
+  "grid_import_mwh_before_d6c": 5.5358,
+  "legacy_cost_breakdown_after_d6c": {
+    "generation_cost": 46094.7343,
+    "generation_duty_fraction": 0.372204,
+    "grid_fraction": 0.0,
+    "grid_import_cost": 0.0,
+    "storage_cost": -1073.6547,
+    "total_cost": 45021.0796
+  },
+  "legacy_cost_breakdown_before_d6c": {
+    "generation_cost": 46094.7343,
+    "generation_duty_fraction": 0.372204,
+    "grid_fraction": 0.008195,
+    "grid_import_cost": 664.2925,
+    "storage_cost": -1073.6547,
+    "total_cost": 45685.3722
+  },
+  "legacy_total_delta_usd": -664.2926000000007,
+  "operating_cost": {
+    "cost_per_mwh_it_load_usd": 97.305358329,
+    "cost_per_mwh_served_usd": 81.33438172,
+    "currency": "USD",
+    "currency_year": "mixed: 2023 USD O&M; 2026 USD fuel prices",
+    "currency_year_provenance": "CITED: EIA AEO2025 O&M proxy is 2023 dollars; fuel prices are US public prices observed in 2026. Values are not inflation-normalized.",
+    "denominators": {
+      "it_load_mwh": 515.163489583,
+      "served_mwh": 616.321989444
+    },
+    "lines": [
+      {
+        "amount_usd": 44344.975191,
+        "conversion_factor": 1.108,
+        "conversion_note": "PROPOSED_HERE: converted LHV to HHV using natural-gas LHV/HHV factor 1.108.",
+        "key": "turbine_gas_fuel",
+        "label": "Turbine gas fuel",
+        "provenance": {
+          "price": "CITED: EIA U.S. Natural Gas Industrial Price, Aug 2025\u2013Jul 2026 12-month mean $5.331/Mcf (https://www.eia.gov/dnav/ng/hist/n3035us3m.htm), divided by EIA 2025 average heat content 1,037 Btu/cf = 1.037 MMBtu/Mcf (https://www.eia.gov/tools/faqs/faq.php?id=45&t=5).",
+          "quantity": "Completed turbine fuel telemetry by unit; accounting-only heat-rate model."
+        },
+        "quantity": 8626.100032504,
+        "quantity_unit": "MMBtu (HHV)",
+        "unit_price": 5.140790743,
+        "unit_price_unit": "USD/MMBtu (HHV)"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "diesel_fuel",
+        "label": "Diesel fuel",
+        "provenance": {
+          "price": "CITED: EIA U.S. on-highway No. 2 diesel retail, week of 2026-10-19, $6.276/gal, including taxes (https://www.eia.gov/petroleum/gasdiesel/). Off-road generator fuel may exclude road taxes.",
+          "quantity": "Diesel fleet fuel-tank consumption delta; null when no diesel fleet is configured."
+        },
+        "quantity": null,
+        "quantity_unit": "gal",
+        "unit_price": 6.276,
+        "unit_price_unit": "USD/gal"
+      },
+      {
+        "amount_usd": 3818.809199,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "turbine_variable_om",
+        "label": "Turbine variable O&M",
+        "provenance": {
+          "price": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $5.70/MWh, 2023 dollars (https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf).",
+          "quantity": "Integrated measured turbine output."
+        },
+        "quantity": 669.966526111,
+        "quantity_unit": "MWh",
+        "unit_price": 5.7,
+        "unit_price_unit": "USD/MWh"
+      },
+      {
+        "amount_usd": 1964.383562,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "turbine_fixed_om",
+        "label": "Turbine fixed O&M allocation",
+        "provenance": {
+          "price": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $9.56/kW-year, 2023 dollars; proxy for larger aeroderivative units.",
+          "quantity": "Rated turbine kW \u00d7 run hours / 8,760 hours/year."
+        },
+        "quantity": 205.479452055,
+        "quantity_unit": "kW-year",
+        "unit_price": 9.56,
+        "unit_price_unit": "USD/kW-year"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "turbine_nonfuel_start",
+        "label": "Turbine non-fuel start charge",
+        "provenance": {
+          "price": "No cited non-fuel start-cost source; intentionally left null.",
+          "quantity": "Completed-run turbine start counter; excludes start fuel, priced in the gas line."
+        },
+        "quantity": 37.0,
+        "quantity_unit": "starts",
+        "unit_price": null,
+        "unit_price_unit": "USD/start"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "bess_degradation",
+        "label": "BESS degradation",
+        "provenance": {
+          "price": "No cited degradation-cost source; intentionally left null.",
+          "quantity": "PROPOSED_HERE: sum of absolute signed BESS AC output over ticks."
+        },
+        "quantity": 158.735243889,
+        "quantity_unit": "MWh AC throughput",
+        "unit_price": null,
+        "unit_price_unit": "USD/MWh"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "unserved_energy",
+        "label": "Unserved-energy value",
+        "provenance": {
+          "price": "No cited unserved-energy value; intentionally left null.",
+          "quantity": "Integrated D7 unserved-load telemetry."
+        },
+        "quantity": 5.535770972,
+        "quantity_unit": "MWh",
+        "unit_price": null,
+        "unit_price_unit": "USD/MWh"
+      }
+    ],
+    "total_excludes": [
+      {
+        "key": "diesel_fuel",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "turbine_nonfuel_start",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "bess_degradation",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "unserved_energy",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "grid_import",
+        "reason": "no operating-cost tariff input is configured"
+      },
+      {
+        "key": "fuel_cell_fuel",
+        "reason": "the requested gas line prices turbine fuel only"
+      },
+      {
+        "key": "solar_or_ppa",
+        "reason": "no source-specific contract input is configured"
+      },
+      {
+        "key": "cooling_labor_and_other_site_om",
+        "reason": "outside this energy-only input block"
+      }
+    ],
+    "total_includes": [
+      "turbine_gas_fuel",
+      "turbine_variable_om",
+      "turbine_fixed_om"
+    ],
+    "total_usd": 50128.167952
+  },
+  "run_id": "run-d892438320af",
+  "scenario_id": "S10_mit_supercloud_2021-08-11",
+  "scenario_store_loaded": true,
+  "seed": 1729,
+  "source": "in-process invocation of api.routes.runs.start_run and get_energy_summary; no unauthenticated HTTP request was made",
+  "tick_count": 17280,
+  "turbine_start_count": 37,
+  "turbine_total_fuel_mmbtu": 7785.288839
+}
