@@ -16,6 +16,7 @@ from mcp_server.server import (
     app,
     service,
 )
+from runtime.scenario_factory import prepare_workload_timeline
 import runtime.seed_resolution as seed_resolution_module
 
 
@@ -774,11 +775,28 @@ def test_tc164_shared_identity_and_cache_match_for_every_study_scenario(
                         "seed": 42,
                         "reuse_cache": True,
                     }
+                    expanded_spec = isolated.executor._expanded_spec(
+                        scenario_id,
+                        arguments["parameter_overrides"],
+                        None,
+                    )
+                    seed_manifest = isolated.executor.resolve_seed_manifest(
+                        expanded_spec,
+                        arguments["seed"],
+                    )
+                    # IMPL-ISL-30/31: identity/cache inputs include the shared,
+                    # seed-prepared Slurm timeline, not the unprepared source.
+                    prepared_spec = prepare_workload_timeline(
+                        expanded_spec,
+                        seed_manifest,
+                    )
                     identity = isolated._identity(
                         scenario_id=scenario_id,
                         mode=mode,
                         parameter_overrides=arguments["parameter_overrides"],
-                        seed=42,
+                        seed=arguments["seed"],
+                        seed_manifest=seed_manifest,
+                        spec=prepared_spec,
                     )
                     started = _call(
                         client,

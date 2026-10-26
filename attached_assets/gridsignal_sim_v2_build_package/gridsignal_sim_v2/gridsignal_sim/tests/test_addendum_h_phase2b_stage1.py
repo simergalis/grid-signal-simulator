@@ -243,12 +243,16 @@ def _stop_floor_context() -> object:
 
 
 def test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches() -> None:
-    """IMPL-H60: stop refusal uses core demand + largest-unit reserve floor."""
+    """IMPL-H60: core-proposed stop refusal uses the N-1 reserve floor.
+
+    IMPL-ISL-30 §3 disables forecast-origin stops; exercise the surviving
+    core-decommit adjudication path directly.
+    """
     from runtime.turbine_commitment import CommitmentForecast
 
     ctx = _stop_floor_context()
     controller = ctx.turbine_commitment_controller
-    controller.forecast = lambda **_: CommitmentForecast(
+    forecast = CommitmentForecast(
         sim_time_s=0.0,
         background_mean_mw=10.0,
         background_std_mw=0.0,
@@ -257,11 +261,34 @@ def test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches() -> 
         minimum_forecast_mw=10.0,
         profile=((0.0, 10.0), (600.0, 10.0)),
     )
-    controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
+    ctx.sim_state._commitment_forecast = forecast
+    accepted = controller.adjudicate_core_proposal(
+        state=ctx.sim_state,
+        decision=SimpleNamespace(
+            action="decommit",
+            target_unit_id="gt-spin-01",
+            reason="core unload",
+            floor_violated=False,
+        ),
+        sim_time_s=0.0,
+        synchronized_capacity_mw=50.0,
+        bess_soc_fraction=0.0,
+    )
 
-    assert controller.log
+    assert accepted is False
     assert controller.log[-1].accepted is False
+    assert controller.log[-1].source == "core_commitment_proposal"
     assert "post-stop N-1 reserve floor" in (controller.log[-1].refusal_reason or "")
+    assert controller.log[-1].evidence is not None
+    assert controller.log[-1].evidence["post_stop_floor_mw"] == 35.0
+    assert controller.log[-1].evidence["remaining_turbine_capacity_mw"] == 25.0
+    assert controller.log[-1].evidence["triggering_announced_jobs"] == []
+    assert (
+        controller.log[-1].evidence["required_capacity_comparison"][
+            "reserve_deficit_mw"
+        ]
+        == 10.0
+    )
     details = controller.stop_floor_refusals[-1]
     assert details["post_stop_floor_mw"] == 35.0
     assert details["remaining_turbine_capacity_mw"] == 25.0
