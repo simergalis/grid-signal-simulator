@@ -20,8 +20,10 @@ from core.commitment import n_minus_one_reserve_floor_mw
 ALLOWED_FORECAST_LEAD_SECONDS = (0.0, 150.0, 300.0, 600.0, 1200.0)
 DEFAULT_FORECAST_LEAD_SECONDS = 600.0
 DEFAULT_BACKGROUND_WINDOW_SECONDS = 900.0
-DEFAULT_HOT_START_LOOKAHEAD_SECONDS = 300.0
-DEFAULT_RAMP_TO_LOAD_SECONDS = 60.0
+# PROPOSED_HERE: Lloyd selected a 30-minute announcement cap so queued Slurm
+# work can be visible before its actual start; configured legacy lead remains
+# the fallback for events without submit_time_s.
+DEFAULT_FORECAST_ANNOUNCEMENT_CAP_SECONDS = 1800.0
 DEFAULT_STOP_LOOKAHEAD_SECONDS = 1200.0
 DEFAULT_FLOOR_SYNCHRONIZED = 1
 DEFAULT_SENSITIVITY_MW = 2.0
@@ -154,9 +156,10 @@ class CommitmentLogRecord:
     to_state: Optional[str] = None
     controller_approved: Optional[bool] = None
     suppressed_repeat_count: int = 0
+    evidence: Optional[dict[str, Any]] = None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "sim_time_s": round(self.sim_time_s, 3),
             "unit_id": self.unit_id,
             "action": self.action,
@@ -175,6 +178,9 @@ class CommitmentLogRecord:
             "controller_approved": self.controller_approved,
             "suppressed_repeat_count": self.suppressed_repeat_count,
         }
+        if self.evidence is not None:
+            result["evidence"] = self.evidence
+        return result
 
 
 @dataclass
@@ -183,9 +189,8 @@ class ForecastDrivenTurbineController:
 
     mode: str = "disabled"
     forecast_lead_seconds: float = DEFAULT_FORECAST_LEAD_SECONDS
+    announcement_cap_seconds: float = DEFAULT_FORECAST_ANNOUNCEMENT_CAP_SECONDS
     background_window_seconds: float = DEFAULT_BACKGROUND_WINDOW_SECONDS
-    hot_start_lookahead_seconds: float = DEFAULT_HOT_START_LOOKAHEAD_SECONDS
-    ramp_to_load_seconds: float = DEFAULT_RAMP_TO_LOAD_SECONDS
     stop_lookahead_seconds: float = DEFAULT_STOP_LOOKAHEAD_SECONDS
     floor_synchronized: int = DEFAULT_FLOOR_SYNCHRONIZED
     sensitivity_mw: float = DEFAULT_SENSITIVITY_MW
@@ -225,6 +230,9 @@ class ForecastDrivenTurbineController:
         default=None, repr=False
     )
     _forecast_events: list[Any] = field(default_factory=list, repr=False)
+    _forecast_announcement_events: list[tuple[float, Any]] = field(
+        default_factory=list, repr=False
+    )
     _timeline_state: dict[str, tuple[float, str, float]] = field(
         default_factory=dict, repr=False
     )
@@ -238,6 +246,9 @@ class ForecastDrivenTurbineController:
         default_factory=dict, repr=False
     )
     _announced_start_event_ids: list[str] = field(default_factory=list, repr=False)
+    _last_stop_veto_evidence: Optional[dict[str, Any]] = field(
+        default=None, repr=False
+    )
     _measured_history_key: Optional[tuple[int, int]] = field(
         default=None, repr=False
     )
@@ -250,6 +261,12 @@ class ForecastDrivenTurbineController:
             raise ValueError(
                 "forecast lead must be one of 0, 150, 300, 600, or 1,200 seconds"
             )
+        if (
+            not math.isfinite(float(self.announcement_cap_seconds))
+            or float(self.announcement_cap_seconds) < 0.0
+        ):
+            raise ValueError("forecast announcement cap must be finite and non-negative")
+        self.announcement_cap_seconds = float(self.announcement_cap_seconds)
         self.floor_synchronized = max(1, int(self.floor_synchronized))
         self.sensitivity_mw = max(0.0, float(self.sensitivity_mw))
         self.preload_margin_seconds = max(0.0, float(self.preload_margin_seconds))
@@ -279,6 +296,20 @@ class ForecastDrivenTurbineController:
             return 0.0
         return max(0.0, float(power_for_event(event)))
 
+    def _announcement_time_s(self, event: Any) -> float:
+        """Return the event's availability time under DR IMPL-ISL-31."""
+        start_time_s = float(event.timestamp)
+        submit_time_s = getattr(event, "submit_time_s", None)
+        if submit_time_s is not None:
+            return max(
+                float(submit_time_s),
+                start_time_s - self.announcement_cap_seconds,
+            )
+        return start_time_s - min(
+            self.announcement_cap_seconds,
+            self.forecast_lead_seconds,
+        )
+
     def _ensure_forecast_event_index(self, events: list[Any]) -> None:
         """Refresh the shared sorted event index without advancing job state."""
         event_key = (
@@ -291,6 +322,16 @@ class ForecastDrivenTurbineController:
         self._forecast_event_key = event_key
         self._forecast_events = sorted(
             events, key=lambda item: (item.timestamp, item.event_id)
+        )
+        self._forecast_announcement_events = sorted(
+            (
+                (self._announcement_time_s(item), item)
+                for item in self._forecast_events
+                if self._is_load_event(item)
+            ),
+            key=lambda pair: (
+                pair[0], float(pair[1].timestamp), str(pair[1].event_id)
+            ),
         )
         self._timeline_state = {}
         self._timeline_cache = {}
@@ -404,7 +445,6 @@ class ForecastDrivenTurbineController:
         events: list[Any],
         power_for_event: Optional[Callable[[Any], float]] = None,
     ) -> dict[str, float]:
-        cutoff = sim_time_s + self.forecast_lead_seconds
         starts: dict[str, float] = {}
         self._ensure_forecast_event_index(events)
         if power_for_event is not None:
@@ -415,34 +455,19 @@ class ForecastDrivenTurbineController:
                 events=events,
                 power_for_event=power_for_event,
             )
-        for event in self._forecast_events[self._announced_event_index :]:
-            if event.timestamp > cutoff:
-                break
-            if self._event_type(event) not in {"starting", "running", "scale"}:
-                continue
-            if event.job_id not in self._announced_start_times_cache:
-                self._announced_start_times_cache[event.job_id] = float(
-                    event.timestamp
-                )
-                self._announced_start_event_ids.append(str(event.event_id))
-            elif (
-                self._announced_start_times_cache[event.job_id]
-                == float(event.timestamp)
-            ):
-                self._announced_start_event_ids.append(str(event.event_id))
-            if event.timestamp <= cutoff:
-                starts[event.job_id] = min(
-                    starts.get(event.job_id, float("inf")),
-                    float(event.timestamp),
-                )
-            self._announced_event_index += 1
-        # Non-load events still advance the cursor so they are not revisited
-        # on every tick.
-        while (
-            self._announced_event_index < len(self._forecast_events)
-            and self._forecast_events[self._announced_event_index].timestamp
-            <= cutoff
+        while self._announced_event_index < len(
+            self._forecast_announcement_events
         ):
+            announce_time_s, event = self._forecast_announcement_events[
+                self._announced_event_index
+            ]
+            if announce_time_s > float(sim_time_s) + 1e-9:
+                break
+            existing_start_s = self._announced_start_times_cache.get(event.job_id)
+            event_start_s = float(event.timestamp)
+            if existing_start_s is None or event_start_s < existing_start_s:
+                self._announced_start_times_cache[event.job_id] = event_start_s
+                self._announced_start_event_ids.append(str(event.event_id))
             self._announced_event_index += 1
         starts.update(self._announced_start_times_cache)
         return starts
@@ -559,6 +584,7 @@ class ForecastDrivenTurbineController:
             if self._event_type(event) in {"starting", "running", "scale"}
             and event.job_id in announced_starts
             and event.timestamp == announced_starts[event.job_id]
+            and self._announcement_time_s(event) <= sim_time_s + 1e-9
         )
         announced_workload = max(
             (
@@ -650,6 +676,138 @@ class ForecastDrivenTurbineController:
                 return turbine
         return None
 
+    @staticmethod
+    def _start_timing(
+        turbine: Any,
+        start_time_s: float,
+        *,
+        projected_stop_time_s: Optional[float] = None,
+    ) -> Optional[tuple[str, float]]:
+        """Use the asset module's single thermal-tier/start-duration resolver."""
+        resolver = getattr(turbine, "start_timing_at", None)
+        if not callable(resolver):
+            return None
+        try:
+            thermal, duration_s = resolver(
+                start_time_s,
+                projected_stop_time_s=projected_stop_time_s,
+            )
+            duration_s = float(duration_s)
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            return None
+        if not math.isfinite(duration_s) or duration_s < 0.0:
+            return None
+        return str(getattr(thermal, "value", thermal)), duration_s
+
+    def _start_horizon_seconds(
+        self,
+        turbine: Any,
+        sim_time_s: float,
+    ) -> Optional[float]:
+        """Thermal-aware start horizon: current-tier start plus rated ramp."""
+        timing = self._start_timing(turbine, sim_time_s)
+        if timing is None:
+            return None
+        config = getattr(turbine, "config", None)
+        try:
+            rated_mw = float(config.rated_mw)
+            ramp_rate_mw_s = float(config.r_asset_mw_per_s)
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            return None
+        if (
+            not math.isfinite(rated_mw)
+            or not math.isfinite(ramp_rate_mw_s)
+            or rated_mw < 0.0
+            or ramp_rate_mw_s <= 0.0
+        ):
+            return None
+        return timing[1] + rated_mw / ramp_rate_mw_s
+
+    def _return_to_service_terms(
+        self,
+        turbine: Any,
+        sim_time_s: float,
+    ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
+        """Compute the per-unit rundown, lockout, thermal start, and ramp window."""
+        config = getattr(turbine, "config", None)
+        required = (
+            "rated_mw",
+            "r_asset_mw_per_s",
+            "p_min_stable_frac",
+            "unload_tail_s",
+            "min_down_enabled",
+        )
+        missing = [name for name in required if not hasattr(config, name)]
+        if missing:
+            return None, missing[0]
+        try:
+            rated_mw = float(config.rated_mw)
+            ramp_rate_mw_s = float(config.r_asset_mw_per_s)
+            msl_fraction = float(config.p_min_stable_frac)
+            unload_tail_s = float(config.unload_tail_s)
+            min_down_enabled = bool(config.min_down_enabled)
+            min_down_s = (
+                float(config.t_min_down_s) if min_down_enabled else 0.0
+            )
+            output_mw = float(turbine.output_mw())
+        except (AttributeError, TypeError, ValueError, OverflowError):
+            return None, "unit_timing_config"
+        if (
+            not all(
+                math.isfinite(value)
+                for value in (
+                    rated_mw,
+                    ramp_rate_mw_s,
+                    msl_fraction,
+                    unload_tail_s,
+                    min_down_s,
+                    output_mw,
+                )
+            )
+            or rated_mw < 0.0
+            or ramp_rate_mw_s <= 0.0
+            or not 0.0 <= msl_fraction <= 1.0
+            or unload_tail_s < 0.0
+            or min_down_s < 0.0
+        ):
+            return None, "unit_timing_config"
+        msl_mw = rated_mw * msl_fraction
+        rundown_s = max(0.0, output_mw - msl_mw) / ramp_rate_mw_s
+        projected_breaker_open_s = (
+            float(sim_time_s) + rundown_s + unload_tail_s
+        )
+        earliest_restart_s = projected_breaker_open_s + min_down_s
+        timing = self._start_timing(
+            turbine,
+            earliest_restart_s,
+            projected_stop_time_s=projected_breaker_open_s,
+        )
+        if timing is None:
+            return None, "thermal_start_duration"
+        thermal_tier, start_duration_s = timing
+        ramp_to_rated_s = rated_mw / ramp_rate_mw_s
+        total_s = (
+            rundown_s
+            + unload_tail_s
+            + min_down_s
+            + start_duration_s
+            + ramp_to_rated_s
+        )
+        return {
+            "rundown_s": rundown_s,
+            "unload_tail_s": unload_tail_s,
+            "min_down_enabled": min_down_enabled,
+            "minimum_down_s": min_down_s,
+            "projected_breaker_open_s": projected_breaker_open_s,
+            "earliest_restart_s": earliest_restart_s,
+            "thermal_tier": thermal_tier,
+            "start_duration_s": start_duration_s,
+            "ramp_target_mw": rated_mw,
+            "ramp_rate_mw_per_s": ramp_rate_mw_s,
+            "ramp_to_load_s": ramp_to_rated_s,
+            "return_to_service_s": total_s,
+        }, None
+
     def _candidate_stop(self, turbines: list[Any]) -> Optional[Any]:
         synchronized = [
             turbine for turbine in turbines
@@ -686,28 +844,28 @@ class ForecastDrivenTurbineController:
         added to that floor because the core commitment policy keeps BESS
         arbitration separate from turbine reserve.
         """
+        self._last_stop_veto_evidence = None
+        rts_terms, missing_term = self._return_to_service_terms(
+            turbine,
+            sim_time_s,
+        )
+        if rts_terms is None:
+            missing_reason = missing_term or "unit_timing_config"
+            self._last_stop_veto_evidence = {
+                "return_to_service_time_unavailable": missing_reason,
+            }
+            return (
+                "forecast controller veto: return-to-service time unavailable "
+                f"({missing_reason})"
+            )
+        restart_delay = float(rts_terms["return_to_service_s"])
+        protection_end = sim_time_s + restart_delay
         if forecast is None:
             return None
-        config = turbine.config
-        restart_delay = (
-            max(0.0, float(getattr(config, "unload_tail_s", 0.0)))
-            + (
-                max(0.0, float(getattr(config, "t_min_down_s", 0.0)))
-                if getattr(config, "min_down_enabled", False)
-                else 0.0
-            )
-            + max(
-                0.0,
-                float(getattr(config, "hot_start_s", 0.0)),
-                float(getattr(config, "warm_start_s", 0.0)),
-                float(getattr(config, "cold_start_s", 0.0)),
-            )
-            + self.ramp_to_load_seconds
-        )
-        protection_end = sim_time_s + restart_delay
+        events = list(getattr(state, "events", []))
         announced_starts = self._announced_start_times(
             sim_time_s=sim_time_s,
-            events=list(getattr(state, "events", [])),
+            events=events,
         )
         simulation_state = getattr(state, "sim_state", state)
         remaining_rated = [
@@ -723,7 +881,7 @@ class ForecastDrivenTurbineController:
             for timestamp, predicted_at_onset in forecast.profile
             if (
                 timestamp >= sim_time_s - 1e-9
-                and timestamp <= sim_time_s + self.stop_lookahead_seconds + 1e-9
+                and timestamp <= protection_end + 1e-9
             )
         ]
         # A stale proposal can be adjudicated after the profile's only sample
@@ -738,7 +896,7 @@ class ForecastDrivenTurbineController:
         for timestamp, predicted_at_onset in profile_points:
             if (
                 timestamp < sim_time_s - 1e-9
-                or timestamp > sim_time_s + self.stop_lookahead_seconds + 1e-9
+                or timestamp > protection_end + 1e-9
             ):
                 continue
             demand_mw = max(0.0, float(predicted_at_onset))
@@ -763,24 +921,47 @@ class ForecastDrivenTurbineController:
                     ),
                     "reserve_deficit_mw": round(deficit_mw, 6),
                     "restart_window_end_s": round(protection_end, 3),
+                    "return_to_service": rts_terms,
                     "stop_lookahead_end_s": round(
                         sim_time_s + self.stop_lookahead_seconds, 3
                     ),
                     "bess_included_in_floor": False,
                 }
                 self.stop_floor_refusals.append(diagnostics)
-                announced_burst = any(
-                    abs(float(burst_time) - float(timestamp)) <= 1e-9
-                    and sim_time_s < float(burst_time) <= protection_end + 1e-9
-                    for burst_time in announced_starts.values()
-                )
+                triggering_jobs = [
+                    {
+                        "event_id": str(event.event_id),
+                        "job_id": str(event.job_id),
+                        "submit_time_s": getattr(event, "submit_time_s", None),
+                        "announcement_time_s": self._announcement_time_s(event),
+                        "forecast_start_time_s": float(event.timestamp),
+                    }
+                    for event in events
+                    if (
+                        self._is_load_event(event)
+                        and event.job_id in announced_starts
+                        and abs(float(event.timestamp) - float(timestamp)) <= 1e-9
+                        and sim_time_s < float(event.timestamp) <= protection_end + 1e-9
+                        and self._announcement_time_s(event) <= sim_time_s + 1e-9
+                    )
+                ]
+                self._last_stop_veto_evidence = {
+                    **diagnostics,
+                    "triggering_announced_jobs": triggering_jobs,
+                    "required_capacity_comparison": {
+                        "forecast_demand_mw": demand_mw,
+                        "post_stop_n_minus_one_floor_mw": floor_mw,
+                        "remaining_turbine_capacity_mw": remaining_capacity_mw,
+                        "bess_allowance_mw": bess_allowance_mw,
+                        "reserve_deficit_mw": deficit_mw,
+                        "sensitivity_threshold_mw": self.sensitivity_mw,
+                    },
+                }
+                announced_burst = bool(triggering_jobs)
                 if announced_burst:
-                    # Preserve the existing restart-window wording while the
-                    # numerical diagnostics above make the refusal auditable.
                     return (
-                        "stop refused: forecast burst at "
-                        f"{timestamp:.0f}s arrives before unit restart window "
-                        f"({protection_end:.0f}s)"
+                        "forecast controller veto: announced workload needs "
+                        f"unit within RTS window ({restart_delay:.0f}s)"
                     )
                 return (
                     "stop refused: post-stop N-1 reserve floor "
@@ -811,6 +992,47 @@ class ForecastDrivenTurbineController:
         # controller actions.
         if self.mode == "baseline":
             return None
+        turbines = ctx.sim_state.turbines
+        candidate_start = self._candidate_start(
+            turbines,
+            float(ctx.sim_time),
+        )
+        candidate_start_horizon = (
+            self._start_horizon_seconds(candidate_start, float(ctx.sim_time))
+            if candidate_start is not None
+            else None
+        )
+        forecast_horizons = [self.stop_lookahead_seconds]
+        for turbine in turbines:
+            reserved = bool(getattr(turbine.config, "hot_standby", False))
+            if turbine.state == TurbineState.OFFLINE:
+                if reserved:
+                    turbine.config.hot_standby = False
+                try:
+                    eligible, _ = turbine.start_eligibility(float(ctx.sim_time))
+                finally:
+                    if reserved:
+                        turbine.config.hot_standby = True
+                if eligible:
+                    start_horizon = self._start_horizon_seconds(
+                        turbine,
+                        float(ctx.sim_time),
+                    )
+                    if start_horizon is not None:
+                        forecast_horizons.append(start_horizon)
+            elif (
+                turbine.state == TurbineState.SYNCHRONISED
+                and not reserved
+            ):
+                rts_terms, _ = self._return_to_service_terms(
+                    turbine,
+                    float(ctx.sim_time),
+                )
+                if rts_terms is not None:
+                    forecast_horizons.append(
+                        float(rts_terms["return_to_service_s"])
+                    )
+        forecast_horizon = max(forecast_horizons)
         cooling_fraction = float(getattr(ctx.sim_state.site, "alpha_max", 0.0))
         forecast = self.forecast(
             sim_time_s=ctx.sim_time,
@@ -818,11 +1040,10 @@ class ForecastDrivenTurbineController:
             measured_history=ctx._measured_site_demand_history,
             power_for_event=power_for_event,
             cooling_fraction=cooling_fraction,
-            horizon_seconds=self.stop_lookahead_seconds,
+            horizon_seconds=forecast_horizon,
         )
         self._latest_forecast = forecast
         setattr(ctx.sim_state, "_commitment_forecast", forecast)
-        turbines = ctx.sim_state.turbines
         # Commitment reserve is the capacity that can respond upward.  An
         # UNLOADING unit remains electrically on the bus for physical balance,
         # but it cannot provide upward reserve and must not justify another
@@ -841,74 +1062,29 @@ class ForecastDrivenTurbineController:
         # only proactive action generated here; commit/decommit proposals are
         # adjudicated after the core has measured the current tick.
         self._evaluate_preload(ctx, forecast, power_for_event)
-        start_horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
-        start_peak = forecast.peak_over(start_horizon)
-        if start_peak > synchronized_capacity + bess_allowance:
-            candidate = self._candidate_start(turbines, float(ctx.sim_time))
-            if candidate is not None:
+        if (
+            candidate_start is not None
+            and candidate_start_horizon is not None
+            and forecast.peak_over(candidate_start_horizon)
+            > synchronized_capacity + bess_allowance
+        ):
+            if candidate_start is not None:
                 self._queue(
                     ctx,
-                    candidate,
-                    "trip" if candidate.config.hot_standby else "start",
+                    candidate_start,
+                    "trip" if candidate_start.config.hot_standby else "start",
                     (
                         "forecast peak exceeds synchronized capacity plus BESS "
-                        f"allowance over {start_horizon:.0f}s"
+                        "allowance over "
+                        f"{candidate_start_horizon:.0f}s"
                     ),
                     forecast,
                     synchronized_capacity,
                     soc,
                 )
             return forecast
-
-        if len([t for t in synchronized if t.state == TurbineState.SYNCHRONISED]) <= self.floor_synchronized:
-            return forecast
-        candidate = self._candidate_stop(turbines)
-        if candidate is None:
-            return forecast
-
-        future_burst_reason = self._future_burst_refusal(
-            state=ctx,
-            turbine=candidate,
-            sim_time_s=ctx.sim_time,
-            forecast=forecast,
-        )
-        if future_burst_reason is not None:
-            self._refused(
-                ctx=ctx,
-                turbine=candidate,
-                action="stop",
-                reason=future_burst_reason,
-                forecast=forecast,
-                synchronized_capacity=synchronized_capacity,
-                soc=soc,
-            )
-        elif (
-            candidate.config.min_run_enabled
-            and not math.isnan(float(getattr(candidate, "_run_start_s", float("nan"))))
-            and ctx.sim_time - candidate._run_start_s < candidate.config.t_min_run_s
-        ):
-            self._refused(
-                ctx=ctx,
-                turbine=candidate,
-                action="stop",
-                reason="stop refused: minimum run time has not elapsed",
-                forecast=forecast,
-                synchronized_capacity=synchronized_capacity,
-                soc=soc,
-            )
-        else:
-            self._queue(
-                ctx,
-                candidate,
-                "stop",
-                (
-                    "forecast peak and minimum support controlled stop over "
-                    f"{self.stop_lookahead_seconds:.0f}s"
-                ),
-                forecast,
-                synchronized_capacity,
-                soc,
-            )
+        # DR IMPL-ISL-30 §3: forecast control is never an originator of stops.
+        # Only core decommit proposals reach the RTS adjudicator below.
         return forecast
 
     def _evaluate_preload(
@@ -1219,10 +1395,13 @@ class ForecastDrivenTurbineController:
                 refusal_reason = (
                     f"forecast controller veto: start ineligible ({eligibility_reason})"
                 )
-            horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
+            horizon = self._start_horizon_seconds(turbine, sim_time_s)
             if accepted and forecast is not None and not decision.floor_violated:
-                if forecast.peak_over(horizon) <= (
+                if (
+                    horizon is not None
+                    and forecast.peak_over(horizon) <= (
                     synchronized_capacity_mw + allowance + self.sensitivity_mw
+                    )
                 ):
                     accepted = False
                     refusal_reason = (
@@ -1230,6 +1409,7 @@ class ForecastDrivenTurbineController:
                         f"within {horizon:.0f}s"
                     )
         elif decision.action == "decommit":
+            self._last_stop_veto_evidence = None
             remaining = [
                 item for item in state.turbines
                 if (
@@ -1290,6 +1470,11 @@ class ForecastDrivenTurbineController:
                 "source": "core_commitment_proposal",
                 "refusal_reason": refusal_reason,
                 "controller_approved": accepted,
+                "evidence": (
+                    self._last_stop_veto_evidence
+                    if decision.action == "decommit" and not accepted
+                    else None
+                ),
             },
             accepted=accepted,
             changed_state=False,
@@ -1379,6 +1564,7 @@ class ForecastDrivenTurbineController:
                 suppressed_repeat_count=self._suppressed_refusal_counts.get(
                     (refusal_key, refusal_signature), 0
                 ),
+                evidence=metadata.get("evidence"),
             )
         )
 
@@ -1396,6 +1582,13 @@ class ForecastDrivenTurbineController:
             and reason.endswith(")")
         ):
             return "stop refused: forecast burst arrives before unit restart window"
+        if reason.startswith(
+            "forecast controller veto: announced workload needs unit within RTS window"
+        ):
+            return (
+                "forecast controller veto: announced workload needs unit "
+                "within RTS window"
+            )
         return reason
 
     @property

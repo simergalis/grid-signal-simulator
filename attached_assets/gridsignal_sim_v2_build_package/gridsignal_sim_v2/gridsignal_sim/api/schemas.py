@@ -217,6 +217,12 @@ class WorkloadEventSpec(BaseModel):
     job_id: str = ""
     event_type: str  # WorkloadEventType string value
     timestamp: float = Field(ge=0.0)
+    # Optional scheduler submit timestamp; exclude the unset value so legacy
+    # scenario dumps and study identities retain their existing shape.
+    submit_time_s: Optional[float] = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     node_count: int = Field(default=0, ge=0)
     hardware_profile_id: str = "enterprise_8gpu_air"
     workload_class: Literal["training", "inference", "other"] = "training"
@@ -1751,6 +1757,16 @@ class ScenarioSpec(BaseModel):
     turbine_forecast_lead_seconds: float = Field(
         default=600.0,
         description="PROPOSED_HERE: advance notice for announced workload events.",
+    )
+    # PROPOSED_HERE: Lloyd selected a 30-minute queue-visibility cap; events
+    # without submit_time_s use the smaller of this cap and the configured lead.
+    turbine_forecast_announcement_cap_seconds: float = Field(
+        default=1800.0,
+        ge=0.0,
+        description=(
+            "PROPOSED_HERE: maximum forecast announcement horizon for events "
+            "with a scheduler submit time."
+        ),
     )
     turbine_commitment_floor: int = Field(
         default=1,

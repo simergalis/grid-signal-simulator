@@ -1070,12 +1070,25 @@ class TurbineModule(AssetModule):
                 return False, "min_down"
         return True, "eligible"
 
-    def start_timing_at(self, sim_time: float) -> tuple[ThermalState, float]:
+    def start_timing_at(
+        self,
+        sim_time: float,
+        *,
+        projected_stop_time_s: Optional[float] = None,
+    ) -> tuple[ThermalState, float]:
         """DR D2-r: preview the existing start timing, without starting a unit."""
-        if math.isnan(self._last_sync_stop_s):
+        # A controller may preview the thermal tier after a proposed future
+        # stop.  The default remains the recorded stop timestamp used by the
+        # physical command path; the override only supplies a forecast reference.
+        last_sync_stop_s = (
+            self._last_sync_stop_s
+            if projected_stop_time_s is None
+            else float(projected_stop_time_s)
+        )
+        if math.isnan(last_sync_stop_s):
             thermal = self.config.initial_thermal_state
         else:
-            elapsed_offline = sim_time - self._last_sync_stop_s
+            elapsed_offline = sim_time - last_sync_stop_s
             if elapsed_offline < self.config.hot_threshold_s:
                 thermal = ThermalState.HOT
             elif elapsed_offline < self.config.warm_threshold_s:

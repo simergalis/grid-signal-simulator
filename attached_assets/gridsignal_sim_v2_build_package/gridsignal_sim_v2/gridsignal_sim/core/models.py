@@ -191,6 +191,7 @@ class WorkloadSignal:
     capacity_budget_id: Optional[str] = None
     admission_provider: Optional[str] = None
     power_enforcement_policy: Optional[str] = None
+    submit_time_s: Optional[float] = None
 
     def __post_init__(self) -> None:
         has_allocation = self.infrastructure_allocation_id is not None

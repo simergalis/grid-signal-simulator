@@ -1712,6 +1712,11 @@ def build_run_context_from_spec(
             job_id=resolved_job_id,
             event_type=event_type or WorkloadEventType(evt["event_type"]),
             timestamp=float(evt["timestamp"]),
+            submit_time_s=(
+                float(evt["submit_time_s"])
+                if evt.get("submit_time_s") is not None
+                else None
+            ),
             hardware_profile_id=evt.get("hardware_profile_id") or hw_id,
             node_count=(
                 int(evt.get("node_count", 0))
@@ -2049,6 +2054,12 @@ def build_run_context_from_spec(
             mode=_commitment_mode,
             forecast_lead_seconds=float(
                 spec_data.get("turbine_forecast_lead_seconds", 600.0)
+            ),
+            announcement_cap_seconds=float(
+                spec_data.get(
+                    "turbine_forecast_announcement_cap_seconds",
+                    1800.0,
+                )
             ),
             floor_synchronized=int(
                 spec_data.get("turbine_commitment_floor", 1)
