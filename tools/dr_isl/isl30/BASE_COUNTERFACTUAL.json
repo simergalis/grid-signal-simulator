@@ -1,0 +1,123 @@
+{
+  "arms": {
+    "baseline": {
+      "d6g_after": {
+        "fuel_mmbtu": 714.363019086,
+        "invalid_frequency_ticks": 53,
+        "peak_unserved_mw": 22.309362466,
+        "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "starts": 2,
+        "unserved_mwh": 0.351692658
+      },
+      "now": {
+        "fuel_mmbtu": 714.363019086,
+        "invalid_frequency_ticks": 53,
+        "peak_unserved_mw": 22.309362466,
+        "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "starts": 2,
+        "unserved_mwh": 0.351692658
+      },
+      "tick_count": 1440
+    },
+    "informed": {
+      "d6g_after": {
+        "fuel_mmbtu": 665.395402401,
+        "invalid_frequency_ticks": 0,
+        "peak_unserved_mw": 7.524660522,
+        "physical_hash": "a5cb3e37d8f8c0c2bd58ede455182a25c7c0fdef62e7e9de6479c389522af049",
+        "starts": 2,
+        "unserved_mwh": 0.02072299
+      },
+      "now": {
+        "fuel_mmbtu": 733.778735734,
+        "invalid_frequency_ticks": 0,
+        "peak_unserved_mw": 7.524660522,
+        "physical_hash": "23c4c5b7d7f0eb98a9e9071a1a64ab8ea2d7c843d1e7f1af072f9daf99a84ef1",
+        "starts": 2,
+        "unserved_mwh": 0.02072299
+      },
+      "tick_count": 1440
+    }
+  },
+  "baseline_gate": {
+    "compared_fields": [
+      "physical_hash",
+      "unserved_mwh",
+      "peak_unserved_mw",
+      "starts",
+      "fuel_mmbtu",
+      "invalid_frequency_ticks"
+    ],
+    "differences": {},
+    "passed": true
+  },
+  "baseline_gate_note": "Baseline physical hash and all six requested metrics must match D6g-after exactly; mismatches are listed by field.",
+  "compare_runs": {
+    "condition_count": 10,
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "failed_conditions": [],
+    "passed_conditions": 10,
+    "verdict": "PASS"
+  },
+  "current_head": "9d063724def6a473e653e32fbcef58dd5c55034a",
+  "informed_peak": {
+    "p_demand_mw": 100.8862,
+    "p_served_mw": 93.3615,
+    "p_unserved_mw": 7.5247,
+    "sim_time_s": 345.0,
+    "tick_index": 69,
+    "turbine_units": [
+      {
+        "asset_id": "gt-spin-01",
+        "breaker_closed": true,
+        "output_mw": 25.0,
+        "state": "synchronised"
+      },
+      {
+        "asset_id": "gt-spin-02",
+        "breaker_closed": true,
+        "output_mw": 19.3615,
+        "state": "synchronised"
+      },
+      {
+        "asset_id": "gt-hot-01",
+        "breaker_closed": true,
+        "output_mw": 11.25,
+        "state": "synchronised"
+      },
+      {
+        "asset_id": "gt-hot-02",
+        "breaker_closed": true,
+        "output_mw": 8.75,
+        "state": "synchronised"
+      }
+    ]
+  },
+  "informed_rts_announced_job_vetoes": {
+    "count": 0,
+    "first_five": [],
+    "matching_rule": "forecast controller veto: announced workload needs unit within RTS window"
+  },
+  "reference_file": "tools/dr_isl/d6g/BASE_COUNTERFACTUAL.json arms.*.after",
+  "request": "IMPL-ISL-30/31 stage 4 part 2: base-demo seed-42 counterfactual only",
+  "run_elapsed_seconds": 24.781,
+  "scenario_id": "scenario-uneven-multisched-01",
+  "seed": 42,
+  "status": "COMPLETED",
+  "study_class": "base_demo",
+  "tick_counts": {
+    "baseline": 1440,
+    "informed": 1440
+  }
+}
