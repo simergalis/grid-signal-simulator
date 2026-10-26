@@ -52,4 +52,15 @@ All six resolve to `enterprise_8gpu_air` (10.2 kW/node), PUE 1.03, and
 - `60462ac` — H1 counterfactual
 - `14b2dbd` — H2 counterfactual
 
-No full-suite run, re-baselining, or publishing was performed.
+At the time of the counterfactual commits, no full-suite run, re-baselining, or publishing was performed.
+
+## Full suite
+
+Ran the real package suite twice, sequentially, with `PYTHONHASHSEED=1` and
+`PYTHONHASHSEED=987654321`. Both runs: 2,276 passed, 17 failed, 3 skipped,
+23 xfailed, and 3 subtests passed. Both retained the 15 known failures and had
+the same two added failures: `test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches`
+and `test_tc164_shared_identity_and_cache_match_for_every_study_scenario`.
+There were no removed known failures and no run-to-run failing-ID differences.
+`test_gpu_load_profile` passed in both runs. Full failing-ID lists and timings
+are recorded in `tools/dr_isl/isl30/FULL_SUITE.txt`.

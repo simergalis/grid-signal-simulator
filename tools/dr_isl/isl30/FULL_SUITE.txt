@@ -1,0 +1,62 @@
+IMPL-ISL-30/31 Stage 4 — full-suite verification
+
+Package: attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim
+Command: python -m pytest -q --tb=no --junitxml=<temporary path>
+Runs were sequential. JUnit files and console logs were kept under /tmp.
+Known comparison set: the 15 failing IDs in tools/dr_isl/d6g/FULL_SUITE.txt.
+
+Run 1 — PYTHONHASHSEED=1
+Result: 2,276 passed, 17 failed, 3 skipped, 23 xfailed; 3 subtests passed;
+54 warnings; 1,031.15 seconds. Exit code 1.
+tests/test_gpu_load_profile.py::test_gpu_load_profile passed.
+
+Failing IDs:
+tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config
+tests/test_addendum_h_phase2b_stage1.py::test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches
+tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve
+tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants
+tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude
+tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context
+tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait
+tests/test_mcp_server.py::test_tc164_shared_identity_and_cache_match_for_every_study_scenario
+tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes
+tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load
+tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip
+
+Run 2 — PYTHONHASHSEED=987654321
+Result: 2,276 passed, 17 failed, 3 skipped, 23 xfailed; 3 subtests passed;
+54 warnings; 1,045.73 seconds. Exit code 1.
+tests/test_gpu_load_profile.py::test_gpu_load_profile passed.
+
+Failing IDs:
+tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config
+tests/test_addendum_h_phase2b_stage1.py::test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches
+tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve
+tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants
+tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude
+tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context
+tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait
+tests/test_mcp_server.py::test_tc164_shared_identity_and_cache_match_for_every_study_scenario
+tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes
+tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load
+tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip
+
+Comparison with the 15 known failures in tools/dr_isl/d6g/FULL_SUITE.txt:
+- Added in both runs:
+  - tests/test_addendum_h_phase2b_stage1.py::test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches
+  - tests/test_mcp_server.py::test_tc164_shared_identity_and_cache_match_for_every_study_scenario
+- Removed known failures: none.
+- Run-to-run failing-ID differences: none.
+- test_gpu_load_profile passed in both runs; it is not among the 15 known failing IDs.
