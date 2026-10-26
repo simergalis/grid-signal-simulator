@@ -184,6 +184,7 @@ def _signal_dict(signal: Any) -> dict[str, Any]:
             "queue_depth",
             "request_rate",
             "scheduler_domain",
+            "submit_time_s",
             "renewable_shortfall_mw",
             "tenant_id",
             "model_id",

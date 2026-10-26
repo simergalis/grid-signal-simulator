@@ -44,6 +44,7 @@ from study_harness.executor import (
     seed_cache_bypass_reason,
     study_class_for_scenario,
 )
+from runtime.scenario_factory import prepare_workload_timeline
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -478,6 +479,9 @@ class StudyService:
         )
         effective_reuse_cache = reuse_cache and cache_bypass_reason is None
         seed_manifest = self.executor.resolve_seed_manifest(spec, seed)
+        # Use the shared scenario-factory preparation before identity/cache
+        # lookup; the same prepared spec is passed through execution below.
+        spec = prepare_workload_timeline(spec, seed_manifest)
         identity = self._identity(
             scenario_id=scenario_id,
             mode=mode,
@@ -537,6 +541,7 @@ class StudyService:
             seed_manifest,
             identity,
             effective_reuse_cache,
+            spec,
         )
         estimate = max(
             1.0,
@@ -558,6 +563,7 @@ class StudyService:
         seed_manifest: Mapping[str, Any],
         identity: Any,
         reuse_cache: bool,
+        prepared_spec: Mapping[str, Any],
     ) -> None:
         with self._lock:
             state.status = "RUNNING"
@@ -581,6 +587,7 @@ class StudyService:
                 identity=identity,
                 reuse_cache=reuse_cache,
                 progress_callback=progress,
+                prepared_spec=prepared_spec,
             )
             with self._lock:
                 state.record = dict(record)

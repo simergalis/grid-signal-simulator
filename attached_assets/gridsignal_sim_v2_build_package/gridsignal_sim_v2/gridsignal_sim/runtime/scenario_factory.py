@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 import uuid as _uuid
 import copy
+import hashlib
 from dataclasses import replace as _replace
 
 from core.asset_modules import (
@@ -77,8 +78,13 @@ from pydantic import TypeAdapter
 
 from runtime.run_manager import InMemoryTimeseriesSink, RunContext
 from runtime.seed_resolution import (
+    SEED_DERIVATION_VERSION,
     resolve_run_seed_manifest,
     seed_consumers_for_spec,
+)
+from runtime.synthetic_queue_wait_cdf import (
+    SYNTHETIC_QUEUE_WAIT_CDF_HISTOGRAM,
+    SYNTHETIC_QUEUE_WAIT_CDF_VERSION,
 )
 from runtime.turbine_commitment import ForecastDrivenTurbineController
 from runtime.pms_test_double import OperatorResponseProfile as _OperatorResponseProfile
@@ -667,6 +673,93 @@ def validate_fuel_cell_source_consistency(spec_data: dict) -> None:
         )
 
 
+# PROPOSED_HERE: use one scheduler-aware, D4-keyed preparation step so every
+# run surface sees the same Slurm submit-time timeline before execution and
+# before any study/MCP identity or cache lookup. Source: IMPL-ISL-30/31 §9 and
+# the one-day MW-weighted S10 queue-wait sample in D6i.
+SLURM_SYNTHETIC_SUBMIT_RULE_VERSION = "isl30-slurm-mw-cdf-v1"
+
+
+def prepare_workload_timeline(
+    spec_data: dict,
+    seed_manifest: dict,
+) -> dict:
+    """Return the shared workload timeline with deterministic Slurm submit times.
+
+    S10 events that already carry an observed ``submit_time_s`` are left
+    untouched. Synthetic Slurm jobs get one D4-keyed wait per job, copied to
+    every event for that job. Other schedulers keep their existing lead policy.
+    """
+    prepared = copy.deepcopy(spec_data)
+    raw_events = [
+        dict(event)
+        for event in (prepared.get("workload_events") or [])
+    ]
+    root_seed = seed_manifest.get("root_seed")
+    if root_seed is None:
+        raise ValueError("prepared seed manifest has no root_seed")
+    scenario_identity = str(
+        prepared.get("scenario_id")
+        or prepared.get("id")
+        or prepared.get("name")
+        or ""
+    )
+
+    slurm_jobs: dict[str, list[dict]] = {}
+    for event in raw_events:
+        scheduler = str(event.get("scheduler_type") or "").strip().upper()
+        job_id = event.get("job_id")
+        if scheduler == "SLURM" and job_id is not None and str(job_id).strip():
+            slurm_jobs.setdefault(str(job_id), []).append(event)
+
+    total_weight = sum(weight for _, weight, _ in SYNTHETIC_QUEUE_WAIT_CDF_HISTOGRAM)
+    for job_id, job_events in slurm_jobs.items():
+        # Preserve a source-provided timestamp for the entire job. In
+        # particular, S10's observed submit times are never replaced.
+        if any(event.get("submit_time_s") is not None for event in job_events):
+            continue
+        starts = [
+            event
+            for event in job_events
+            if str(event.get("event_type") or "").lower()
+            in {"starting", "start", "scale"}
+            and event.get("timestamp") is not None
+        ]
+        if not starts:
+            continue
+        start_event = min(starts, key=lambda event: float(event["timestamp"]))
+        start_time_s = float(start_event["timestamp"])
+
+        root_material = (
+            f"{type(root_seed).__name__}:{root_seed}".encode("utf-8")
+        )
+        keyed_material = (
+            b"GridSignal/" + SEED_DERIVATION_VERSION.encode("ascii")
+            + b"\0" + root_material
+            + b"\0synthetic_queue_wait\0"
+            + SLURM_SYNTHETIC_SUBMIT_RULE_VERSION.encode("ascii")
+            + b"\0" + SYNTHETIC_QUEUE_WAIT_CDF_VERSION.encode("ascii")
+            + b"\0" + scenario_identity.encode("utf-8")
+            + b"\0SLURM\0" + job_id.encode("utf-8")
+        )
+        draw = int.from_bytes(hashlib.sha256(keyed_material).digest()[:8], "big")
+        target_weight = (draw * total_weight) >> 64
+        cumulative_weight = 0
+        sampled_wait_s = SYNTHETIC_QUEUE_WAIT_CDF_HISTOGRAM[-1][0]
+        for wait_s, weight, _job_count in SYNTHETIC_QUEUE_WAIT_CDF_HISTOGRAM:
+            cumulative_weight += weight
+            if target_weight < cumulative_weight:
+                sampled_wait_s = wait_s
+                break
+        submit_time_s = start_time_s - float(sampled_wait_s)
+        for event in job_events:
+            if event.get("submit_time_s") is None:
+                event["submit_time_s"] = submit_time_s
+
+    prepared["workload_events"] = raw_events
+    return prepared
+
+
 def build_run_context_from_spec(
     run_id: str,
     spec_data: dict,
@@ -706,6 +799,7 @@ def build_run_context_from_spec(
         configured_seeds=_configured_seeds,
         existing_manifest=seed_manifest,
     )
+    spec_data = prepare_workload_timeline(spec_data, seed_manifest)
     _materialized_spec = copy.deepcopy(spec_data)
 
     # ── Site configuration ────────────────────────────────────────────────

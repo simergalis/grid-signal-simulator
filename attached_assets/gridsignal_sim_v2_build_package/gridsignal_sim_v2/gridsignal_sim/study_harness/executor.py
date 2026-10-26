@@ -17,7 +17,12 @@ from runtime.phase2b_reference import (
     expand_phase2b_reference_spec,
 )
 from runtime.run_manager import _tick_result_to_dict
-from runtime.scenario_factory import build_run_context_from_spec
+from runtime.scenario_factory import (
+    SLURM_SYNTHETIC_SUBMIT_RULE_VERSION,
+    build_run_context_from_spec,
+    prepare_workload_timeline,
+)
+from runtime.synthetic_queue_wait_cdf import SYNTHETIC_QUEUE_WAIT_CDF_VERSION
 from runtime.seed_resolution import (
     SEED_DERIVATION_VERSION,
     resolve_run_seed_manifest,
@@ -53,9 +58,10 @@ STUDY_CLASS_BASE_DEMO = "base_demo"
 SUPER_CLOUD_REPLAY_SCENARIO_ID = "S10_mit_supercloud_2021-08-11"
 STUDY_CLASS_SUPERCLOUD_REPLAY = "supercloud_replay"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
-# PROPOSED_HERE: bump the study identity when resolved RNG inputs become part
-# of a run's reproducibility contract. Source: DR Phase 6 D4.
-STUDY_IDENTITY_VERSION = 3
+# PROPOSED_HERE: bump the identity contract because synthetic submit times,
+# the queue rule, empirical CDF, cap, and resolved seed now determine the
+# prepared base/H workload timeline. Source: IMPL-ISL-30/31 §9.
+STUDY_IDENTITY_VERSION = 4
 
 
 def seed_cache_bypass_reason(
@@ -130,6 +136,27 @@ def make_study_run_identity(
         identity_parameters["workload_events_sha256"] = (
             _canonical_workload_events_sha256(spec)
         )
+    elif scenario_id == BASE_DEMO_SCENARIO_ID or scenario_id in REFERENCE_IDS:
+        # PROPOSED_HERE: timeline and derivation inputs must participate in
+        # identity before study/MCP cache lookup. Source: IMPL-ISL-28 / §9.
+        identity_parameters["workload_events_sha256"] = (
+            _canonical_workload_events_sha256(spec)
+        )
+        identity_parameters["synthetic_submit_time_policy_version"] = (
+            SLURM_SYNTHETIC_SUBMIT_RULE_VERSION
+        )
+        identity_parameters["synthetic_queue_wait_cdf_version"] = (
+            SYNTHETIC_QUEUE_WAIT_CDF_VERSION
+        )
+        identity_parameters["turbine_forecast_announcement_cap_seconds"] = (
+            float(
+                spec.get(
+                    "turbine_forecast_announcement_cap_seconds",
+                    1800.0,
+                )
+            )
+        )
+        identity_parameters["synthetic_queue_wait_root_seed"] = seed
     # The replay trace is an execution input; its content is separately hashed.
     identity_parameters.pop("workload_events", None)
     identity_parameters["study_class"] = study_class_for_scenario(scenario_id)
@@ -677,6 +704,7 @@ class StudyRunExecutor:
         progress_callback: Any | None = None,
         seed_manifest: dict[str, Any] | None = None,
         identity: RunIdentity | None = None,
+        prepared_spec: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Execute one mode through the same S1 probe/replay path as run_pair."""
         if mode not in {"baseline", "informed"}:
@@ -686,10 +714,14 @@ class StudyRunExecutor:
             requested_seed=seed,
         ):
             reuse_cache = False
-        spec = self._expanded_spec(
-            scenario_id,
-            parameter_overrides,
-            duration_seconds,
+        spec = (
+            copy.deepcopy(dict(prepared_spec))
+            if prepared_spec is not None
+            else self._expanded_spec(
+                scenario_id,
+                parameter_overrides,
+                duration_seconds,
+            )
         )
         if seed_manifest is None:
             seed_manifest = self.resolve_seed_manifest(spec, seed)
@@ -700,6 +732,7 @@ class StudyRunExecutor:
             if seed is not None and str(seed) != str(manifest_seed):
                 raise ValueError("seed does not match prepared seed manifest")
             seed = manifest_seed
+        spec = prepare_workload_timeline(spec, seed_manifest)
         replay_events, demand_replay = self._probe(
             spec,
             run_id=f"{scenario_id}-study-s1-probe",
@@ -739,6 +772,7 @@ class StudyRunExecutor:
             duration_seconds,
         )
         seed_manifest = self.resolve_seed_manifest(spec, seed)
+        spec = prepare_workload_timeline(spec, seed_manifest)
         replay_events, demand_replay = self._probe(
             spec,
             run_id=f"{scenario_id}-study-s1-probe",
