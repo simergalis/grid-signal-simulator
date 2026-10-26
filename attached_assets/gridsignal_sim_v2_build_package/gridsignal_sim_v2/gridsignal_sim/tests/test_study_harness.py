@@ -24,6 +24,7 @@ from study_harness.executor import (
 )
 from study_harness.manifest import RunManifestCache, make_run_identity
 from study_harness.metrics import collect_metrics
+from runtime.scenario_factory import prepare_workload_timeline
 from runtime.turbine_commitment import ForecastDrivenTurbineController
 from runtime.seed_resolution import (
     resolve_run_seed_manifest,
@@ -789,7 +790,7 @@ def test_tc_isl_69_s10_source_events_are_part_of_run_identity(
 def test_tc_isl_72_cache_identity_isolates_s10_source_event_edits(
     tmp_path: Path,
 ) -> None:
-    """TC-ISL-72: S10 source edits affect its key; other classes add no field."""
+    """TC-ISL-72: S10 and base/H workload timelines participate in identity."""
     executor = StudyRunExecutor(output_dir=tmp_path)
     s10 = executor._expanded_spec(SUPER_CLOUD_REPLAY_SCENARIO_ID, None, 5.0)
     s10_changed = json.loads(json.dumps(s10))
@@ -815,46 +816,52 @@ def test_tc_isl_72_cache_identity_isolates_s10_source_event_edits(
     assert s10_identity.digest != changed_identity.digest
     for scenario_id in (BASE_DEMO_SCENARIO_ID, "scenario-h1-k8s-ray-24h"):
         spec = executor._expanded_spec(scenario_id, None, 5.0)
+        seed_manifest = executor.resolve_seed_manifest(spec, 42)
+        spec = prepare_workload_timeline(spec, seed_manifest)
         identity = make_study_run_identity(
             scenario_id=scenario_id,
             mode="baseline",
             spec=spec,
-            seed=42,
+            seed=seed_manifest["root_seed"],
             tick_seconds=executor.tick_seconds,
             engine_commit=executor.engine_commit,
             harness_commit=executor.harness_commit,
         )
-        assert "workload_events_sha256" not in identity.parameter_set
+        assert identity.parameter_set["workload_events_sha256"]
+        assert identity.parameter_set["synthetic_submit_time_policy_version"]
+        assert identity.parameter_set["synthetic_queue_wait_root_seed"] == 42
 
 
-def test_tc_isl_73_existing_base_and_h_identities_match_prechange_evidence(
+def test_tc_isl_73_base_and_h_identity_includes_prepared_timeline(
     tmp_path: Path,
 ) -> None:
-    """TC-ISL-73: existing identity payload construction remains byte-identical."""
-    repository_root = Path(__file__).resolve().parents[5]
-    reference = json.loads(
-        (
-            repository_root
-            / "tools"
-            / "dr_isl"
-            / "isl25"
-            / "BASE_IDENTITIES_BEFORE.json"
-        ).read_text()
-    )
+    """TC-ISL-73: IMPL-ISL-28 inputs precede the base/H cache lookup."""
     executor = StudyRunExecutor(output_dir=tmp_path)
-    for expected in reference["runs"]:
-        spec = executor._expanded_spec(expected["scenario_id"], None, None)
-        seed_manifest = executor.resolve_seed_manifest(spec, expected["seed"])
-        identity = make_study_run_identity(
-            scenario_id=expected["scenario_id"],
-            mode=expected["mode"],
-            spec=spec,
-            seed=seed_manifest["root_seed"],
-            tick_seconds=executor.tick_seconds,
-            engine_commit=expected["engine_commit"],
-            harness_commit=expected["harness_commit"],
-        )
-        assert identity.digest == expected["identity_digest"]
+    for scenario_id in (
+        BASE_DEMO_SCENARIO_ID,
+        "scenario-h1-k8s-ray-24h",
+        "scenario-h2-slurm-24h",
+    ):
+        spec = executor._expanded_spec(scenario_id, None, None)
+        seed_manifest = executor.resolve_seed_manifest(spec, 42)
+        prepared = prepare_workload_timeline(spec, seed_manifest)
+        for mode in ("baseline", "informed"):
+            identity = make_study_run_identity(
+                scenario_id=scenario_id,
+                mode=mode,
+                spec=prepared,
+                seed=seed_manifest["root_seed"],
+                tick_seconds=executor.tick_seconds,
+                engine_commit="fixed-engine",
+                harness_commit="fixed-harness",
+            )
+            params = identity.parameter_set
+            assert params["study_identity_version"] == 4
+            assert params["workload_events_sha256"]
+            assert params["synthetic_submit_time_policy_version"]
+            assert params["synthetic_queue_wait_cdf_version"]
+            assert params["turbine_forecast_announcement_cap_seconds"] == 1800.0
+            assert params["synthetic_queue_wait_root_seed"] == 42
 
 
 def test_tc_isl_71_rest_physics_parity_enforces_rounding_and_discrete_fields() -> None:
