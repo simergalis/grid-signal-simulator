@@ -1,0 +1,85 @@
+{
+  "arms": {
+    "baseline": {
+      "after": {
+        "fuel_mmbtu": 714.363019086,
+        "invalid_frequency_ticks": 53,
+        "peak_unserved_mw": 22.309362466,
+        "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "starts": 2,
+        "unserved_mwh": 0.351692658
+      },
+      "before": {
+        "fuel_mmbtu": 714.363019086,
+        "invalid_frequency_ticks": 53,
+        "peak_unserved_mw": 22.309362466,
+        "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "starts": 2,
+        "unserved_mwh": 0.351692658
+      }
+    },
+    "informed": {
+      "after": {
+        "fuel_mmbtu": 665.395402401,
+        "invalid_frequency_ticks": 0,
+        "peak_unserved_mw": 7.524660522,
+        "physical_hash": "a5cb3e37d8f8c0c2bd58ede455182a25c7c0fdef62e7e9de6479c389522af049",
+        "starts": 2,
+        "unserved_mwh": 0.02072299
+      },
+      "before": {
+        "fuel_mmbtu": 665.398247704,
+        "invalid_frequency_ticks": 0,
+        "peak_unserved_mw": 7.52325057,
+        "physical_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+        "starts": 2,
+        "unserved_mwh": 0.020719074
+      }
+    }
+  },
+  "baseline_gate": {
+    "compared_fields": [
+      "physical_hash",
+      "unserved_mwh",
+      "peak_unserved_mw",
+      "starts",
+      "fuel_mmbtu",
+      "invalid_frequency_ticks"
+    ],
+    "d6c_physical_hash_matches": true,
+    "differences": [],
+    "passed": true
+  },
+  "compare_runs": {
+    "condition_count": 10,
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "failed_conditions": [],
+    "passed_conditions": 10,
+    "verdict": "PASS"
+  },
+  "current_head": "ba2d3617af8da07eb843a89dc288a5c4a64f9bba",
+  "references": {
+    "pre_fix_metrics": "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json scenarios[scenario-uneven-multisched-01].metrics_current",
+    "pre_fix_physical_hashes_and_verdict": "tools/dr_isl/isl25/PROTECTED_STUDY_GATES_FINAL.json scenarios[scenario-uneven-multisched-01]"
+  },
+  "request": "D6g step 2 part 2: base-demo seed-42 counterfactual only",
+  "run_elapsed_seconds": 24.201,
+  "scenario_id": "scenario-uneven-multisched-01",
+  "seed": 42,
+  "study_class": "base_demo",
+  "tick_counts": {
+    "baseline": 1440,
+    "informed": 1440
+  }
+}
