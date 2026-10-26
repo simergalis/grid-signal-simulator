@@ -9,7 +9,8 @@
       "timestamp": 0.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": -33047.0
     },
     {
       "event_id": "evt-s10-job-00002-start",
@@ -18,7 +19,8 @@
       "timestamp": 527.0,
       "node_count": 2960,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3428.0
     },
     {
       "event_id": "evt-s10-job-00002-end",
@@ -36,7 +38,8 @@
       "timestamp": 2092.0,
       "node_count": 2960,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3384.0
     },
     {
       "event_id": "evt-s10-job-00003-end",
@@ -54,7 +57,8 @@
       "timestamp": 3902.0,
       "node_count": 2960,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3351.0
     },
     {
       "event_id": "evt-s10-job-00004-end",
@@ -72,7 +76,8 @@
       "timestamp": 5288.0,
       "node_count": 2960,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3280.0
     },
     {
       "event_id": "evt-s10-job-00005-end",
@@ -99,7 +104,8 @@
       "timestamp": 6867.0,
       "node_count": 2960,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3245.0
     },
     {
       "event_id": "evt-s10-job-00006-end",
@@ -117,7 +123,8 @@
       "timestamp": 9569.0,
       "node_count": 4532,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 9569.0
     },
     {
       "event_id": "evt-s10-job-00007-end",
@@ -135,7 +142,8 @@
       "timestamp": 13678.0,
       "node_count": 4902,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 13346.0
     },
     {
       "event_id": "evt-s10-job-00008-end",
@@ -153,7 +161,8 @@
       "timestamp": 16771.0,
       "node_count": 4902,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 13812.0
     },
     {
       "event_id": "evt-s10-job-00009-end",
@@ -171,7 +180,8 @@
       "timestamp": 20584.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 14397.0
     },
     {
       "event_id": "evt-s10-job-00010-end",
@@ -189,7 +199,8 @@
       "timestamp": 26347.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 14711.0
     },
     {
       "event_id": "evt-s10-job-00011-end",
@@ -207,7 +218,8 @@
       "timestamp": 33303.0,
       "node_count": 4902,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 15448.0
     },
     {
       "event_id": "evt-s10-job-00012-end",
@@ -225,7 +237,8 @@
       "timestamp": 36548.0,
       "node_count": 4532,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 15706.0
     },
     {
       "event_id": "evt-s10-job-00013-end",
@@ -243,7 +256,8 @@
       "timestamp": 39897.0,
       "node_count": 2960,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 16036.0
     },
     {
       "event_id": "evt-s10-job-00014-end",
@@ -261,7 +275,8 @@
       "timestamp": 43186.0,
       "node_count": 1480,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 16242.0
     },
     {
       "event_id": "evt-s10-job-00015-end",
@@ -279,7 +294,8 @@
       "timestamp": 46938.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 45531.0
     },
     {
       "event_id": "evt-s10-job-00016-end",
@@ -297,7 +313,8 @@
       "timestamp": 52449.0,
       "node_count": 1480,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51090.0
     },
     {
       "event_id": "evt-s10-job-00018-start",
@@ -306,7 +323,8 @@
       "timestamp": 52449.0,
       "node_count": 1480,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51101.0
     },
     {
       "event_id": "evt-s10-job-00019-start",
@@ -315,7 +333,8 @@
       "timestamp": 52449.0,
       "node_count": 1480,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51058.0
     },
     {
       "event_id": "evt-s10-job-00017-end",
@@ -333,7 +352,8 @@
       "timestamp": 53495.0,
       "node_count": 1480,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51114.0
     },
     {
       "event_id": "evt-s10-job-00018-end",
@@ -351,7 +371,8 @@
       "timestamp": 53911.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51090.0
     },
     {
       "event_id": "evt-s10-job-00022-start",
@@ -360,7 +381,8 @@
       "timestamp": 53911.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51058.0
     },
     {
       "event_id": "evt-s10-job-00020-end",
@@ -378,7 +400,8 @@
       "timestamp": 54251.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51114.0
     },
     {
       "event_id": "evt-s10-job-00024-start",
@@ -387,7 +410,8 @@
       "timestamp": 54251.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51101.0
     },
     {
       "event_id": "evt-s10-job-00021-end",
@@ -441,7 +465,8 @@
       "timestamp": 56777.0,
       "node_count": 4902,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 56365.0
     },
     {
       "event_id": "evt-s10-job-00025-end",
@@ -459,7 +484,8 @@
       "timestamp": 59918.0,
       "node_count": 2960,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 57431.0
     },
     {
       "event_id": "evt-s10-job-00026-end",
@@ -477,7 +503,8 @@
       "timestamp": 62576.0,
       "node_count": 1480,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 57865.0
     },
     {
       "event_id": "evt-s10-job-00028-start",
@@ -486,7 +513,8 @@
       "timestamp": 63326.0,
       "node_count": 370,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 63325.0
     },
     {
       "event_id": "evt-s10-job-00029-start",
@@ -495,7 +523,8 @@
       "timestamp": 63805.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 63803.0
     },
     {
       "event_id": "evt-s10-job-00030-start",
@@ -504,7 +533,8 @@
       "timestamp": 63822.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 63822.0
     },
     {
       "event_id": "evt-s10-job-00031-start",
@@ -513,7 +543,8 @@
       "timestamp": 64022.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 64022.0
     },
     {
       "event_id": "evt-s10-job-00028-end",
@@ -531,7 +562,8 @@
       "timestamp": 64549.0,
       "node_count": 740,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 64548.0
     },
     {
       "event_id": "evt-s10-job-00033-start",
@@ -540,7 +572,8 @@
       "timestamp": 64889.0,
       "node_count": 370,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 64889.0
     },
     {
       "event_id": "evt-s10-job-00031-end",
@@ -567,7 +600,8 @@
       "timestamp": 65428.0,
       "node_count": 370,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 65428.0
     },
     {
       "event_id": "evt-s10-job-00035-start",
@@ -576,7 +610,8 @@
       "timestamp": 65445.0,
       "node_count": 370,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 65445.0
     },
     {
       "event_id": "evt-s10-job-00030-end",
@@ -612,7 +647,8 @@
       "timestamp": 66265.0,
       "node_count": 185,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
     },
     {
       "event_id": "evt-s10-job-00037-start",
@@ -621,7 +657,8 @@
       "timestamp": 66265.0,
       "node_count": 92,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
     },
     {
       "event_id": "evt-s10-job-00038-start",
@@ -630,7 +667,8 @@
       "timestamp": 66265.0,
       "node_count": 46,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
     },
     {
       "event_id": "evt-s10-job-00039-start",
@@ -639,7 +677,8 @@
       "timestamp": 66265.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
     },
     {
       "event_id": "evt-s10-job-00040-start",
@@ -648,7 +687,8 @@
       "timestamp": 66276.0,
       "node_count": 185,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
     },
     {
       "event_id": "evt-s10-job-00041-start",
@@ -657,7 +697,8 @@
       "timestamp": 66276.0,
       "node_count": 92,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
     },
     {
       "event_id": "evt-s10-job-00042-start",
@@ -666,7 +707,8 @@
       "timestamp": 66276.0,
       "node_count": 46,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
     },
     {
       "event_id": "evt-s10-job-00043-start",
@@ -675,7 +717,8 @@
       "timestamp": 66276.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
     },
     {
       "event_id": "evt-s10-job-00044-start",
@@ -684,7 +727,8 @@
       "timestamp": 66286.0,
       "node_count": 185,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
     },
     {
       "event_id": "evt-s10-job-00045-start",
@@ -693,7 +737,8 @@
       "timestamp": 66286.0,
       "node_count": 92,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
     },
     {
       "event_id": "evt-s10-job-00046-start",
@@ -702,7 +747,8 @@
       "timestamp": 66286.0,
       "node_count": 46,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
     },
     {
       "event_id": "evt-s10-job-00047-start",
@@ -711,7 +757,8 @@
       "timestamp": 66286.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
     },
     {
       "event_id": "evt-s10-job-00034-end",
@@ -729,7 +776,8 @@
       "timestamp": 67974.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 67974.0
     },
     {
       "event_id": "evt-s10-job-00033-end",
@@ -765,7 +813,8 @@
       "timestamp": 68546.0,
       "node_count": 92,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 68545.0
     },
     {
       "event_id": "evt-s10-job-00041-end",
@@ -801,7 +850,8 @@
       "timestamp": 71634.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 71634.0
     },
     {
       "event_id": "evt-s10-job-00042-end",
@@ -828,7 +878,8 @@
       "timestamp": 73623.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73622.0
     },
     {
       "event_id": "evt-s10-job-00052-start",
@@ -837,7 +888,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00053-start",
@@ -846,7 +898,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00054-start",
@@ -855,7 +908,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00055-start",
@@ -864,7 +918,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00056-start",
@@ -873,7 +928,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00057-start",
@@ -882,7 +938,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00058-start",
@@ -891,7 +948,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00059-start",
@@ -900,7 +958,8 @@
       "timestamp": 73666.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
     },
     {
       "event_id": "evt-s10-job-00060-start",
@@ -909,7 +968,8 @@
       "timestamp": 73715.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73711.0
     },
     {
       "event_id": "evt-s10-job-00061-start",
@@ -918,7 +978,8 @@
       "timestamp": 73781.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73781.0
     },
     {
       "event_id": "evt-s10-job-00062-start",
@@ -927,7 +988,8 @@
       "timestamp": 73940.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73940.0
     },
     {
       "event_id": "evt-s10-job-00063-start",
@@ -936,7 +998,8 @@
       "timestamp": 74290.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74287.0
     },
     {
       "event_id": "evt-s10-job-00064-start",
@@ -945,7 +1008,8 @@
       "timestamp": 74305.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74297.0
     },
     {
       "event_id": "evt-s10-job-00065-start",
@@ -954,7 +1018,8 @@
       "timestamp": 74315.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74313.0
     },
     {
       "event_id": "evt-s10-job-00066-start",
@@ -963,7 +1028,8 @@
       "timestamp": 74335.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74328.0
     },
     {
       "event_id": "evt-s10-job-00067-start",
@@ -972,7 +1038,8 @@
       "timestamp": 74345.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74343.0
     },
     {
       "event_id": "evt-s10-job-00068-start",
@@ -981,7 +1048,8 @@
       "timestamp": 74355.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74351.0
     },
     {
       "event_id": "evt-s10-job-00069-start",
@@ -990,7 +1058,8 @@
       "timestamp": 74369.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74369.0
     },
     {
       "event_id": "evt-s10-job-00070-start",
@@ -999,7 +1068,8 @@
       "timestamp": 74379.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74376.0
     },
     {
       "event_id": "evt-s10-job-00071-start",
@@ -1008,7 +1078,8 @@
       "timestamp": 74767.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74761.0
     },
     {
       "event_id": "evt-s10-job-00045-end",
@@ -1026,7 +1097,8 @@
       "timestamp": 75085.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75078.0
     },
     {
       "event_id": "evt-s10-job-00048-end",
@@ -1044,7 +1116,8 @@
       "timestamp": 75119.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75117.0
     },
     {
       "event_id": "evt-s10-job-00074-start",
@@ -1053,7 +1126,8 @@
       "timestamp": 75141.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75136.0
     },
     {
       "event_id": "evt-s10-job-00075-start",
@@ -1062,7 +1136,8 @@
       "timestamp": 75167.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75166.0
     },
     {
       "event_id": "evt-s10-job-00076-start",
@@ -1071,7 +1146,8 @@
       "timestamp": 75184.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75183.0
     },
     {
       "event_id": "evt-s10-job-00077-start",
@@ -1080,7 +1156,8 @@
       "timestamp": 75217.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75216.0
     },
     {
       "event_id": "evt-s10-job-00051-end",
@@ -1098,7 +1175,8 @@
       "timestamp": 75576.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75575.0
     },
     {
       "event_id": "evt-s10-job-00079-start",
@@ -1107,7 +1185,8 @@
       "timestamp": 75587.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75587.0
     },
     {
       "event_id": "evt-s10-job-00080-start",
@@ -1116,7 +1195,8 @@
       "timestamp": 75603.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75603.0
     },
     {
       "event_id": "evt-s10-job-00081-start",
@@ -1125,7 +1205,8 @@
       "timestamp": 75613.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75610.0
     },
     {
       "event_id": "evt-s10-job-00082-start",
@@ -1134,7 +1215,8 @@
       "timestamp": 75725.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75724.0
     },
     {
       "event_id": "evt-s10-job-00083-start",
@@ -1143,7 +1225,8 @@
       "timestamp": 75791.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75787.0
     },
     {
       "event_id": "evt-s10-job-00084-start",
@@ -1152,7 +1235,8 @@
       "timestamp": 75829.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75829.0
     },
     {
       "event_id": "evt-s10-job-00085-start",
@@ -1161,7 +1245,8 @@
       "timestamp": 75846.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75845.0
     },
     {
       "event_id": "evt-s10-job-00086-start",
@@ -1170,7 +1255,8 @@
       "timestamp": 76067.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76066.0
     },
     {
       "event_id": "evt-s10-job-00087-start",
@@ -1179,7 +1265,8 @@
       "timestamp": 76067.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76066.0
     },
     {
       "event_id": "evt-s10-job-00088-start",
@@ -1188,7 +1275,8 @@
       "timestamp": 76075.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76068.0
     },
     {
       "event_id": "evt-s10-job-00089-start",
@@ -1197,7 +1285,8 @@
       "timestamp": 76075.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76069.0
     },
     {
       "event_id": "evt-s10-job-00090-start",
@@ -1206,7 +1295,8 @@
       "timestamp": 76075.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76069.0
     },
     {
       "event_id": "evt-s10-job-00091-start",
@@ -1215,7 +1305,8 @@
       "timestamp": 76075.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76070.0
     },
     {
       "event_id": "evt-s10-job-00092-start",
@@ -1224,7 +1315,8 @@
       "timestamp": 76075.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76070.0
     },
     {
       "event_id": "evt-s10-job-00093-start",
@@ -1233,7 +1325,8 @@
       "timestamp": 76075.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76070.0
     },
     {
       "event_id": "evt-s10-job-00043-end",
@@ -1251,7 +1344,8 @@
       "timestamp": 76603.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76603.0
     },
     {
       "event_id": "evt-s10-job-00083-end",
@@ -1269,7 +1363,8 @@
       "timestamp": 77365.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77358.0
     },
     {
       "event_id": "evt-s10-job-00096-start",
@@ -1278,7 +1373,8 @@
       "timestamp": 77642.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77642.0
     },
     {
       "event_id": "evt-s10-job-00097-start",
@@ -1287,7 +1383,8 @@
       "timestamp": 77785.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77785.0
     },
     {
       "event_id": "evt-s10-job-00098-start",
@@ -1296,7 +1393,8 @@
       "timestamp": 77796.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77796.0
     },
     {
       "event_id": "evt-s10-job-00099-start",
@@ -1305,7 +1403,8 @@
       "timestamp": 78099.0,
       "node_count": 23,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 78099.0
     },
     {
       "event_id": "evt-s10-job-00085-end",
@@ -1323,7 +1422,8 @@
       "timestamp": 79044.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79043.0
     },
     {
       "event_id": "evt-s10-job-00037-end",
@@ -1341,7 +1441,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00102-start",
@@ -1350,7 +1451,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00103-start",
@@ -1359,7 +1461,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00104-start",
@@ -1368,7 +1471,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00105-start",
@@ -1377,7 +1481,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00106-start",
@@ -1386,7 +1491,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00107-start",
@@ -1395,7 +1501,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00108-start",
@@ -1404,7 +1511,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00109-start",
@@ -1413,7 +1521,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00110-start",
@@ -1422,7 +1531,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00111-start",
@@ -1431,7 +1541,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00112-start",
@@ -1440,7 +1551,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00113-start",
@@ -1449,7 +1561,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00114-start",
@@ -1458,7 +1571,8 @@
       "timestamp": 79247.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00082-end",
@@ -1476,7 +1590,8 @@
       "timestamp": 79315.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00116-start",
@@ -1485,7 +1600,8 @@
       "timestamp": 79315.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
     },
     {
       "event_id": "evt-s10-job-00075-end",
@@ -1503,7 +1619,8 @@
       "timestamp": 79919.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79918.0
     },
     {
       "event_id": "evt-s10-job-00038-end",
@@ -1548,7 +1665,8 @@
       "timestamp": 80798.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 80798.0
     },
     {
       "event_id": "evt-s10-job-00119-start",
@@ -1557,7 +1675,8 @@
       "timestamp": 81262.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 81258.0
     },
     {
       "event_id": "evt-s10-job-00119-end",
@@ -1575,7 +1694,8 @@
       "timestamp": 81931.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 81930.0
     },
     {
       "event_id": "evt-s10-job-00121-start",
@@ -1584,7 +1704,8 @@
       "timestamp": 82206.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82206.0
     },
     {
       "event_id": "evt-s10-job-00122-start",
@@ -1593,7 +1714,8 @@
       "timestamp": 82215.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82208.0
     },
     {
       "event_id": "evt-s10-job-00123-start",
@@ -1602,7 +1724,8 @@
       "timestamp": 82215.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
     },
     {
       "event_id": "evt-s10-job-00124-start",
@@ -1611,7 +1734,8 @@
       "timestamp": 82215.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
     },
     {
       "event_id": "evt-s10-job-00125-start",
@@ -1620,7 +1744,8 @@
       "timestamp": 82215.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
     },
     {
       "event_id": "evt-s10-job-00126-start",
@@ -1629,7 +1754,8 @@
       "timestamp": 82215.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
     },
     {
       "event_id": "evt-s10-job-00127-start",
@@ -1638,7 +1764,8 @@
       "timestamp": 82215.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82207.0
     },
     {
       "event_id": "evt-s10-job-00117-end",
@@ -1656,7 +1783,8 @@
       "timestamp": 82804.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
     },
     {
       "event_id": "evt-s10-job-00129-start",
@@ -1665,7 +1793,8 @@
       "timestamp": 82804.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
     },
     {
       "event_id": "evt-s10-job-00130-start",
@@ -1674,7 +1803,8 @@
       "timestamp": 82804.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
     },
     {
       "event_id": "evt-s10-job-00131-start",
@@ -1683,7 +1813,8 @@
       "timestamp": 82804.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
     },
     {
       "event_id": "evt-s10-job-00122-end",
@@ -1701,7 +1832,8 @@
       "timestamp": 83005.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
     },
     {
       "event_id": "evt-s10-job-00133-start",
@@ -1710,7 +1842,8 @@
       "timestamp": 83005.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
     },
     {
       "event_id": "evt-s10-job-00134-start",
@@ -1719,7 +1852,8 @@
       "timestamp": 83005.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
     },
     {
       "event_id": "evt-s10-job-00135-start",
@@ -1728,7 +1862,8 @@
       "timestamp": 83005.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
     },
     {
       "event_id": "evt-s10-job-00136-start",
@@ -1737,7 +1872,8 @@
       "timestamp": 83593.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 83593.0
     },
     {
       "event_id": "evt-s10-job-00137-start",
@@ -1746,7 +1882,8 @@
       "timestamp": 83680.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 83680.0
     },
     {
       "event_id": "evt-s10-job-00138-start",
@@ -1755,7 +1892,8 @@
       "timestamp": 83890.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 83890.0
     },
     {
       "event_id": "evt-s10-job-00139-start",
@@ -1764,7 +1902,8 @@
       "timestamp": 84308.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84308.0
     },
     {
       "event_id": "evt-s10-job-00140-start",
@@ -1773,7 +1912,8 @@
       "timestamp": 84312.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84312.0
     },
     {
       "event_id": "evt-s10-job-00141-start",
@@ -1782,7 +1922,8 @@
       "timestamp": 84317.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84317.0
     },
     {
       "event_id": "evt-s10-job-00142-start",
@@ -1791,7 +1932,8 @@
       "timestamp": 84335.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84335.0
     },
     {
       "event_id": "evt-s10-job-00143-start",
@@ -1800,7 +1942,8 @@
       "timestamp": 84340.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84340.0
     },
     {
       "event_id": "evt-s10-job-00144-start",
@@ -1809,7 +1952,8 @@
       "timestamp": 84343.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84343.0
     },
     {
       "event_id": "evt-s10-job-00145-start",
@@ -1818,7 +1962,8 @@
       "timestamp": 84432.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84432.0
     },
     {
       "event_id": "evt-s10-job-00146-start",
@@ -1827,7 +1972,8 @@
       "timestamp": 84517.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84517.0
     },
     {
       "event_id": "evt-s10-job-00147-start",
@@ -1836,7 +1982,8 @@
       "timestamp": 84537.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84537.0
     },
     {
       "event_id": "evt-s10-job-00148-start",
@@ -1845,7 +1992,8 @@
       "timestamp": 84576.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84576.0
     },
     {
       "event_id": "evt-s10-job-00149-start",
@@ -1854,7 +2002,8 @@
       "timestamp": 84584.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84584.0
     },
     {
       "event_id": "evt-s10-job-00150-start",
@@ -1863,7 +2012,8 @@
       "timestamp": 84702.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84702.0
     },
     {
       "event_id": "evt-s10-job-00151-start",
@@ -1872,7 +2022,8 @@
       "timestamp": 84715.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84715.0
     },
     {
       "event_id": "evt-s10-job-00152-start",
@@ -1881,7 +2032,8 @@
       "timestamp": 84728.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84728.0
     },
     {
       "event_id": "evt-s10-job-00153-start",
@@ -1890,7 +2042,8 @@
       "timestamp": 84738.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84738.0
     },
     {
       "event_id": "evt-s10-job-00154-start",
@@ -1899,7 +2052,8 @@
       "timestamp": 84740.0,
       "node_count": 12,
       "hardware_profile_id": "hopper_8gpu_air",
-      "scheduler_type": "SLURM"
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84740.0
     },
     {
       "event_id": "evt-s10-job-00101-end",
