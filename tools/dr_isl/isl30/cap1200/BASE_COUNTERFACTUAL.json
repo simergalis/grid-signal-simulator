@@ -1,0 +1,109 @@
+{
+  "arms": {
+    "baseline": {
+      "cap1200": {
+        "fuel_mmbtu": 714.363019086,
+        "identity_cap_values": [
+          {
+            "path": "parameter_set.study_input_provenance.post_validation_overrides[1].value.turbine_forecast_announcement_cap_seconds",
+            "value": 1200
+          },
+          {
+            "path": "parameter_set.turbine_forecast_announcement_cap_seconds",
+            "value": 1200.0
+          }
+        ],
+        "identity_digest": "8588a62b29ba5390c35f9d1a901138939336c78282e130169f6975a0e6e0356e",
+        "invalid_frequency_ticks": 53,
+        "operating_cost_total_usd": null,
+        "peak_unserved_mw": 22.309362466,
+        "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "starts": 2,
+        "unserved_mwh": 0.351692658
+      },
+      "cap1800": {
+        "fuel_mmbtu": 714.363019086,
+        "invalid_frequency_ticks": 53,
+        "peak_unserved_mw": 22.309362466,
+        "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "starts": 2,
+        "unserved_mwh": 0.351692658
+      }
+    },
+    "informed": {
+      "cap1200": {
+        "fuel_mmbtu": 733.778735734,
+        "identity_cap_values": [
+          {
+            "path": "parameter_set.study_input_provenance.post_validation_overrides[1].value.turbine_forecast_announcement_cap_seconds",
+            "value": 1200
+          },
+          {
+            "path": "parameter_set.turbine_forecast_announcement_cap_seconds",
+            "value": 1200.0
+          }
+        ],
+        "identity_digest": "9510c2f2e40c9a383f10366861b87842152e786f834bd8a46e3660c408e3204a",
+        "invalid_frequency_ticks": 0,
+        "operating_cost_total_usd": null,
+        "peak_unserved_mw": 7.524660522,
+        "physical_hash": "23c4c5b7d7f0eb98a9e9071a1a64ab8ea2d7c843d1e7f1af072f9daf99a84ef1",
+        "starts": 2,
+        "unserved_mwh": 0.02072299
+      },
+      "cap1800": {
+        "fuel_mmbtu": 733.778735734,
+        "invalid_frequency_ticks": 0,
+        "peak_unserved_mw": 7.524660522,
+        "physical_hash": "23c4c5b7d7f0eb98a9e9071a1a64ab8ea2d7c843d1e7f1af072f9daf99a84ef1",
+        "starts": 2,
+        "unserved_mwh": 0.02072299
+      }
+    }
+  },
+  "baseline_gate": {
+    "compared_fields": [
+      "physical_hash",
+      "unserved_mwh",
+      "peak_unserved_mw",
+      "starts",
+      "fuel_mmbtu",
+      "operating_cost_total_usd",
+      "invalid_frequency_ticks"
+    ],
+    "differences": {},
+    "note": "The cap changes study identity by design; this gate compares the requested physical/run metrics, and identity digests are recorded separately.",
+    "passed": true
+  },
+  "compare_runs": {
+    "condition_count": 10,
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "failed_conditions": [],
+    "passed_conditions": 10,
+    "verdict": "PASS"
+  },
+  "current_head": "6374acb3bc97c9c19db2b235334b9262957f5e9b",
+  "identity_cap_confirmed": true,
+  "informed_rts_announced_job_vetoes": {
+    "count": 0,
+    "first_five": []
+  },
+  "parameter_overrides": {
+    "turbine_forecast_announcement_cap_seconds": 1200
+  },
+  "run_elapsed_seconds": 22.863,
+  "scenario_id": "scenario-uneven-multisched-01",
+  "seed": 42,
+  "study_class": "base_demo"
+}
