@@ -279,6 +279,27 @@ class ForecastDrivenTurbineController:
             return 0.0
         return max(0.0, float(power_for_event(event)))
 
+    def _ensure_forecast_event_index(self, events: list[Any]) -> None:
+        """Refresh the shared sorted event index without advancing job state."""
+        event_key = (
+            len(events),
+            id(events[0]) if events else 0,
+            id(events[-1]) if events else 0,
+        )
+        if event_key == self._forecast_event_key:
+            return
+        self._forecast_event_key = event_key
+        self._forecast_events = sorted(
+            events, key=lambda item: (item.timestamp, item.event_id)
+        )
+        self._timeline_state = {}
+        self._timeline_cache = {}
+        self._timeline_max_timestamp = float("-inf")
+        self._timeline_next_event_index = 0
+        self._announced_event_index = 0
+        self._announced_start_times_cache = {}
+        self._announced_start_event_ids = []
+
     def _job_state_at(
         self,
         *,
@@ -296,23 +317,7 @@ class ForecastDrivenTurbineController:
         # Callers may pass a fresh list view of the same event objects (the
         # future-burst guard does this once per turbine).  Keying on list
         # identity would repeatedly sort and replay the full timeline.
-        event_key = (
-            len(events),
-            id(events[0]) if events else 0,
-            id(events[-1]) if events else 0,
-        )
-        if event_key != self._forecast_event_key:
-            self._forecast_event_key = event_key
-            self._forecast_events = sorted(
-                events, key=lambda item: (item.timestamp, item.event_id)
-            )
-            self._timeline_state = {}
-            self._timeline_cache = {}
-            self._timeline_max_timestamp = float("-inf")
-            self._timeline_next_event_index = 0
-            self._announced_event_index = 0
-            self._announced_start_times_cache = {}
-            self._announced_start_event_ids = []
+        self._ensure_forecast_event_index(events)
 
         query_timestamp = round(float(timestamp), 6)
         cached = self._timeline_cache.get(query_timestamp)
@@ -397,14 +402,19 @@ class ForecastDrivenTurbineController:
         *,
         sim_time_s: float,
         events: list[Any],
+        power_for_event: Optional[Callable[[Any], float]] = None,
     ) -> dict[str, float]:
         cutoff = sim_time_s + self.forecast_lead_seconds
         starts: dict[str, float] = {}
-        self._job_state_at(
-            timestamp=sim_time_s,
-            events=events,
-            power_for_event=lambda event: 0.0,
-        )
+        self._ensure_forecast_event_index(events)
+        if power_for_event is not None:
+            # DR D6d/D6e, IMPL-ISL-29: prime the shared job timeline with the
+            # same measured event-power callback used by forecast samples.
+            self._job_state_at(
+                timestamp=sim_time_s,
+                events=events,
+                power_for_event=power_for_event,
+            )
         for event in self._forecast_events[self._announced_event_index :]:
             if event.timestamp > cutoff:
                 break
@@ -521,6 +531,7 @@ class ForecastDrivenTurbineController:
         announced_starts = self._announced_start_times(
             sim_time_s=sim_time_s,
             events=events,
+            power_for_event=power_for_event,
         )
         profile: list[tuple[float, float]] = []
         point_count = max(1, int(math.ceil(horizon / max(step_seconds, 0.1))))
