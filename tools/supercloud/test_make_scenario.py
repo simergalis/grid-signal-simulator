@@ -6,6 +6,7 @@ Synthetic fixtures only.  Run from the repository root:
 
 from __future__ import annotations
 
+import copy
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -261,3 +262,38 @@ def test_tc_isl_60_fuel_model_is_explicit_opt_in_and_records_provenance():
     )
     assert with_fuel["workload_events"] == without_fuel["workload_events"]
     assert with_fuel["turbine_units"][0]["rated_mw"] == without_fuel["turbine_units"][0]["rated_mw"]
+
+
+def test_tc_isl_95_s10_submit_times_use_source_time_submit_only():
+    """TC-ISL-95 — D6 stage 2 adds submit_time_s without changing other scenario fields."""
+    starts = [100, 527, 900, 1500, 3000, 7000, 9569, 12000, 16771]
+    submits = [0, -3428, 300, 400, 500, 600, 9569, 800, 13812]
+    rows = [
+        _row(
+            i + 1,
+            gpus=1,
+            submit=D0 + submits[i],
+            start=D0 + starts[i],
+            end=D0 + starts[i] + 100,
+        )
+        for i in range(len(starts))
+    ]
+    jobs, skipped = ms.gpu_jobs_for_day(rows, DAY)
+    assert skipped == {}
+    regenerated, _ = ms.build_scenario(jobs, TEMPLATE, day=DAY, peak_mw=50.0, rated_kw=10.2)
+
+    existing = copy.deepcopy(regenerated)
+    for event in existing["workload_events"]:
+        if event["event_type"] == "starting":
+            event.pop("submit_time_s")
+    merged = ms.merge_submit_times_into_existing(existing, regenerated)
+    starts_by_job = {
+        event["job_id"]: event
+        for event in merged["workload_events"]
+        if event["event_type"] == "starting"
+    }
+
+    assert starts_by_job["s10-job-00002"]["submit_time_s"] == -3428.0
+    assert starts_by_job["s10-job-00007"]["submit_time_s"] == starts_by_job["s10-job-00007"]["timestamp"]
+    assert starts_by_job["s10-job-00009"]["submit_time_s"] == 13812.0
+    assert merged == regenerated
