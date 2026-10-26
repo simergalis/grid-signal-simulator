@@ -1,0 +1,63 @@
+IMPL-ISL-30/31 full-suite verification after TC-147 and TC-164 test corrections
+
+Package: attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim
+Command for each run: python -m pytest -q --tb=no --junitxml=<temporary path>
+Baseline: tools/dr_isl/d6g/FULL_SUITE.txt (15 known failing IDs).
+
+## PYTHONHASHSEED=1
+Result: 15 failed, 2278 passed, 3 skipped, 23 xfailed, 54 warnings, 3 subtests passed in 1054.90s (0:17:34)
+Failing IDs:
+- tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+- tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config
+- tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+- tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+- tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve
+- tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names
+- tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+- tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+- tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context
+- tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants
+- tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude
+- tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait
+- tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes
+- tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load
+- tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip
+
+Added vs baseline: none
+Removed vs baseline: none
+Corrected tests in full-suite run:
+- test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches: passed
+- test_tc164_shared_identity_and_cache_match_for_every_study_scenario: passed
+
+## PYTHONHASHSEED=987654321
+Result: 15 failed, 2278 passed, 3 skipped, 23 xfailed, 54 warnings, 3 subtests passed in 1026.95s (0:17:06)
+Failing IDs:
+- tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+- tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config
+- tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+- tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+- tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve
+- tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names
+- tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+- tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+- tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context
+- tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants
+- tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude
+- tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait
+- tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes
+- tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load
+- tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip
+
+Added vs baseline: none
+Removed vs baseline: none
+Corrected tests in full-suite run:
+- test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches: passed
+- test_tc164_shared_identity_and_cache_match_for_every_study_scenario: passed
+
+Run-to-run failing-ID differences: none
+
+Both pytest invocations completed. The background wrapper's post-run summary
+step used an incorrect repository-root path; this summary was reconstructed
+from the saved pytest logs and JUnit files.
+
+Raw pytest logs and JUnit XML are retained in /tmp; they are not committed.
