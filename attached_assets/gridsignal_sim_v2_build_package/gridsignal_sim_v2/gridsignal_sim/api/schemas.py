@@ -1763,6 +1763,9 @@ class ScenarioSpec(BaseModel):
     turbine_forecast_announcement_cap_seconds: float = Field(
         default=1800.0,
         ge=0.0,
+        # Omit the unchanged default so pre-IMPL-ISL-30 canonical scenario and
+        # study identity payloads stay byte-identical.
+        exclude_if=lambda value: value == 1800.0,
         description=(
             "PROPOSED_HERE: maximum forecast announcement horizon for events "
             "with a scheduler submit time."

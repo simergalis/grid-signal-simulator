@@ -862,7 +862,13 @@ class ForecastDrivenTurbineController:
         protection_end = sim_time_s + restart_delay
         if forecast is None:
             return None
-        events = list(getattr(state, "events", []))
+        state_events = getattr(state, "events", None)
+        if state_events is not None:
+            self._ensure_forecast_event_index(list(state_events))
+        # SimulationState intentionally does not own scheduler events. The
+        # informed evaluation above owns this per-run event index and retains
+        # it through core-proposal adjudication.
+        events = list(self._forecast_events)
         announced_starts = self._announced_start_times(
             sim_time_s=sim_time_s,
             events=events,
@@ -893,6 +899,11 @@ class ForecastDrivenTurbineController:
             profile_points = [
                 (sim_time_s, float(forecast.peak_forecast_mw))
             ]
+        profile_step_s = (
+            float(forecast.profile[1][0] - forecast.profile[0][0])
+            if len(forecast.profile) > 1
+            else 0.0
+        )
         for timestamp, predicted_at_onset in profile_points:
             if (
                 timestamp < sim_time_s - 1e-9
@@ -940,7 +951,12 @@ class ForecastDrivenTurbineController:
                     if (
                         self._is_load_event(event)
                         and event.job_id in announced_starts
-                        and abs(float(event.timestamp) - float(timestamp)) <= 1e-9
+                        and float(event.timestamp) <= float(timestamp) + 1e-9
+                        and (
+                            profile_step_s <= 0.0
+                            or float(event.timestamp)
+                            > float(timestamp) - profile_step_s + 1e-9
+                        )
                         and sim_time_s < float(event.timestamp) <= protection_end + 1e-9
                         and self._announcement_time_s(event) <= sim_time_s + 1e-9
                     )
@@ -1442,7 +1458,10 @@ class ForecastDrivenTurbineController:
                     remaining_capacity + allowance
                 ):
                     accepted = False
-                    refusal_reason = "forecast controller veto: unit is needed within 1,200s"
+                    refusal_reason = (
+                        "forecast controller veto: unit is needed within "
+                        f"{self.stop_lookahead_seconds:.0f}s"
+                    )
             if (
                 accepted
                 and turbine.config.min_run_enabled
