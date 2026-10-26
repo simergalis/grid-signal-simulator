@@ -20,6 +20,12 @@ PACKAGE_ROOT = (
     / "gridsignal_sim"
 )
 OUTPUT_PATH = REPO_ROOT / "tools" / "dr_isl" / "d6e" / "E1_INPUTS.json"
+SCENARIO_JSON = (
+    PACKAGE_ROOT
+    / "config"
+    / "scenarios"
+    / "S10_mit_supercloud_2021-08-11.json"
+)
 TARGET_TIMES = {13680.0, 16775.0}
 TARGET_EVENT_IDS = {
     "evt-s10-job-00008-start",
@@ -102,6 +108,13 @@ def main() -> None:
     active_eval: dict[str, Any] | None = None
     callback_calls: list[dict[str, Any]] = []
     forecast_records: list[dict[str, Any]] = []
+    seen_callback_keys: set[tuple[Any, ...]] = set()
+    authored = json.loads(SCENARIO_JSON.read_text(encoding="utf-8"))
+    authored_end_by_job = {
+        str(event["job_id"]): float(event["timestamp"])
+        for event in authored.get("workload_events", [])
+        if event.get("event_type") == "job_end"
+    }
 
     original_callback = RunContext._event_power_mw
     original_forecast = ForecastDrivenTurbineController.forecast
@@ -126,8 +139,26 @@ def main() -> None:
                 self, str(event.hardware_profile_id)
             )
             pue_base = float(self.sim_state.site.pue_base)
-            callback_calls.append(
-                {
+            evaluation_kind = (
+                "post_forecast_diagnostic"
+                if active_eval is not None
+                and active_eval.get("diagnostic_callback_evaluation")
+                else "forecast_execution"
+            )
+            callback_key = (
+                str(event.event_id),
+                evaluation_kind,
+                (
+                    float(active_eval["controller_eval_time_s"])
+                    if evaluation_kind == "post_forecast_diagnostic"
+                    and active_eval is not None
+                    else None
+                ),
+            )
+            if callback_key not in seen_callback_keys:
+                seen_callback_keys.add(callback_key)
+                callback_calls.append(
+                    {
                     "controller_sim_time_s": float(self.sim_time),
                     **_event_payload(event),
                     "resolved_profile_id": resolved_profile_id,
@@ -137,14 +168,9 @@ def main() -> None:
                         "node_count_as_read * rated_kw_resolved * pue_base / 1000"
                     ),
                     "callback_returned_mw": result,
-                    "evaluation_kind": (
-                        "post_forecast_diagnostic"
-                        if active_eval is not None
-                        and active_eval.get("diagnostic_callback_evaluation")
-                        else "forecast_execution"
-                    ),
-                }
-            )
+                    "evaluation_kind": evaluation_kind,
+                    }
+                )
         return result
 
     def wrapped_announced(self: Any, *, sim_time_s: float, events: list[Any]):
@@ -228,8 +254,6 @@ def main() -> None:
             if horizon_seconds is None
             else max(0.0, float(horizon_seconds))
         )
-        event_by_id = {str(event.event_id): event for event in events}
-        event_by_job = {str(event.job_id): event for event in events}
         record: dict[str, Any] = {
             "controller_eval_time_s": float(sim_time_s),
             "sim_time_s": float(sim_time_s),
@@ -282,10 +306,7 @@ def main() -> None:
 
         relevant_events: list[Any] = []
         for event in events:
-            if (
-                str(event.event_id) in announced_id_set
-                or str(event.event_id) in TARGET_EVENT_IDS
-            ):
+            if str(event.event_id) in announced_id_set:
                 relevant_events.append(event)
 
         events_by_job: dict[str, list[Any]] = {}
@@ -310,11 +331,20 @@ def main() -> None:
                 ),
                 None,
             )
-            payload["end_time_s"] = (
-                None if end_event is None else float(end_event.timestamp)
+            end_time_s = (
+                float(end_event.timestamp)
+                if end_event is not None
+                else authored_end_by_job.get(job_id)
             )
+            payload["end_time_s"] = end_time_s
             payload["end_time_source"] = (
-                None if end_event is None else str(end_event.event_id)
+                str(end_event.event_id)
+                if end_event is not None
+                else (
+                    "authored_scenario_workload_events"
+                    if end_time_s is not None
+                    else None
+                )
             )
             payload["event_id_in_forecast_announced_ids"] = (
                 str(event.event_id) in announced_id_set
@@ -408,7 +438,15 @@ def main() -> None:
             event_records.append(payload)
 
         record["announced_event_inputs"] = event_records
-        forecast_records.append(_json_safe(record))
+        compact_record = {
+            key: value
+            for key, value in record.items()
+            if key != "job_state_samples"
+        }
+        compact_record["captured_sample_time_count"] = len(
+            record["job_state_samples"]
+        )
+        forecast_records.append(_json_safe(compact_record))
         return result
 
     RunContext._event_power_mw = wrapped_callback
