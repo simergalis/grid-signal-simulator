@@ -110,7 +110,18 @@ def main() -> None:
 
     def wrapped_callback(self: RunContext, event: Any) -> float:
         result = float(original_callback(self, event))
-        if str(event.event_id) in TARGET_EVENT_IDS:
+        announced_jobs = (
+            set(active_eval.get("announced_start_times_returned", {}))
+            if active_eval is not None
+            else set()
+        )
+        if (
+            str(event.event_id) in TARGET_EVENT_IDS
+            or (
+                active_eval is not None
+                and str(event.job_id) in announced_jobs
+            )
+        ):
             rated_kw, resolved_profile_id = _resolve_profile(
                 self, str(event.hardware_profile_id)
             )
@@ -126,6 +137,12 @@ def main() -> None:
                         "node_count_as_read * rated_kw_resolved * pue_base / 1000"
                     ),
                     "callback_returned_mw": result,
+                    "evaluation_kind": (
+                        "post_forecast_diagnostic"
+                        if active_eval is not None
+                        and active_eval.get("diagnostic_callback_evaluation")
+                        else "forecast_execution"
+                    ),
                 }
             )
         return result
@@ -136,6 +153,9 @@ def main() -> None:
             active_eval["announced_start_times_returned"] = {
                 str(job_id): float(timestamp) for job_id, timestamp in result.items()
             }
+            active_eval["announced_event_job_ids"] = list(
+                active_eval["announced_start_times_returned"]
+            )
             active_eval["announced_cutoff_s"] = (
                 float(sim_time_s) + float(self.forecast_lead_seconds)
             )
@@ -160,7 +180,7 @@ def main() -> None:
             <= float(timestamp)
             <= sim_time_s + float(active_eval["forecast_horizon_s"])
         ):
-            target_jobs = set(active_eval["announced_event_job_ids"])
+            target_jobs = set(active_eval.get("announced_event_job_ids", []))
             state_rows = {}
             for job_id in target_jobs:
                 state = result.get(job_id)
@@ -212,6 +232,7 @@ def main() -> None:
         event_by_job = {str(event.job_id): event for event in events}
         record: dict[str, Any] = {
             "controller_eval_time_s": float(sim_time_s),
+            "sim_time_s": float(sim_time_s),
             "forecast_profile_window_start_s": float(sim_time_s),
             "forecast_horizon_s": horizon,
             "forecast_profile_window_end_s": float(sim_time_s) + horizon,
@@ -234,6 +255,19 @@ def main() -> None:
                 horizon_seconds=horizon_seconds,
                 step_seconds=step_seconds,
             )
+            # Evaluate the real RunContext callback once for each announced
+            # event after the forecast has been built. This records its inputs
+            # and output without changing the forecast or timeline cache.
+            starts = record.get("announced_start_times_returned", {})
+            record["diagnostic_callback_evaluation"] = True
+            for event in events:
+                if (
+                    str(event.job_id) in starts
+                    and str(_enum_value(event.event_type))
+                    in {"starting", "running", "scale"}
+                ):
+                    power_for_event(event)
+            record["diagnostic_callback_evaluation"] = False
         finally:
             active_eval = None
 
@@ -307,8 +341,19 @@ def main() -> None:
                 ),
             }
 
-            rated_kw, resolved_profile_id = _resolve_profile_from_events(
-                event, events, callback_calls
+            matching_calls = [
+                call
+                for call in callback_calls
+                if call["event_id"] == str(event.event_id)
+            ]
+            latest_call = matching_calls[-1] if matching_calls else None
+            rated_kw = (
+                float(latest_call["rated_kw_resolved"])
+                if latest_call is not None
+                else 0.0
+            )
+            resolved_profile_id = (
+                None if latest_call is None else latest_call["resolved_profile_id"]
             )
             payload["callback_inputs"] = {
                 "event_type": str(_enum_value(event.event_type)),
@@ -316,17 +361,8 @@ def main() -> None:
                 "hardware_profile_id": str(event.hardware_profile_id),
                 "resolved_profile_id": resolved_profile_id,
                 "rated_kw_resolved": rated_kw,
-                "pue_base": (
-                    callback_calls[-1]["pue_base"]
-                    if callback_calls
-                    and callback_calls[-1]["event_id"] == str(event.event_id)
-                    else None
-                ),
+                "pue_base": None if latest_call is None else latest_call["pue_base"],
             }
-            matching_calls = [
-                call for call in callback_calls
-                if call["event_id"] == str(event.event_id)
-            ]
             payload["callback_observations"] = matching_calls
 
             relevant_samples = []
@@ -373,6 +409,7 @@ def main() -> None:
 
         record["announced_event_inputs"] = event_records
         forecast_records.append(_json_safe(record))
+        return result
 
     RunContext._event_power_mw = wrapped_callback
     ForecastDrivenTurbineController._announced_start_times = wrapped_announced
