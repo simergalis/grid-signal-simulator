@@ -820,7 +820,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     report["skipped"] = dict(skipped)
     report["cpu_skipped"] = dict(cpu_skipped)
     report["template"] = args.template.name
-    args.out.write_text(json.dumps(spec, indent=1) + "\n", encoding="utf-8")
+    output_json = json.dumps(
+        spec,
+        indent=2 if existing_spec is not None else 1,
+        ensure_ascii=existing_spec is None,
+    )
+    args.out.write_text(output_json + "\n", encoding="utf-8")
     if existing_spec is None:
         args.out.with_suffix(".build.json").write_text(
             json.dumps(report, indent=2) + "\n",
