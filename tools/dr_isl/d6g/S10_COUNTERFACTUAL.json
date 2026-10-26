@@ -1,0 +1,152 @@
+{
+  "arms": {
+    "baseline": {
+      "after": {
+        "fuel_mmbtu": 7785.288838529,
+        "invalid_frequency_ticks": 519,
+        "operating_cost_total_usd": 50128.167955,
+        "peak_unserved_mw": 16.8004944,
+        "physical_hash": "22a109ae31e928518db467fbe3ff90675604ce2e38c0f6ed5551c21aa10d9a3f",
+        "starts": 37,
+        "unserved_mwh": 5.535769413
+      },
+      "before": {
+        "fuel_mmbtu": 7785.288838529,
+        "invalid_frequency_ticks": 519,
+        "operating_cost_total_usd": 50128.167955,
+        "peak_unserved_mw": 16.8004944,
+        "physical_hash": "22a109ae31e928518db467fbe3ff90675604ce2e38c0f6ed5551c21aa10d9a3f",
+        "starts": 37,
+        "unserved_mwh": 5.535769413
+      }
+    },
+    "informed": {
+      "after": {
+        "fuel_mmbtu": 7471.889208508,
+        "invalid_frequency_ticks": 226,
+        "operating_cost_total_usd": 48180.603997,
+        "peak_unserved_mw": 31.8004944,
+        "physical_hash": "7e63ec904f1a3624dad21207f0fffb95a2c834d056ac43446152399de6a5d63b",
+        "starts": 42,
+        "unserved_mwh": 4.399430718
+      },
+      "before": {
+        "fuel_mmbtu": 7428.01542868,
+        "invalid_frequency_ticks": 628,
+        "operating_cost_total_usd": 47890.547243,
+        "peak_unserved_mw": 31.8004944,
+        "physical_hash": "31500784c695aec403662bb71ccccb0dff6e74d1cb5440197b43251330d380b0",
+        "starts": 47,
+        "unserved_mwh": 13.94040689
+      }
+    }
+  },
+  "baseline_gate": {
+    "comparison_fields": [
+      "physical_hash",
+      "unserved_mwh",
+      "peak_unserved_mw",
+      "starts",
+      "fuel_mmbtu",
+      "operating_cost_total_usd",
+      "invalid_frequency_ticks"
+    ],
+    "current_values": {
+      "fuel_mmbtu": 7785.288838529,
+      "invalid_frequency_ticks": 519,
+      "operating_cost_total_usd": 50128.167955,
+      "peak_unserved_mw": 16.8004944,
+      "physical_hash": "22a109ae31e928518db467fbe3ff90675604ce2e38c0f6ed5551c21aa10d9a3f",
+      "starts": 37,
+      "unserved_mwh": 5.535769413
+    },
+    "note": "The saved run output records one whole operating_cost-object shape difference: the current object includes expanded line/provenance/denominator fields, while the saved compact reference contains summary fields. The requested operating-cost total and all other listed baseline values match exactly.",
+    "passed": true,
+    "pre_fix_reference_hash_matches_exactly": true,
+    "reference_values": {
+      "fuel_mmbtu": 7785.288838529,
+      "invalid_frequency_ticks": 519,
+      "operating_cost_total_usd": 50128.167955,
+      "peak_unserved_mw": 16.8004944,
+      "physical_hash": "22a109ae31e928518db467fbe3ff90675604ce2e38c0f6ed5551c21aa10d9a3f",
+      "starts": 37,
+      "unserved_mwh": 5.535769413
+    }
+  },
+  "compare_runs": {
+    "after": {
+      "condition_count": 10,
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": false,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "failed_conditions": [
+        "informed_peak_unserved_no_worse"
+      ],
+      "passed_conditions": 9,
+      "verdict": "FAIL"
+    },
+    "before": {
+      "condition_count": 10,
+      "failed_conditions": [
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "passed_conditions": 8,
+      "verdict": "FAIL"
+    }
+  },
+  "current_head": "576061f5900eeb910616a0eed0a745eec2efc42d",
+  "informed_stop_decisions": {
+    "evaluations": [
+      {
+        "accepted_stop_count": 0,
+        "actions": [],
+        "entries": [],
+        "time_s": 13680
+      },
+      {
+        "accepted_stop_count": 0,
+        "actions": [],
+        "entries": [],
+        "time_s": 13685
+      },
+      {
+        "accepted_stop_count": 0,
+        "actions": [],
+        "entries": [],
+        "time_s": 16775
+      },
+      {
+        "accepted_stop_count": 0,
+        "actions": [],
+        "entries": [],
+        "time_s": 16785
+      }
+    ],
+    "interpretation": "No stop decision was taken at these evaluations; none is recorded as refused."
+  },
+  "references": {
+    "pre_fix_reference": "tools/dr_isl/isl25/S10_MCP_ACCEPTANCE_SUMMARY.json",
+    "pre_fix_source": "S10_MCP_ACCEPTANCE_SUMMARY.json runs[42]",
+    "run_result": "/tmp/d6g_s10_result.json"
+  },
+  "request": "D6g step 2 part 1: S10 seed-42 counterfactual only",
+  "run_elapsed_seconds": 256.767,
+  "runner_status": "GATE_FAIL",
+  "scenario_id": "S10_mit_supercloud_2021-08-11",
+  "seed": 42,
+  "study_class": "supercloud_replay",
+  "tick_counts": {
+    "baseline": 17280,
+    "informed": 17280
+  }
+}
