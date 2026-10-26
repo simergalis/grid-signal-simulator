@@ -1,0 +1,120 @@
+{
+  "arms": {
+    "baseline": {
+      "cap1200": {
+        "fuel_mmbtu": 7785.288838529,
+        "identity_cap_values": [
+          {
+            "path": "parameter_set.turbine_forecast_announcement_cap_seconds",
+            "value": 1200
+          }
+        ],
+        "identity_digest": "e5a9489d6cc03033864bf6ab8f49626132e8cafc34e8f7831cbdc68e8ffcf336",
+        "invalid_frequency_ticks": 519,
+        "operating_cost_total_usd": 50128.167955,
+        "peak_unserved_mw": 16.8004944,
+        "physical_hash": "22a109ae31e928518db467fbe3ff90675604ce2e38c0f6ed5551c21aa10d9a3f",
+        "starts": 37,
+        "unserved_mwh": 5.535769413
+      },
+      "cap1800": {
+        "fuel_mmbtu": 7785.288838529,
+        "invalid_frequency_ticks": 519,
+        "operating_cost_total_usd": 50128.167955,
+        "peak_unserved_mw": 16.8004944,
+        "physical_hash": "22a109ae31e928518db467fbe3ff90675604ce2e38c0f6ed5551c21aa10d9a3f",
+        "starts": 37,
+        "unserved_mwh": 5.535769413
+      }
+    },
+    "informed": {
+      "cap1200": {
+        "fuel_mmbtu": 7880.913411826,
+        "identity_cap_values": [
+          {
+            "path": "parameter_set.turbine_forecast_announcement_cap_seconds",
+            "value": 1200
+          }
+        ],
+        "identity_digest": "69bf20fa9286ed7afa1431b25fa375cddc36f7212a93e4a782c8ed3f0ebed74a",
+        "invalid_frequency_ticks": 28,
+        "operating_cost_total_usd": 50720.665774,
+        "peak_unserved_mw": 9.859394658,
+        "physical_hash": "97215a592356fd54c598bf2bcd5998ea84ab014cc250037c4a4096146ec144bb",
+        "starts": 27,
+        "unserved_mwh": 0.234620241
+      },
+      "cap1800": {
+        "fuel_mmbtu": 7880.913411826,
+        "invalid_frequency_ticks": 28,
+        "operating_cost_total_usd": 50720.665774,
+        "peak_unserved_mw": 9.859394658,
+        "physical_hash": "97215a592356fd54c598bf2bcd5998ea84ab014cc250037c4a4096146ec144bb",
+        "starts": 27,
+        "unserved_mwh": 0.234620241
+      }
+    }
+  },
+  "baseline_gate": {
+    "compared_fields": [
+      "physical_hash",
+      "unserved_mwh",
+      "peak_unserved_mw",
+      "starts",
+      "fuel_mmbtu",
+      "operating_cost_total_usd",
+      "invalid_frequency_ticks"
+    ],
+    "differences": {},
+    "note": "The cap changes the study identity by design; the baseline gate compares the requested run/physical metrics, while identity digests and cap payload values are reported separately.",
+    "passed": true
+  },
+  "compare_runs": {
+    "condition_count": 10,
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "failed_conditions": [],
+    "passed_conditions": 10,
+    "verdict": "PASS"
+  },
+  "current_head": "baed9e792b682bf056e311d1fa5e885f108761dd",
+  "identity_cap_confirmed": true,
+  "informed_rts_announced_job_vetoes": {
+    "count": 2,
+    "first_five": [
+      {
+        "refusal_reason": "forecast controller veto: announced workload needs unit within RTS window (1290s)",
+        "time_s": 3720.0,
+        "triggering_job_ids": [
+          "s10-job-00004"
+        ],
+        "unit": "turbine-3"
+      },
+      {
+        "refusal_reason": "forecast controller veto: announced workload needs unit within RTS window (1290s)",
+        "time_s": 13560.0,
+        "triggering_job_ids": [
+          "s10-job-00008"
+        ],
+        "unit": "turbine-4"
+      }
+    ]
+  },
+  "parameter_overrides": {
+    "turbine_forecast_announcement_cap_seconds": 1200
+  },
+  "run_elapsed_seconds": 248.213,
+  "scenario_id": "S10_mit_supercloud_2021-08-11",
+  "seed": 42,
+  "study_class": "supercloud_replay"
+}
