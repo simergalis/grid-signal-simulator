@@ -1,0 +1,570 @@
+{
+  "completed_scenarios": [
+    {
+      "affected_evaluation_count": 2,
+      "affected_evaluations_with_start_stop_decision": 2,
+      "announcement_lead_seconds": [
+        600.0
+      ],
+      "controller_evaluations": 1440,
+      "duration_seconds": 7200.0,
+      "first_10_occurrences": [
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": true,
+              "action": "trip",
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-k8s-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-k8s-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 0.0
+        },
+        {
+          "callback_mw": 0.3708,
+          "decisions": [
+            {
+              "accepted": true,
+              "action": "trip",
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-ray-gb200-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 0.44496,
+          "job_id": "kube-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 0.0
+        },
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": true,
+              "action": "trip",
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 0.0
+        },
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": true,
+              "action": "trip",
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "event_id": "um-k8s-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-k8s-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 5.0
+        },
+        {
+          "callback_mw": 0.3708,
+          "decisions": [
+            {
+              "accepted": true,
+              "action": "trip",
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "event_id": "um-ray-gb200-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 0.44496,
+          "job_id": "kube-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 5.0
+        },
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": true,
+              "action": "trip",
+              "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 5.0
+        }
+      ],
+      "identity_digest": "c7e473a5cb2c8a744e2fce974103229fcff238a25a894a85fbcbfe33399795d7",
+      "job_start_time_alignment": {
+        "between_tick_count": 0,
+        "between_tick_examples_s": [],
+        "boundary_examples_s": [
+          30.0,
+          310.0,
+          920.0,
+          1850.0,
+          2700.0
+        ],
+        "event_types_counted": [
+          "running",
+          "scale",
+          "starting"
+        ],
+        "on_tick_boundary_count": 5,
+        "start_like_event_count": 5,
+        "tick_seconds": 5.0
+      },
+      "label": "base demo (2 h)",
+      "maximum_missing_mw_in_one_evaluation": 4.22712,
+      "mode": "informed",
+      "scenario_id": "scenario-uneven-multisched-01",
+      "seed": 42,
+      "status": "PASS",
+      "total_missing_definition": "Sum across affected controller evaluations of each zeroed active job's callback MW multiplied by (1 + cooling_fraction); this is an MW-evaluation sum, not energy.",
+      "total_missing_mw_evaluations": 8.45424,
+      "zeroed_job_evaluation_count": 6
+    },
+    {
+      "affected_evaluation_count": 122,
+      "affected_evaluations_with_start_stop_decision": 117,
+      "announcement_lead_seconds": [
+        600.0
+      ],
+      "controller_evaluations": 17280,
+      "duration_seconds": 86400.0,
+      "first_10_occurrences": [
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 28.358 MW exceeds remaining turbine capacity 25.000 MW by 3.358 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-k8s-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-k8s-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 0.0
+        },
+        {
+          "callback_mw": 0.3708,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 28.358 MW exceeds remaining turbine capacity 25.000 MW by 3.358 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-ray-gb200-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 0.44496,
+          "job_id": "kube-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 0.0
+        },
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 28.358 MW exceeds remaining turbine capacity 25.000 MW by 3.358 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-k8s-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-k8s-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 5.0
+        },
+        {
+          "callback_mw": 0.3708,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 28.358 MW exceeds remaining turbine capacity 25.000 MW by 3.358 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-ray-gb200-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 0.44496,
+          "job_id": "kube-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 5.0
+        },
+        {
+          "callback_mw": 35.993556,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 132.612 MW exceeds remaining turbine capacity 50.000 MW by 82.612 MW at forecast 59450s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-ray-gb200-scripted-t585200",
+          "forecast_mw_missing_at_current_sample": 43.192267199999996,
+          "job_id": "scripted-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 58520.0
+        },
+        {
+          "callback_mw": 35.993556,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 132.612 MW exceeds remaining turbine capacity 50.000 MW by 82.612 MW at forecast 59450s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-ray-gb200-scripted-t585200",
+          "forecast_mw_missing_at_current_sample": 43.192267199999996,
+          "job_id": "scripted-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 58525.0
+        },
+        {
+          "callback_mw": 35.993556,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 133.696 MW exceeds remaining turbine capacity 50.000 MW by 83.696 MW at forecast 59450s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-ray-gb200-scripted-t585200",
+          "forecast_mw_missing_at_current_sample": 43.192267199999996,
+          "job_id": "scripted-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 58530.0
+        },
+        {
+          "callback_mw": 35.993556,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 134.629 MW exceeds remaining turbine capacity 50.000 MW by 84.629 MW at forecast 59450s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-ray-gb200-scripted-t585200",
+          "forecast_mw_missing_at_current_sample": 43.192267199999996,
+          "job_id": "scripted-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 58535.0
+        },
+        {
+          "callback_mw": 35.993556,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 135.470 MW exceeds remaining turbine capacity 50.000 MW by 85.470 MW at forecast 59450s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-ray-gb200-scripted-t585200",
+          "forecast_mw_missing_at_current_sample": 43.192267199999996,
+          "job_id": "scripted-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 58540.0
+        },
+        {
+          "callback_mw": 35.993556,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 136.242 MW exceeds remaining turbine capacity 50.000 MW by 86.242 MW at forecast 59450s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-hot-01"
+            }
+          ],
+          "event_id": "um-ray-gb200-scripted-t585200",
+          "forecast_mw_missing_at_current_sample": 43.192267199999996,
+          "job_id": "scripted-admission-um-ray-gb200",
+          "start_stop_decision_taken": true,
+          "time_s": 58545.0
+        }
+      ],
+      "identity_digest": "b58f0bde0c6a0b89824834ce39b5e9ad5d3065e68ead2095e40b0accb5b120a6",
+      "job_start_time_alignment": {
+        "between_tick_count": 0,
+        "between_tick_examples_s": [],
+        "boundary_examples_s": [
+          28830.0,
+          29720.0,
+          30650.0,
+          31500.0,
+          36030.0
+        ],
+        "event_types_counted": [
+          "running",
+          "scale",
+          "starting"
+        ],
+        "on_tick_boundary_count": 24,
+        "start_like_event_count": 24,
+        "tick_seconds": 5.0
+      },
+      "label": "H1-24h",
+      "maximum_missing_mw_in_one_evaluation": 43.1922672,
+      "mode": "informed",
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "seed": 42,
+      "status": "PASS",
+      "total_missing_definition": "Sum across affected controller evaluations of each zeroed active job's callback MW multiplied by (1 + cooling_fraction); this is an MW-evaluation sum, not energy.",
+      "total_missing_mw_evaluations": 5187.744144,
+      "zeroed_job_evaluation_count": 124
+    },
+    {
+      "affected_evaluation_count": 65,
+      "affected_evaluations_with_start_stop_decision": 65,
+      "announcement_lead_seconds": [
+        600.0
+      ],
+      "controller_evaluations": 17280,
+      "duration_seconds": 86400.0,
+      "first_10_occurrences": [
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 28.366 MW exceeds remaining turbine capacity 25.000 MW by 3.366 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 0.0
+        },
+        {
+          "callback_mw": 1.5759,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: post-stop N-1 reserve floor 28.366 MW exceeds remaining turbine capacity 25.000 MW by 3.366 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t0",
+          "forecast_mw_missing_at_current_sample": 1.89108,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 5.0
+        },
+        {
+          "callback_mw": 9.161232,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t300150",
+          "forecast_mw_missing_at_current_sample": 10.993478399999999,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30015.0
+        },
+        {
+          "callback_mw": 5.589192,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t300500",
+          "forecast_mw_missing_at_current_sample": 6.7070304,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30050.0
+        },
+        {
+          "callback_mw": 6.450683999999999,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t302400",
+          "forecast_mw_missing_at_current_sample": 7.740820799999998,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30240.0
+        },
+        {
+          "callback_mw": 7.795452,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t303500",
+          "forecast_mw_missing_at_current_sample": 9.3545424,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30350.0
+        },
+        {
+          "callback_mw": 6.933959999999999,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t304900",
+          "forecast_mw_missing_at_current_sample": 8.320751999999999,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30490.0
+        },
+        {
+          "callback_mw": 3.824184,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t305300",
+          "forecast_mw_missing_at_current_sample": 4.589020799999999,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30530.0
+        },
+        {
+          "callback_mw": 7.259646,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t306900",
+          "forecast_mw_missing_at_current_sample": 8.7115752,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30690.0
+        },
+        {
+          "callback_mw": 4.78023,
+          "decisions": [
+            {
+              "accepted": false,
+              "action": "stop",
+              "reason": "stop refused: minimum run time has not elapsed",
+              "source": "forecast_commitment",
+              "unit_id": "gt-spin-02"
+            }
+          ],
+          "event_id": "um-slurm-h100-kube-signal-t306950",
+          "forecast_mw_missing_at_current_sample": 5.736276,
+          "job_id": "kube-admission-um-slurm-h100",
+          "start_stop_decision_taken": true,
+          "time_s": 30695.0
+        }
+      ],
+      "identity_digest": "867b2a0f363f416e0e01012b34b0d08a58eeceaa075520e40102b7cbdb496838",
+      "job_start_time_alignment": {
+        "between_tick_count": 0,
+        "between_tick_examples_s": [],
+        "boundary_examples_s": [
+          29110.0,
+          36310.0,
+          43510.0,
+          50710.0,
+          57910.0
+        ],
+        "event_types_counted": [
+          "running",
+          "scale",
+          "starting"
+        ],
+        "on_tick_boundary_count": 6,
+        "start_like_event_count": 6,
+        "tick_seconds": 5.0
+      },
+      "label": "H2-24h",
+      "maximum_missing_mw_in_one_evaluation": 11.1447648,
+      "mode": "informed",
+      "scenario_id": "scenario-h2-slurm-24h",
+      "seed": 42,
+      "status": "PASS",
+      "total_missing_definition": "Sum across affected controller evaluations of each zeroed active job's callback MW multiplied by (1 + cooling_fraction); this is an MW-evaluation sum, not energy.",
+      "total_missing_mw_evaluations": 361.7888184,
+      "zeroed_job_evaluation_count": 65
+    }
+  ],
+  "purpose": "D6e E3 scope probe; informed controller only",
+  "seed": 42,
+  "status": "complete",
+  "tick_seconds": 5.0
+}
