@@ -1,0 +1,85 @@
+{
+  "arms": {
+    "baseline": {
+      "after": {
+        "fuel_mmbtu": 5330.503098761,
+        "invalid_frequency_ticks": 549,
+        "peak_unserved_mw": 44.86838787,
+        "physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+        "starts": 11,
+        "unserved_mwh": 5.011418076
+      },
+      "before": {
+        "fuel_mmbtu": 5330.503098761,
+        "invalid_frequency_ticks": 549,
+        "peak_unserved_mw": 44.86838787,
+        "physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+        "starts": 11,
+        "unserved_mwh": 5.011418076
+      }
+    },
+    "informed": {
+      "after": {
+        "fuel_mmbtu": 5327.34949305,
+        "invalid_frequency_ticks": 412,
+        "peak_unserved_mw": 42.36838787,
+        "physical_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+        "starts": 14,
+        "unserved_mwh": 0.859772492
+      },
+      "before": {
+        "fuel_mmbtu": 5327.34949305,
+        "invalid_frequency_ticks": 412,
+        "peak_unserved_mw": 42.36838787,
+        "physical_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+        "starts": 14,
+        "unserved_mwh": 0.859772492
+      }
+    }
+  },
+  "baseline_gate": {
+    "compared_fields": [
+      "physical_hash",
+      "unserved_mwh",
+      "peak_unserved_mw",
+      "starts",
+      "fuel_mmbtu",
+      "invalid_frequency_ticks"
+    ],
+    "d6c_physical_hash_matches": true,
+    "differences": [],
+    "passed": true
+  },
+  "compare_runs": {
+    "condition_count": 10,
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "failed_conditions": [],
+    "passed_conditions": 10,
+    "verdict": "PASS"
+  },
+  "current_head": "ee3350eb817456af1df7947078b8708373527185",
+  "references": {
+    "pre_fix_metrics": "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json scenarios[scenario-h2-slurm-24h].metrics_current",
+    "pre_fix_physical_hashes_and_verdict": "tools/dr_isl/isl25/PROTECTED_STUDY_GATES_FINAL.json scenarios[scenario-h2-slurm-24h]"
+  },
+  "request": "D6g step 2 part 4: H2 seed-42 counterfactual only",
+  "run_elapsed_seconds": 222.327,
+  "scenario_id": "scenario-h2-slurm-24h",
+  "seed": 42,
+  "study_class": "addendum_h",
+  "tick_counts": {
+    "baseline": 17280,
+    "informed": 17280
+  }
+}
