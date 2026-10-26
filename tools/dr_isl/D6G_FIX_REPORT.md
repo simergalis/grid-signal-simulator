@@ -47,3 +47,15 @@ Each pair was run once through `StudyRunExecutor.run_pair`. All four conventiona
 | H2-24h (`H2_COUNTERFACTUAL.json`) | Informed | `17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba` → same | 0.859772492 → 0.859772492 | 42.36838787 → 42.36838787 | 14 → 14 | 5327.34949305 → 5327.34949305 | 412 → 412 | PASS (10/10) → PASS (10/10) |
 
 Evidence commits: S10 `ba2d361`, base demo `5b14d09`, H1 `ee3350e`, H2 `e8b2cef`. H2 baseline gate passed exactly; compare_runs passed all 10 conditions before and after.
+
+## Full suite
+
+The complete simulator suite was run twice, sequentially, with
+`PYTHONHASHSEED=1` and `PYTHONHASHSEED=987654321`. Both runs reported
+2,261 passed, 15 failed, 3 skipped, 23 xfailed, 3 subtests passed, and
+54 warnings. Both had the same 15 failing IDs, all present in
+`tools/dr_isl/PHASE_6C_FAILING_TESTS.txt`; there were no added failures or
+run-to-run differences. The baseline list's waived
+`tests/test_gpu_load_profile.py::test_gpu_load_profile` passed in both runs.
+Counts, exact failing IDs, durations, and baseline deltas are recorded in
+`tools/dr_isl/d6g/FULL_SUITE.txt`.
