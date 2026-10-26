@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the protected seed-42 study pairs and compare them to D6c evidence."""
+"""Run the protected seed-42 study pairs and compare them to the ISL30 reference."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ PACKAGE = (
     / "gridsignal_sim_v2"
     / "gridsignal_sim"
 )
-OUTPUT = ROOT / "tools/dr_isl/isl25/PROTECTED_STUDY_GATES_PROGRESS.json"
+OUTPUT = ROOT / "tools/dr_isl/isl30/PROTECTED_STUDY_GATES_PROGRESS.json"
 SCENARIOS = (
     "scenario-uneven-multisched-01",
     "scenario-h1-k8s-ray-24h",
@@ -139,22 +139,15 @@ def main() -> int:
     from study_harness.executor import StudyRunExecutor
 
     expected_data = json.loads(
-        (ROOT / "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json").read_text()
+        (ROOT / "tools/dr_isl/isl30/PROTECTED_STUDY_GATES_ISL30.json").read_text()
     )
     expected = {row["scenario_id"]: row for row in expected_data["scenarios"]}
-    identity_diagnosis = json.loads(
-        (ROOT / "tools/dr_isl/isl25/RUN_PATH_IDENTITIES.json").read_text()
-    )
-    normalized_payloads = {
-        (row["scenario_id"], row["mode"]): row
-        for row in identity_diagnosis["runs"]
-    }
     executor = StudyRunExecutor(output_dir=Path("/tmp/isl25-protected-study-runs"))
     progress: dict = {
         "seed": 42,
         "cache": "fresh temporary directory; no prior run can be reused",
-        "reference": "tools/dr_isl/d6c/ACCEPTANCE_STUDY_GATES.json",
-        "identity_reference": "RUN_PATH_IDENTITIES.json exact StudyRunExecutor run-pair path payload with both commit fields normalized",
+        "reference": "tools/dr_isl/isl30/PROTECTED_STUDY_GATES_ISL30.json",
+        "identity_reference": "identity-v4 payloads captured from the seed-42 ISL30 run paths; commit fields normalized to each source run head",
         "canonical_large_metric_encoding": {
             "sort_keys": True,
             "separators": [",", ":"],
@@ -182,8 +175,8 @@ def main() -> int:
         for mode in ("baseline", "informed"):
             record = pair["runs"][mode]
             reference_arm = reference_scenario[mode]
-            normalized_reference_row = normalized_payloads[(scenario_id, mode)]
-            normalized_reference = normalized_reference_row["payload"]
+            identity_reference = reference_arm["identity_v4"]
+            normalized_reference = identity_reference["payload"]
             actual_identity = record.get("identity")
             normalized_actual = dict(actual_identity or {})
             normalized_actual["engine_commit"] = normalized_reference[
@@ -197,7 +190,20 @@ def main() -> int:
             normalized_identity_digest = hashlib.sha256(
                 actual_identity_bytes
             ).hexdigest()
-            identity_matches = actual_identity_bytes == expected_identity_bytes
+            run_identity_digest = hashlib.sha256(
+                json.dumps(
+                    normalized_actual,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            identity_payload_matches = (
+                actual_identity_bytes == expected_identity_bytes
+            )
+            identity_digest_matches = (
+                run_identity_digest == identity_reference["digest"]
+            )
+            identity_matches = identity_payload_matches and identity_digest_matches
             identity_payload_differences = typed_payload_differences(
                 normalized_reference, normalized_actual
             )
@@ -210,6 +216,8 @@ def main() -> int:
                             expected_identity_bytes
                         ).hexdigest(),
                         "actual_sha256": normalized_identity_digest,
+                        "expected_identity_digest": identity_reference["digest"],
+                        "actual_identity_digest": run_identity_digest,
                         "differing_fields": identity_payload_differences,
                     }
                 )
@@ -257,9 +265,11 @@ def main() -> int:
             scenario_result["arms"][mode] = {
                 "raw_identity_digest": record.get("identity_digest"),
                 "normalized_identity_sha256": normalized_identity_digest,
-                "expected_normalized_identity_sha256": normalized_reference_row[
-                    "base_payload_sha256"
+                "expected_normalized_identity_sha256": identity_reference[
+                    "payload_sha256_ensure_ascii_false"
                 ],
+                "expected_identity_digest": identity_reference["digest"],
+                "normalized_identity_digest_matches": identity_digest_matches,
                 "normalized_identity_matches_reference": identity_matches,
                 "normalized_identity_differing_fields": identity_payload_differences,
                 "raw_commit_fields": {
