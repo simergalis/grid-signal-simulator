@@ -243,6 +243,7 @@ class GpuJob:
     end_s: Optional[float]  # None if the job runs past the window end
     gpus: int
     started_before_window: bool
+    submit_s: Optional[float] = None  # seconds from day origin; may be negative
 
 
 @dataclass(frozen=True)
@@ -270,6 +271,11 @@ def gpu_jobs_for_day(
         except Quarantine as q:
             skipped[f"parse:{q.reason}"] += 1
             continue
+        try:
+            submit_epoch_s = int((raw.get("time_submit") or "").strip())
+        except (AttributeError, TypeError, ValueError):
+            skipped["parse:malformed_time_submit"] += 1
+            continue
         gpus = r.tres_alloc.get(TRES_GPU_VOLTA, 0) + r.tres_alloc.get(TRES_GPU_TESLA, 0)
         if not gpus or r.partition not in parts:
             continue
@@ -286,6 +292,7 @@ def gpu_jobs_for_day(
             end_s=float(r.time_end - lo) if r.time_end < hi else None,
             gpus=gpus,
             started_before_window=r.time_start < lo,
+            submit_s=float(submit_epoch_s - lo),
         ))
     jobs.sort(key=lambda j: (j.start_s, j.end_s if j.end_s is not None else DAY_S))
     return jobs, skipped
@@ -459,6 +466,8 @@ def build_scenario(
             "timestamp": job.start_s, "node_count": chassis,
             "hardware_profile_id": profile_id, "scheduler_type": "SLURM",
         })
+        if job.submit_s is not None:
+            events[-1]["submit_time_s"] = job.submit_s
         if job.end_s is not None:
             events.append({
                 "event_id": f"evt-{job_id}-end", "job_id": job_id, "event_type": "job_end",
@@ -665,6 +674,43 @@ def build_scenario(
     return spec, report
 
 
+def merge_submit_times_into_existing(
+    existing_spec: dict[str, Any],
+    regenerated_spec: dict[str, Any],
+) -> dict[str, Any]:
+    """Copy only regenerated start-event submit times onto an existing S10 spec."""
+    merged = copy.deepcopy(existing_spec)
+
+    def start_events(spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        result: dict[str, dict[str, Any]] = {}
+        for event in spec.get("workload_events") or []:
+            if event.get("event_type") != "starting":
+                continue
+            job_id = str(event.get("job_id", ""))
+            if not job_id or job_id in result:
+                raise ValueError("start events must have unique, non-empty job IDs")
+            result[job_id] = event
+        return result
+
+    current_starts = start_events(merged)
+    new_starts = start_events(regenerated_spec)
+    if current_starts.keys() != new_starts.keys():
+        missing = sorted(current_starts.keys() - new_starts.keys())
+        extra = sorted(new_starts.keys() - current_starts.keys())
+        raise ValueError(
+            "regenerated start-event job IDs differ from existing S10 "
+            f"(missing={missing[:5]}, extra={extra[:5]})"
+        )
+    for job_id, current_event in current_starts.items():
+        regenerated_event = new_starts[job_id]
+        if "submit_time_s" not in regenerated_event:
+            raise ValueError(f"regenerated event {job_id} has no submit_time_s")
+        if "submit_time_s" in current_event:
+            raise ValueError(f"existing event {job_id} already has submit_time_s")
+        current_event["submit_time_s"] = regenerated_event["submit_time_s"]
+    return merged
+
+
 def _file_sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -724,7 +770,20 @@ def main(argv: Optional[list[str]] = None) -> int:
         help="aggregate-only D6a startup-surplus derivation evidence",
     )
     ap.add_argument("--out", type=Path, required=True, help="write OUTSIDE public repositories")
+    ap.add_argument(
+        "--merge-submit-times-into-existing",
+        action="store_true",
+        help=(
+            "regenerate and merge only submit_time_s into matching starting "
+            "events in the existing --out scenario"
+        ),
+    )
     args = ap.parse_args(argv)
+    existing_spec = None
+    if args.merge_submit_times_into_existing:
+        if not args.out.is_file():
+            raise ValueError("--out must be an existing scenario in merge mode")
+        existing_spec = json.loads(args.out.read_text(encoding="utf-8"))
 
     day = date.fromisoformat(args.date)
     gpu_partitions = tuple(
@@ -756,11 +815,17 @@ def main(argv: Optional[list[str]] = None) -> int:
         soc_derivation=soc_derivation,
         fuel_model=args.fuel_model,
     )
+    if existing_spec is not None:
+        spec = merge_submit_times_into_existing(existing_spec, spec)
     report["skipped"] = dict(skipped)
     report["cpu_skipped"] = dict(cpu_skipped)
     report["template"] = args.template.name
     args.out.write_text(json.dumps(spec, indent=1) + "\n", encoding="utf-8")
-    args.out.with_suffix(".build.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    if existing_spec is None:
+        args.out.with_suffix(".build.json").write_text(
+            json.dumps(report, indent=2) + "\n",
+            encoding="utf-8",
+        )
     print(json.dumps(report, indent=2))
     return 0
 
