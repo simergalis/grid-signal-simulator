@@ -160,6 +160,7 @@ def test_tc111_informed_mode_starts_for_announced_workload() -> None:
 
 
 def test_tc112_stop_uses_lifo_actual_start_order_and_minimum_run_gate() -> None:
+    """IMPL-ISL-30: forecast no longer originates the LIFO stop proposal."""
     from core.asset_modules import TurbineState
     from runtime.scenario_factory import build_run_context_from_spec
 
@@ -177,17 +178,16 @@ def test_tc112_stop_uses_lifo_actual_start_order_and_minimum_run_gate() -> None:
 
     ctx.sim_time = 101.0
     controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
-    assert controller.log[-1].unit_id == "turbine-2"
-    assert controller.log[-1].accepted is False
-    assert "minimum run" in controller.log[-1].refusal_reason
+    assert not any(record.action == "stop" for record in controller.log)
 
     ctx.sim_time = 1001.0
     controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
     ctx.drain_operator_commands()
-    assert controller.log[-1].unit_id == "turbine-2"
-    assert controller.log[-1].action == "stop"
-    assert controller.log[-1].accepted is True
-    assert ctx.sim_state.turbines[2].state == TurbineState.UNLOADING
+    # DR IMPL-ISL-30 §3: any stop must come from the measured core rule and be
+    # adjudicated there; evaluate() is limited to starts/preload.
+    assert not any(record.action == "stop" for record in controller.log)
+    assert not any(action == "stop" for _, action in controller._pending_request_keys)
+    assert ctx.sim_state.turbines[2].state == TurbineState.SYNCHRONISED
 
 
 def test_tc113_bess_anchor_is_a_power_hard_check_not_a_soc_check() -> None:
@@ -401,6 +401,7 @@ def test_tc117_identical_refusal_logs_are_deduplicated() -> None:
 
 
 def test_tc118_stop_requires_two_mw_margin() -> None:
+    """IMPL-ISL-30: forecasts cannot create an independent stop at a margin."""
     from runtime.scenario_factory import build_run_context_from_spec
     from runtime.turbine_commitment import CommitmentForecast
 
@@ -420,8 +421,9 @@ def test_tc118_stop_requires_two_mw_margin() -> None:
     )
     ctx.sim_time = 1000.0
     controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
-    assert controller.log[-1].accepted is False
-    assert "needed within" in (controller.log[-1].refusal_reason or "")
+    # DR IMPL-ISL-30 §3: only a core decommit proposal is eligible for veto.
+    assert not any(record.action == "stop" for record in controller.log)
+    assert not any(action == "stop" for _, action in controller._pending_request_keys)
 
 
 def test_tc119_informed_preload_uses_existing_ramp_and_bess_charge_path() -> None:
@@ -828,7 +830,7 @@ def test_tc132_core_start_is_vetoed_during_minimum_down_window() -> None:
 
 
 def test_tc133_lead_aware_stop_refusal_protects_restart_window() -> None:
-    """A stop is refused when a future burst arrives before restart completes."""
+    """IMPL-ISL-30 disables forecast-origin stops; core proposals own decommit."""
     from runtime.scenario_factory import build_run_context_from_spec
     from runtime.turbine_commitment import CommitmentForecast
 
@@ -856,13 +858,10 @@ def test_tc133_lead_aware_stop_refusal_protects_restart_window() -> None:
 
     controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
 
-    assert controller.log
-    assert controller.log[-1].accepted is False
-    assert controller.log[-1].action == "stop"
-    assert controller.log[-1].refusal_reason == (
-        "stop refused: forecast burst at 500s arrives before unit restart window "
-        "(1620s)"
-    )
+    # DR IMPL-ISL-30 §3: forecasts may veto a core decommit, but may not
+    # originate a stop that the conventional commitment rule did not propose.
+    assert all(record.action != "stop" for record in controller.log)
+    assert not any(action == "stop" for _, action in controller._pending_request_keys)
 
 
 def test_tc134_scale_event_is_an_announced_burst_for_forecast_control() -> None:
