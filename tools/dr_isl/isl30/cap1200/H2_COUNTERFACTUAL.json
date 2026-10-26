@@ -1,0 +1,101 @@
+{
+  "arms": {
+    "baseline": {
+      "cap1200": {
+        "fuel_mmbtu": 5330.503098761,
+        "identity_cap_values": [
+          {
+            "path": "parameter_set.turbine_forecast_announcement_cap_seconds",
+            "value": 1200.0
+          }
+        ],
+        "identity_digest": "92889f41a27ce390697386373f62d62a9444fc6f3942cc8bc3333399c50d34cb",
+        "invalid_frequency_ticks": 549,
+        "operating_cost_total_usd": null,
+        "peak_unserved_mw": 44.86838787,
+        "physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+        "starts": 11,
+        "unserved_mwh": 5.011418076
+      },
+      "cap1800": {
+        "fuel_mmbtu": 5330.503098761,
+        "invalid_frequency_ticks": 549,
+        "peak_unserved_mw": 44.86838787,
+        "physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+        "starts": 11,
+        "unserved_mwh": 5.011418076
+      }
+    },
+    "informed": {
+      "cap1200": {
+        "fuel_mmbtu": 5349.03370309,
+        "identity_cap_values": [
+          {
+            "path": "parameter_set.turbine_forecast_announcement_cap_seconds",
+            "value": 1200.0
+          }
+        ],
+        "identity_digest": "5c7c810bf233cdd4b8468aab0a032e198cf08231ec6dd4d35fd696333fb32d75",
+        "invalid_frequency_ticks": 382,
+        "operating_cost_total_usd": null,
+        "peak_unserved_mw": 27.36838787,
+        "physical_hash": "0562d2e0df0fc06547a3fa301cd4c237ae8857f60c40ae2331241db2b5b1dbec",
+        "starts": 12,
+        "unserved_mwh": 0.538242266
+      },
+      "cap1800": {
+        "fuel_mmbtu": 5349.03370309,
+        "invalid_frequency_ticks": 382,
+        "peak_unserved_mw": 27.36838787,
+        "physical_hash": "0562d2e0df0fc06547a3fa301cd4c237ae8857f60c40ae2331241db2b5b1dbec",
+        "starts": 12,
+        "unserved_mwh": 0.538242266
+      }
+    }
+  },
+  "baseline_gate": {
+    "compared_fields": [
+      "physical_hash",
+      "unserved_mwh",
+      "peak_unserved_mw",
+      "starts",
+      "fuel_mmbtu",
+      "operating_cost_total_usd",
+      "invalid_frequency_ticks"
+    ],
+    "differences": {},
+    "note": "The cap changes study identity by design; this gate compares the requested physical/run metrics, and identity digests are recorded separately.",
+    "passed": true
+  },
+  "compare_runs": {
+    "condition_count": 10,
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "failed_conditions": [],
+    "passed_conditions": 10,
+    "verdict": "PASS"
+  },
+  "current_head": "c94e4448f23ddd969ffb3c679932f94fa92f4198",
+  "identity_cap_confirmed": true,
+  "informed_rts_announced_job_vetoes": {
+    "count": 0,
+    "first_five": []
+  },
+  "parameter_overrides": {
+    "turbine_forecast_announcement_cap_seconds": 1200
+  },
+  "run_elapsed_seconds": 206.028,
+  "scenario_id": "scenario-h2-slurm-24h",
+  "seed": 42,
+  "study_class": "addendum_h"
+}
