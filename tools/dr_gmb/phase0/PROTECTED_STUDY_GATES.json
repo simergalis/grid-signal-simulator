@@ -1,0 +1,1633 @@
+{
+  "cache": "fresh temporary directory; no prior run can be reused",
+  "canonical_large_metric_encoding": {
+    "allow_nan": false,
+    "ensure_ascii": false,
+    "separators": [
+      ",",
+      ":"
+    ],
+    "sort_keys": true
+  },
+  "identity_reference": "identity-v4 payloads captured from the seed-42 ISL30 run paths; commit fields normalized to each source run head",
+  "last_completed_scenario": "scenario-h2-slurm-24h",
+  "reference": "tools/dr_isl/isl30/PROTECTED_STUDY_GATES_ISL30.json",
+  "runs": [
+    {
+      "arms": {
+        "baseline": {
+          "expected_identity_digest": "e25100f64f572efad4062f96df197f70a919ab15a0c8d125a60344ab9039b25b",
+          "expected_normalized_identity_sha256": "3b75a2ac5bb2272da1f80ba7094d22cc5eb1b9f428e937965322bcc4967c90d5",
+          "metric_differences": {},
+          "metrics": {
+            "bess_soc_final": 0.999999999,
+            "bess_soc_max": 0.999999999,
+            "bess_soc_min": 0.746789342,
+            "build_warnings": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "32d5c7e61d656373ea518a66087e7d4633eabe41d2bc4186193951f48c4bcd81",
+              "count": 12,
+              "serialized_bytes": 416,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "8f6b038c4b7feaa0830e28105708aa20852e0c4cfa4c767a5adb255168a6e2e3",
+              "count": 8,
+              "serialized_bytes": 3541,
+              "type": "list"
+            },
+            "commitment_log_record_count": 8,
+            "compute_trace_count": 1440,
+            "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "f9bdb4c64a81c1477d377504ac78f74883b5a5566abd02d803235ade620a0730",
+              "count": 1,
+              "serialized_bytes": 284,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "069afb14170c6147b4db6da48c64860f060b246a3ea08aa048deb8a96ef289be",
+              "count": 4,
+              "serialized_bytes": 103,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "ed4a341f5e1e44aab124ac3baf37dec810b00ecb6d71955dc9c063173801c260",
+              "count": 4,
+              "serialized_bytes": 118,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "89974cfb8548ad611ce05d5f130d8c62db083683c2b02b27fcf9b44e2d81667c",
+              "count": 4,
+              "serialized_bytes": 103,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+            "dispatch_curtailment_mwh": 8.136511735,
+            "energy_balance": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4e6582eae40545ddcacaa2d47042f1aada88822d76343f8e7e1674b5b295ac95",
+              "count": 4,
+              "serialized_bytes": 130,
+              "type": "dict"
+            },
+            "forecast": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "83e396efec6d770fd040bf075da10bf756e869475f34dc112c1b697794368231",
+              "count": 2,
+              "serialized_bytes": 35,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "0b17dd3210b0034458c5cd486a83c86236b6fc5ab2f280c52756d6f8718f9ffe",
+              "count": 2,
+              "serialized_bytes": 25,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "65b61a87406a30f967dea90c45dd8302160ceb931c2c683b67bce758e8958926",
+              "count": 4,
+              "serialized_bytes": 120,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "identity": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "3b75a2ac5bb2272da1f80ba7094d22cc5eb1b9f428e937965322bcc4967c90d5",
+              "count": 8,
+              "serialized_bytes": 7704,
+              "type": "dict"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.03680555555555556,
+            "invalid_frequency_tick_count": 53,
+            "measured_start_event_count": 2,
+            "measured_start_events": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "daae15fe2b1e426f7986495375412469503bf7a05fe6ff096d45f7da1db6912c",
+              "count": 2,
+              "serialized_bytes": 161,
+              "type": "list"
+            },
+            "mode": "baseline",
+            "peak_unserved_mw": 22.309362466,
+            "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-uneven-multisched-01",
+            "served_mwh": 64.203838044,
+            "start_fuel_reconciliation": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "1757a55781f6e24cc2d65c336bffa80872e8477defb88f0b6036c3a0f98ce14e",
+              "count": 6,
+              "serialized_bytes": 143,
+              "type": "dict"
+            },
+            "starts": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4989135045cee7491af96a496bf8a131088442e829adbde3225afc7242a509b9",
+              "count": 2,
+              "serialized_bytes": 853,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 0,
+            "stop_floor_refusals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "study_class": "base_demo",
+            "tick_count": 1440,
+            "turbine_fuel_mmbtu": 714.363019086,
+            "unserved_intervals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "1fc87c50958b60277f633cd7edafe22041212e14673ae4f58b9e34136a467ec3",
+              "count": 2,
+              "serialized_bytes": 177,
+              "type": "list"
+            },
+            "unserved_mwh": 0.351692658
+          },
+          "normalized_identity_differing_fields": [],
+          "normalized_identity_digest_matches": true,
+          "normalized_identity_matches_reference": true,
+          "normalized_identity_sha256": "3b75a2ac5bb2272da1f80ba7094d22cc5eb1b9f428e937965322bcc4967c90d5",
+          "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+          "raw_commit_fields": {
+            "engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty"
+          },
+          "raw_identity_digest": "5a368b648d22f117f0e5d704c725e98340c198b39e412eedadc8d3fc91312266",
+          "raw_identity_metric_d6c_summary": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "3b75a2ac5bb2272da1f80ba7094d22cc5eb1b9f428e937965322bcc4967c90d5",
+            "count": 8,
+            "serialized_bytes": 7704,
+            "type": "dict"
+          },
+          "status": "PASS",
+          "tick_count": 1440
+        },
+        "informed": {
+          "expected_identity_digest": "d2b281e8602f6f1ba39e8d32f2f63e669203748dc497881e6d72673dbea45421",
+          "expected_normalized_identity_sha256": "146a97a2cd2c3245af6eb930b26572f8b0ac1c561cb8275a71d7f93f8b88e8cb",
+          "metric_differences": {},
+          "metrics": {
+            "bess_soc_final": 0.99999999,
+            "bess_soc_max": 0.99999999,
+            "bess_soc_min": 0.859745209,
+            "build_warnings": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "cc7a4e2ea4b1f3002d8672f4847ecf635f225cd927241fa5780c149fb6cc9344",
+              "count": 12,
+              "serialized_bytes": 418,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9031e502cf6ce1df3bb38d2055512fcc877b991fa63f4eace953888935c2a353",
+              "count": 10,
+              "serialized_bytes": 4697,
+              "type": "list"
+            },
+            "commitment_log_record_count": 10,
+            "compute_trace_count": 1440,
+            "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "dce75914404969c58422f358333857d534ecd3bedd5437b0cdf6ea4f077ddc54",
+              "count": 1,
+              "serialized_bytes": 290,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "6e67be55ac29d8b8607a77212ad41602b9a407be7eb57fa2b9eb226b146936b3",
+              "count": 4,
+              "serialized_bytes": 102,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 104.716180522,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "b69a47076c12180649700acaadb085f93702890d711bfbfd18fe07cf4ea8962d",
+              "count": 4,
+              "serialized_bytes": 112,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "46a8294093ccdc1041f10e98a36a647f08c69c55d9d6c3cc90c3b842f773d973",
+              "count": 4,
+              "serialized_bytes": 105,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 292.804568729,
+            "dispatch_curtailment_mwh": 10.002737911,
+            "energy_balance": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "fb83004c5f48d170cedd8681d24768d18b096ef4765d715eb186a5997352a676",
+              "count": 4,
+              "serialized_bytes": 129,
+              "type": "dict"
+            },
+            "forecast": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "cf6a32c3d0696394268dac5ed7477375850a402585509fbfdbacb0a01bfeb8fd",
+              "count": 2,
+              "serialized_bytes": 43,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "f94bf4d7c6a01776d905e5592e2b94b90bdb3ed7ec36834cc0b9e88ffde46781",
+              "count": 2,
+              "serialized_bytes": 39,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "63bb158e9f7da10aea5fef55ee295c86741a96750cb96530ce7de12b38f31602",
+              "count": 4,
+              "serialized_bytes": 127,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "identity": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "146a97a2cd2c3245af6eb930b26572f8b0ac1c561cb8275a71d7f93f8b88e8cb",
+              "count": 8,
+              "serialized_bytes": 7704,
+              "type": "dict"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.0,
+            "invalid_frequency_tick_count": 0,
+            "measured_start_event_count": 2,
+            "measured_start_events": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "b651be54a8c87710b2d68b642b92e2780c073f576e6d526f80eced749ef4846e",
+              "count": 2,
+              "serialized_bytes": 158,
+              "type": "list"
+            },
+            "mode": "informed",
+            "peak_unserved_mw": 7.524660522,
+            "physical_identity_sha256": "23c4c5b7d7f0eb98a9e9071a1a64ab8ea2d7c843d1e7f1af072f9daf99a84ef1",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-uneven-multisched-01",
+            "served_mwh": 64.534807711,
+            "start_fuel_reconciliation": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "1757a55781f6e24cc2d65c336bffa80872e8477defb88f0b6036c3a0f98ce14e",
+              "count": 6,
+              "serialized_bytes": 143,
+              "type": "dict"
+            },
+            "starts": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9deec74a57c8fbcceccf5f8a030d5a868cd8d87a3c56dab25608085d91b3c3bd",
+              "count": 2,
+              "serialized_bytes": 929,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 0,
+            "stop_floor_refusals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "study_class": "base_demo",
+            "tick_count": 1440,
+            "turbine_fuel_mmbtu": 733.778735734,
+            "unserved_intervals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "de05bd0904045a64e568ba0d0d9f40eeae39fce3962b2124c8873d23245cb364",
+              "count": 1,
+              "serialized_bytes": 88,
+              "type": "list"
+            },
+            "unserved_mwh": 0.02072299
+          },
+          "normalized_identity_differing_fields": [],
+          "normalized_identity_digest_matches": true,
+          "normalized_identity_matches_reference": true,
+          "normalized_identity_sha256": "146a97a2cd2c3245af6eb930b26572f8b0ac1c561cb8275a71d7f93f8b88e8cb",
+          "physical_identity_sha256": "23c4c5b7d7f0eb98a9e9071a1a64ab8ea2d7c843d1e7f1af072f9daf99a84ef1",
+          "raw_commit_fields": {
+            "engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty"
+          },
+          "raw_identity_digest": "55d3e1b61afbc2d5e61b1ba143363388ce25cae9e0e8ecb1459fd90187c6709c",
+          "raw_identity_metric_d6c_summary": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "146a97a2cd2c3245af6eb930b26572f8b0ac1c561cb8275a71d7f93f8b88e8cb",
+            "count": 8,
+            "serialized_bytes": 7704,
+            "type": "dict"
+          },
+          "status": "PASS",
+          "tick_count": 1440
+        }
+      },
+      "comparison": {
+        "condition_inputs": {
+          "baseline_energy_balance": {
+            "baseline_energy_balance": true,
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          },
+          "baseline_fuel_reconciled": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_fuel_reconciled": true,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          },
+          "baseline_valid": {
+            "baseline_constraints_valid": true,
+            "baseline_frequency_feedback_configured": false,
+            "baseline_frequency_valid": true,
+            "baseline_hard_violations": [],
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          },
+          "build_parity": {
+            "baseline_engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "baseline_frequency_feedback_configured": false,
+            "baseline_harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "informed_frequency_feedback_configured": false,
+            "informed_harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          },
+          "identical_compute_trace": {
+            "baseline_compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          },
+          "informed_energy_balance": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_energy_balance": true,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          },
+          "informed_fuel_reconciled": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_fuel_reconciled": true,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          },
+          "informed_peak_unserved_no_worse": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_peak_unserved_mw": 22.309362466,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_peak_unserved_mw": 7.524660522,
+            "informed_protection_configured": false,
+            "tolerance_mw": 1e-09
+          },
+          "informed_unserved_energy_no_worse": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "baseline_unserved_mwh": 0.351692658,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false,
+            "informed_unserved_mwh": 0.02072299,
+            "tolerance_mwh": 1e-09
+          },
+          "informed_valid": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03680555555555556,
+            "baseline_invalid_frequency_tick_count": 53,
+            "baseline_protection_configured": false,
+            "informed_constraints_valid": true,
+            "informed_frequency_feedback_configured": false,
+            "informed_frequency_valid": true,
+            "informed_hard_violations": [],
+            "informed_invalid_frequency_fraction": 0.0,
+            "informed_invalid_frequency_tick_count": 0,
+            "informed_protection_configured": false
+          }
+        },
+        "condition_order": [
+          "build_parity",
+          "baseline_valid",
+          "informed_valid",
+          "baseline_energy_balance",
+          "informed_energy_balance",
+          "baseline_fuel_reconciled",
+          "informed_fuel_reconciled",
+          "identical_compute_trace",
+          "informed_unserved_energy_no_worse",
+          "informed_peak_unserved_no_worse"
+        ],
+        "conditions": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "frequency_inputs": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "informed_vs_baseline": {
+          "baseline_peak_unserved_mw": 22.309362466,
+          "baseline_unserved_mwh": 0.351692658,
+          "informed_peak_unserved_mw": 7.524660522,
+          "informed_unserved_mwh": 0.02072299
+        },
+        "verdict": "PASS"
+      },
+      "failures": [],
+      "scenario_id": "scenario-uneven-multisched-01",
+      "study_class": "base_demo"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "expected_identity_digest": "e1677d584145a25a52adf8c91c849c9b545d9ebbcd4ec9c99dd821d81311e16e",
+          "expected_normalized_identity_sha256": "5fd65e2c703534d508241f55891d560c1a50bb40dc0a03888f12848c49ffe4d2",
+          "metric_differences": {},
+          "metrics": {
+            "bess_soc_final": 0.999999998,
+            "bess_soc_max": 0.999999999,
+            "bess_soc_min": 0.828342155,
+            "build_warnings": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "96faf8be7ec346525882297f3353fa56e63c7c45413b47befdefef0269917964",
+              "count": 12,
+              "serialized_bytes": 418,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "939ef35455be9d4aaf8df5e1c05dc32944eb675277f41c4d4e2c411c42afe8dd",
+              "count": 48,
+              "serialized_bytes": 21318,
+              "type": "list"
+            },
+            "commitment_log_record_count": 48,
+            "compute_trace_count": 17280,
+            "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "854e01e2c7d479e14a892ae597d7896a0c3f583c567de818896be74c7902f44b",
+              "count": 1,
+              "serialized_bytes": 289,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "a07ed6db2d13bf94ccc912cbac7c689b0aa5b0407f6ba5a62a5832d83ba26d1c",
+              "count": 4,
+              "serialized_bytes": 105,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 1974.088304814,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "a09a8c1e20bdcb390eba593645ab52126859d89dac398ab893180e9c7a116d99",
+              "count": 4,
+              "serialized_bytes": 128,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "1796786ffb1eedec862372a8ed1678dfef6901be8871315b6ea1d3f247783a27",
+              "count": 4,
+              "serialized_bytes": 105,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3394.620064264,
+            "dispatch_curtailment_mwh": 187.690139189,
+            "energy_balance": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "19bf6e054dafb4f9ec8bcb07f382b126275343bd6f7296da1bd8aa985fc9a7dc",
+              "count": 4,
+              "serialized_bytes": 131,
+              "type": "dict"
+            },
+            "forecast": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "83e396efec6d770fd040bf075da10bf756e869475f34dc112c1b697794368231",
+              "count": 2,
+              "serialized_bytes": 35,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "0b17dd3210b0034458c5cd486a83c86236b6fc5ab2f280c52756d6f8718f9ffe",
+              "count": 2,
+              "serialized_bytes": 25,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "cdba22499f187ca3a0f711e3a3f4e5963f87fdda4317d4457705b59e1d38d2dc",
+              "count": 4,
+              "serialized_bytes": 123,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "identity": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "5fd65e2c703534d508241f55891d560c1a50bb40dc0a03888f12848c49ffe4d2",
+              "count": 8,
+              "serialized_bytes": 2508,
+              "type": "dict"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.04693287037037037,
+            "invalid_frequency_tick_count": 811,
+            "measured_start_event_count": 12,
+            "measured_start_events": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "505ad17eda3073c71a3179cde8a146bf4987d097e74c9a57452e497e372bcfff",
+              "count": 12,
+              "serialized_bytes": 990,
+              "type": "list"
+            },
+            "mode": "baseline",
+            "peak_unserved_mw": 35.021533247,
+            "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-h1-k8s-ray-24h",
+            "served_mwh": 367.781736493,
+            "start_fuel_reconciliation": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "08a0c6e8453cd5b022568efd37e7db2878e1f809726079d3e70736f3fa99b81f",
+              "count": 6,
+              "serialized_bytes": 146,
+              "type": "dict"
+            },
+            "starts": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "d95c0926a1bf8003383ffbedf4256ba8f45e7fad4f373bb0ab48ae6637cf4787",
+              "count": 12,
+              "serialized_bytes": 5106,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 0,
+            "stop_floor_refusals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "study_class": "addendum_h",
+            "tick_count": 17280,
+            "turbine_fuel_mmbtu": 6039.74023024,
+            "unserved_intervals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "1878ed15a43b78788f7893c43261a47797169961a113298629a85408cd95e8b0",
+              "count": 20,
+              "serialized_bytes": 1818,
+              "type": "list"
+            },
+            "unserved_mwh": 0.894372986
+          },
+          "normalized_identity_differing_fields": [],
+          "normalized_identity_digest_matches": true,
+          "normalized_identity_matches_reference": true,
+          "normalized_identity_sha256": "5fd65e2c703534d508241f55891d560c1a50bb40dc0a03888f12848c49ffe4d2",
+          "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+          "raw_commit_fields": {
+            "engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty"
+          },
+          "raw_identity_digest": "334d9c1eb971904f02d4b5b61493ce52cbab3aacbbdd3fa78e210c6a7ed641ad",
+          "raw_identity_metric_d6c_summary": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "5fd65e2c703534d508241f55891d560c1a50bb40dc0a03888f12848c49ffe4d2",
+            "count": 8,
+            "serialized_bytes": 2508,
+            "type": "dict"
+          },
+          "status": "PASS",
+          "tick_count": 17280
+        },
+        "informed": {
+          "expected_identity_digest": "1d99fb904281cd92c8e1963cc3a0b602434db5e89e0bc6ab31e44e379e1431e3",
+          "expected_normalized_identity_sha256": "007d261ed79e949cf53b8e7261c50a4834ee15777e3d64708c3e5578f86df40e",
+          "metric_differences": {},
+          "metrics": {
+            "bess_soc_final": 0.999999989,
+            "bess_soc_max": 0.999999999,
+            "bess_soc_min": 0.877673489,
+            "build_warnings": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "1a26747dc342c0289d057c31a20dbd18f09fc800443246c48ab2527234714bd6",
+              "count": 12,
+              "serialized_bytes": 418,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "78054e05720213d15aba9f7b3b9e0321b60bec95ac3a3b87c4ae51e8bee3ad52",
+              "count": 66,
+              "serialized_bytes": 31971,
+              "type": "list"
+            },
+            "commitment_log_record_count": 66,
+            "compute_trace_count": 17280,
+            "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "6df0d6a1a102a9e3afbedf00dac82d5119767472cb942dc6ed910541127228e5",
+              "count": 1,
+              "serialized_bytes": 296,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "d77c1a016d645b84f94f62ae7595624c711146a0d60857ed30f6886a736b7603",
+              "count": 4,
+              "serialized_bytes": 103,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 2102.293988626,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "586dcbe67e3cf43d6c7e90b32007a747d2c4144c517f7bed0a806b0f8a16467f",
+              "count": 4,
+              "serialized_bytes": 128,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "d8c2d3c2e4a57971c4af8939f785ebe512b9bfc3c7ed346d91ebdd3ebe2aa983",
+              "count": 4,
+              "serialized_bytes": 108,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3535.055208859,
+            "dispatch_curtailment_mwh": 200.012298325,
+            "energy_balance": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "b488dadcc63be47a67d6c644a9e3076a3c4a88ebbba2f93788b13518c1d0f29a",
+              "count": 4,
+              "serialized_bytes": 131,
+              "type": "dict"
+            },
+            "forecast": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "83e396efec6d770fd040bf075da10bf756e869475f34dc112c1b697794368231",
+              "count": 2,
+              "serialized_bytes": 35,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "0b17dd3210b0034458c5cd486a83c86236b6fc5ab2f280c52756d6f8718f9ffe",
+              "count": 2,
+              "serialized_bytes": 25,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "aade3d51d59995aa95ddec22416b2ad9f204d62966f4a3bb543302398ad8a33b",
+              "count": 4,
+              "serialized_bytes": 130,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "identity": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "007d261ed79e949cf53b8e7261c50a4834ee15777e3d64708c3e5578f86df40e",
+              "count": 8,
+              "serialized_bytes": 2508,
+              "type": "dict"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.001388888888888889,
+            "invalid_frequency_tick_count": 24,
+            "measured_start_event_count": 12,
+            "measured_start_events": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "e11f28d79901ecebe828c5753c9a7fe6a2e2b5ce1f26a2b69f9bbd4e2d7374b6",
+              "count": 12,
+              "serialized_bytes": 990,
+              "type": "list"
+            },
+            "mode": "informed",
+            "peak_unserved_mw": 13.754584348,
+            "physical_identity_sha256": "49fe8905d6e97f8654a0bc3febab07198f6f89cac66e7b0993bbeb62e7cb4de2",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-h1-k8s-ray-24h",
+            "served_mwh": 368.609626552,
+            "start_fuel_reconciliation": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "08a0c6e8453cd5b022568efd37e7db2878e1f809726079d3e70736f3fa99b81f",
+              "count": 6,
+              "serialized_bytes": 146,
+              "type": "dict"
+            },
+            "starts": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "dde5a0365b7c30acc9306de2b2e45a4f46d1f43772eceb36e9f81976e2854084",
+              "count": 12,
+              "serialized_bytes": 5412,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 2,
+            "stop_floor_refusals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "33cf275eaa7a42aaf9da5672167112ae899debceabfb7dddfd9f648c983810ad",
+              "count": 2,
+              "serialized_bytes": 1155,
+              "type": "list"
+            },
+            "study_class": "addendum_h",
+            "tick_count": 17280,
+            "turbine_fuel_mmbtu": 6103.92584995,
+            "unserved_intervals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "2916acba871cb0062a317fcf506a642ef6b066b851fee06feee602f021c36390",
+              "count": 8,
+              "serialized_bytes": 731,
+              "type": "list"
+            },
+            "unserved_mwh": 0.066482927
+          },
+          "normalized_identity_differing_fields": [],
+          "normalized_identity_digest_matches": true,
+          "normalized_identity_matches_reference": true,
+          "normalized_identity_sha256": "007d261ed79e949cf53b8e7261c50a4834ee15777e3d64708c3e5578f86df40e",
+          "physical_identity_sha256": "49fe8905d6e97f8654a0bc3febab07198f6f89cac66e7b0993bbeb62e7cb4de2",
+          "raw_commit_fields": {
+            "engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty"
+          },
+          "raw_identity_digest": "d48bdeb829e0c9e2f42eb695a2e1f590dfdd1affa765ebf5dcae9761d03657dd",
+          "raw_identity_metric_d6c_summary": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "007d261ed79e949cf53b8e7261c50a4834ee15777e3d64708c3e5578f86df40e",
+            "count": 8,
+            "serialized_bytes": 2508,
+            "type": "dict"
+          },
+          "status": "PASS",
+          "tick_count": 17280
+        }
+      },
+      "comparison": {
+        "condition_inputs": {
+          "baseline_energy_balance": {
+            "baseline_energy_balance": true,
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          },
+          "baseline_fuel_reconciled": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_fuel_reconciled": true,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          },
+          "baseline_valid": {
+            "baseline_constraints_valid": true,
+            "baseline_frequency_feedback_configured": false,
+            "baseline_frequency_valid": true,
+            "baseline_hard_violations": [],
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          },
+          "build_parity": {
+            "baseline_engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "baseline_frequency_feedback_configured": false,
+            "baseline_harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "informed_frequency_feedback_configured": false,
+            "informed_harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          },
+          "identical_compute_trace": {
+            "baseline_compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          },
+          "informed_energy_balance": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_energy_balance": true,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          },
+          "informed_fuel_reconciled": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_fuel_reconciled": true,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          },
+          "informed_peak_unserved_no_worse": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_peak_unserved_mw": 35.021533247,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_peak_unserved_mw": 13.754584348,
+            "informed_protection_configured": false,
+            "tolerance_mw": 1e-09
+          },
+          "informed_unserved_energy_no_worse": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "baseline_unserved_mwh": 0.894372986,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false,
+            "informed_unserved_mwh": 0.066482927,
+            "tolerance_mwh": 1e-09
+          },
+          "informed_valid": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.04693287037037037,
+            "baseline_invalid_frequency_tick_count": 811,
+            "baseline_protection_configured": false,
+            "informed_constraints_valid": true,
+            "informed_frequency_feedback_configured": false,
+            "informed_frequency_valid": true,
+            "informed_hard_violations": [],
+            "informed_invalid_frequency_fraction": 0.001388888888888889,
+            "informed_invalid_frequency_tick_count": 24,
+            "informed_protection_configured": false
+          }
+        },
+        "condition_order": [
+          "build_parity",
+          "baseline_valid",
+          "informed_valid",
+          "baseline_energy_balance",
+          "informed_energy_balance",
+          "baseline_fuel_reconciled",
+          "informed_fuel_reconciled",
+          "identical_compute_trace",
+          "informed_unserved_energy_no_worse",
+          "informed_peak_unserved_no_worse"
+        ],
+        "conditions": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "frequency_inputs": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.001388888888888889,
+          "informed_invalid_frequency_tick_count": 24,
+          "informed_protection_configured": false
+        },
+        "informed_vs_baseline": {
+          "baseline_peak_unserved_mw": 35.021533247,
+          "baseline_unserved_mwh": 0.894372986,
+          "informed_peak_unserved_mw": 13.754584348,
+          "informed_unserved_mwh": 0.066482927
+        },
+        "verdict": "PASS"
+      },
+      "failures": [],
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "study_class": "addendum_h"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "expected_identity_digest": "8e17f3cd578da91b94793d106151597277f8bc6afcae5af498ecd0cb3d72bded",
+          "expected_normalized_identity_sha256": "e2a840930e370cb4042b4ad93e40bd0435cdd0853f272dde3e27c60ef0ca26e7",
+          "metric_differences": {},
+          "metrics": {
+            "bess_soc_final": 0.999999998,
+            "bess_soc_max": 0.999999999,
+            "bess_soc_min": 0.950386947,
+            "build_warnings": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "47882fcfa74b24f47dce42ef928c6bc7bba5671204f80515b3e41c3622da7eb1",
+              "count": 12,
+              "serialized_bytes": 418,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "d40102b994ac6d20eed6dc6257a18136a6e63008fb0b01cdcf328280f0b2af16",
+              "count": 44,
+              "serialized_bytes": 19678,
+              "type": "list"
+            },
+            "commitment_log_record_count": 44,
+            "compute_trace_count": 17280,
+            "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "33efe98cc5f90e884801efc9b8a1e699bcaed6eef42c7d1eaaea3ce132ded913",
+              "count": 1,
+              "serialized_bytes": 297,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "88f1d0603d731f20c422ec5303aab5d3c83c408d9b907f0066105e1fb5ca1187",
+              "count": 4,
+              "serialized_bytes": 109,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 3680.617469434,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "44eeeb835c6a25afb1be42ba014e1cdfa9f037cac5f46749de519a173ce1f33b",
+              "count": 4,
+              "serialized_bytes": 123,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "ec2df0004058387b0538a195b766cb9472caec5d9c727ed8c3f801bf54d7e4c0",
+              "count": 4,
+              "serialized_bytes": 109,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4838.569627585,
+            "dispatch_curtailment_mwh": 349.917690813,
+            "energy_balance": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "0bd144f6a51415bbcaae3dc9b195692cc3bec1ba49ff6a08233f2bea65699728",
+              "count": 4,
+              "serialized_bytes": 131,
+              "type": "dict"
+            },
+            "forecast": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "83e396efec6d770fd040bf075da10bf756e869475f34dc112c1b697794368231",
+              "count": 2,
+              "serialized_bytes": 35,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "0b17dd3210b0034458c5cd486a83c86236b6fc5ab2f280c52756d6f8718f9ffe",
+              "count": 2,
+              "serialized_bytes": 25,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "36137b97cf59e4f544f7386d2f21a54c5eebcf558de4dbc9e70a3db6257f014a",
+              "count": 4,
+              "serialized_bytes": 130,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "identity": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "e2a840930e370cb4042b4ad93e40bd0435cdd0853f272dde3e27c60ef0ca26e7",
+              "count": 8,
+              "serialized_bytes": 2512,
+              "type": "dict"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.03177083333333333,
+            "invalid_frequency_tick_count": 549,
+            "measured_start_event_count": 11,
+            "measured_start_events": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "8a3a77bc25af8ac9b54b1a83fda43eebe986b66a18fd57a420df01849d8623d1",
+              "count": 11,
+              "serialized_bytes": 912,
+              "type": "list"
+            },
+            "mode": "baseline",
+            "peak_unserved_mw": 44.86838787,
+            "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-h2-slurm-24h",
+            "served_mwh": 138.948956374,
+            "start_fuel_reconciliation": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "c5dc5b77b852782d8173727046c0c750ba6e45e2b84ab8e649258c3a63573cad",
+              "count": 6,
+              "serialized_bytes": 146,
+              "type": "dict"
+            },
+            "starts": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "6a0367a3c2245010274546028464c973ed941110acb8751af220b4a01d005ebe",
+              "count": 11,
+              "serialized_bytes": 4826,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 0,
+            "stop_floor_refusals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "study_class": "addendum_h",
+            "tick_count": 17280,
+            "turbine_fuel_mmbtu": 5330.503098761,
+            "unserved_intervals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "0cb36092bd1cc1c86f36376c9911af1b9f59ac0d784bed317722aa4f2c44d63a",
+              "count": 7,
+              "serialized_bytes": 640,
+              "type": "list"
+            },
+            "unserved_mwh": 5.011418076
+          },
+          "normalized_identity_differing_fields": [],
+          "normalized_identity_digest_matches": true,
+          "normalized_identity_matches_reference": true,
+          "normalized_identity_sha256": "e2a840930e370cb4042b4ad93e40bd0435cdd0853f272dde3e27c60ef0ca26e7",
+          "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+          "raw_commit_fields": {
+            "engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty"
+          },
+          "raw_identity_digest": "11caa53dff42510aebea4b1419bb64b96728d2a507d6e4bfc58ad0d4ef9bf744",
+          "raw_identity_metric_d6c_summary": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "e2a840930e370cb4042b4ad93e40bd0435cdd0853f272dde3e27c60ef0ca26e7",
+            "count": 8,
+            "serialized_bytes": 2512,
+            "type": "dict"
+          },
+          "status": "PASS",
+          "tick_count": 17280
+        },
+        "informed": {
+          "expected_identity_digest": "408d94a4bba836bdc58a1dc696ecc7c1659ecaf92e56afe91b4eec308e06fba8",
+          "expected_normalized_identity_sha256": "ec2be03deb35de444b593f338e35cd09ce071c9b1b9fe03cd6f1d60b34617312",
+          "metric_differences": {},
+          "metrics": {
+            "bess_soc_final": 0.999999987,
+            "bess_soc_max": 0.999999998,
+            "bess_soc_min": 0.950386947,
+            "build_warnings": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "9aa7c1fc5d210bc3492e49eafd54562697ae65ac5bca3bfaa7b99f8665a5ada8",
+              "count": 1,
+              "serialized_bytes": 120,
+              "type": "list"
+            },
+            "cache_hit": false,
+            "commitment": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "6d0650ce00b07b774df1c24d36585eddb7dcb6c130719162959fc3754bddcde1",
+              "count": 12,
+              "serialized_bytes": 420,
+              "type": "dict"
+            },
+            "commitment_log": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "a7d1c4b299e2dc3c2d49de46377a995b574d818275901fefd636e673984f6058",
+              "count": 61,
+              "serialized_bytes": 28727,
+              "type": "list"
+            },
+            "commitment_log_record_count": 61,
+            "compute_trace_count": 17280,
+            "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+            "constraints_valid": true,
+            "daily_breakdown": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "de0ae91f8546384c0cd0b47b3a172116de6bcb7e59a0e66695008b062f1b93ef",
+              "count": 1,
+              "serialized_bytes": 289,
+              "type": "list"
+            },
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "5148fcedabae1f86b72296339670c3dc1e413a95412021450fcc3bb4a7c08f20",
+              "count": 4,
+              "serialized_bytes": 108,
+              "type": "dict"
+            },
+            "dispatch_curtailment_attributable_fuel_mmbtu": 3641.833439756,
+            "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "2364a0079b0dbadf0c721555a6acf79d7402c91dd75f2bfc9413d96deb5724fd",
+              "count": 4,
+              "serialized_bytes": 130,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "23a2884557e72d1aed616ce39998c41ad82afa7c6581a8a99d473e6cc076e320",
+              "count": 4,
+              "serialized_bytes": 109,
+              "type": "dict"
+            },
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4911.186704128,
+            "dispatch_curtailment_mwh": 346.234483537,
+            "energy_balance": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "f870f30888d5bce75a1b4df99699ce57faf6d6c29929fbd6d6f514d808974449",
+              "count": 4,
+              "serialized_bytes": 131,
+              "type": "dict"
+            },
+            "forecast": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "61559127dda6c4c30f2dda1cb4d9af53a9e2634fef6acd8ea4dc957dc1c85315",
+              "count": 2,
+              "serialized_bytes": 45,
+              "type": "dict"
+            },
+            "forecast_misses": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "bf2173da8c82ce029442f4a1485b173fbd0dbe63004d4fd72fec46a70b43958f",
+              "count": 2,
+              "serialized_bytes": 41,
+              "type": "dict"
+            },
+            "frequency_feedback_configured": false,
+            "fuel_by_component_mmbtu": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "eb4244c27004dc1113ffa3a35f68bb31ea2a9f71e0314d5d95bcd3ab1a5f9416",
+              "count": 4,
+              "serialized_bytes": 123,
+              "type": "dict"
+            },
+            "fuel_reconciled": true,
+            "hard_violations": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "identity": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "ec2be03deb35de444b593f338e35cd09ce071c9b1b9fe03cd6f1d60b34617312",
+              "count": 8,
+              "serialized_bytes": 2512,
+              "type": "dict"
+            },
+            "interval_seconds": 5.0,
+            "invalid_frequency_fraction": 0.02210648148148148,
+            "invalid_frequency_tick_count": 382,
+            "measured_start_event_count": 12,
+            "measured_start_events": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "2045c2512f08e101ccad41ca892e5c3d4b39356b1ed2192f916e4f060aa45c84",
+              "count": 12,
+              "serialized_bytes": 995,
+              "type": "list"
+            },
+            "mode": "informed",
+            "peak_unserved_mw": 27.36838787,
+            "physical_identity_sha256": "0562d2e0df0fc06547a3fa301cd4c237ae8857f60c40ae2331241db2b5b1dbec",
+            "protection_configured": false,
+            "replay_strategy": "baseline demand trace replay",
+            "scenario_id": "scenario-h2-slurm-24h",
+            "served_mwh": 143.422132183,
+            "start_fuel_reconciliation": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "341c84cf2a360af5e35fdc36ca0531ef9cd71d3d7a7a3b65ce6769422685c36f",
+              "count": 6,
+              "serialized_bytes": 146,
+              "type": "dict"
+            },
+            "starts": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4e504f87b8a2d7d15723da0118c6c944cb3b069b2f6d1e0696f53a55d6d718fa",
+              "count": 12,
+              "serialized_bytes": 5569,
+              "type": "list"
+            },
+            "status": "PASS",
+            "stop_floor_refusal_count": 0,
+            "stop_floor_refusals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+              "count": 0,
+              "serialized_bytes": 2,
+              "type": "list"
+            },
+            "study_class": "addendum_h",
+            "tick_count": 17280,
+            "turbine_fuel_mmbtu": 5349.03370309,
+            "unserved_intervals": {
+              "__summary__": "large metric value represented by exact canonical SHA-256",
+              "canonical_json_sha256": "ac0387cc0e7f66574addc588ba2e0eb52831d672ecd62a272262aea3edbff416",
+              "count": 7,
+              "serialized_bytes": 645,
+              "type": "list"
+            },
+            "unserved_mwh": 0.538242266
+          },
+          "normalized_identity_differing_fields": [],
+          "normalized_identity_digest_matches": true,
+          "normalized_identity_matches_reference": true,
+          "normalized_identity_sha256": "ec2be03deb35de444b593f338e35cd09ce071c9b1b9fe03cd6f1d60b34617312",
+          "physical_identity_sha256": "0562d2e0df0fc06547a3fa301cd4c237ae8857f60c40ae2331241db2b5b1dbec",
+          "raw_commit_fields": {
+            "engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty"
+          },
+          "raw_identity_digest": "c736ae755b1cca1023a560a91e27266f0cb89888e51af87202ffd68de493400f",
+          "raw_identity_metric_d6c_summary": {
+            "__summary__": "large metric value represented by exact canonical SHA-256",
+            "canonical_json_sha256": "ec2be03deb35de444b593f338e35cd09ce071c9b1b9fe03cd6f1d60b34617312",
+            "count": 8,
+            "serialized_bytes": 2512,
+            "type": "dict"
+          },
+          "status": "PASS",
+          "tick_count": 17280
+        }
+      },
+      "comparison": {
+        "condition_inputs": {
+          "baseline_energy_balance": {
+            "baseline_energy_balance": true,
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          },
+          "baseline_fuel_reconciled": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_fuel_reconciled": true,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          },
+          "baseline_valid": {
+            "baseline_constraints_valid": true,
+            "baseline_frequency_feedback_configured": false,
+            "baseline_frequency_valid": true,
+            "baseline_hard_violations": [],
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          },
+          "build_parity": {
+            "baseline_engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "baseline_frequency_feedback_configured": false,
+            "baseline_harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_engine_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "informed_frequency_feedback_configured": false,
+            "informed_harness_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f-dirty",
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          },
+          "identical_compute_trace": {
+            "baseline_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          },
+          "informed_energy_balance": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_energy_balance": true,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          },
+          "informed_fuel_reconciled": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_fuel_reconciled": true,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          },
+          "informed_peak_unserved_no_worse": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_peak_unserved_mw": 44.86838787,
+            "baseline_protection_configured": false,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_peak_unserved_mw": 27.36838787,
+            "informed_protection_configured": false,
+            "tolerance_mw": 1e-09
+          },
+          "informed_unserved_energy_no_worse": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "baseline_unserved_mwh": 5.011418076,
+            "informed_frequency_feedback_configured": false,
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false,
+            "informed_unserved_mwh": 0.538242266,
+            "tolerance_mwh": 1e-09
+          },
+          "informed_valid": {
+            "baseline_frequency_feedback_configured": false,
+            "baseline_invalid_frequency_fraction": 0.03177083333333333,
+            "baseline_invalid_frequency_tick_count": 549,
+            "baseline_protection_configured": false,
+            "informed_constraints_valid": true,
+            "informed_frequency_feedback_configured": false,
+            "informed_frequency_valid": true,
+            "informed_hard_violations": [],
+            "informed_invalid_frequency_fraction": 0.02210648148148148,
+            "informed_invalid_frequency_tick_count": 382,
+            "informed_protection_configured": false
+          }
+        },
+        "condition_order": [
+          "build_parity",
+          "baseline_valid",
+          "informed_valid",
+          "baseline_energy_balance",
+          "informed_energy_balance",
+          "baseline_fuel_reconciled",
+          "informed_fuel_reconciled",
+          "identical_compute_trace",
+          "informed_unserved_energy_no_worse",
+          "informed_peak_unserved_no_worse"
+        ],
+        "conditions": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "frequency_inputs": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.02210648148148148,
+          "informed_invalid_frequency_tick_count": 382,
+          "informed_protection_configured": false
+        },
+        "informed_vs_baseline": {
+          "baseline_peak_unserved_mw": 44.86838787,
+          "baseline_unserved_mwh": 5.011418076,
+          "informed_peak_unserved_mw": 27.36838787,
+          "informed_unserved_mwh": 0.538242266
+        },
+        "verdict": "PASS"
+      },
+      "failures": [],
+      "scenario_id": "scenario-h2-slurm-24h",
+      "study_class": "addendum_h"
+    }
+  ],
+  "seed": 42,
+  "status": "PASS"
+}

@@ -1,0 +1,823 @@
+{
+  "invalid_count": 10,
+  "invalid_scenarios": [
+    {
+      "error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...subsequent comparison.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S1-A1', 'check': ...resent in the timeline'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'verdict_never' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S1-A2', 'check': ...corroboration (TC-82b)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.2\n  Input tag 'metric_always' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S1-A3', 'check': ...ncy < 1000 ms (TC-84b)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S1_baseline_training.json",
+      "id": "S1_baseline_training"
+    },
+    {
+      "error": "6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...torage hardware fault.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S2-A1', 'check': ...eckpoint phase present'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S2-A2', 'check': ...ing checkpoint (TC-81)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.2\n  Input tag 'metric_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S2-A3', 'check': ...ing checkpoint (TC-81)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.3\n  Input tag 'verdict_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S2-A4', 'check': ...t_corroborated (TC-81)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.4\n  Input tag 'telemetry_field_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S2-A5', 'check': ...apability tier (TC-81)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S2_checkpoint_hotspot.json",
+      "id": "S2_checkpoint_hotspot"
+    },
+    {
+      "error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ant operational check.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S3-A1', 'check': ...'job_end phase present'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S3-A2', 'check': ...during job_end (TC-82)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.2\n  Input tag 'verdict_never' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S3-A3', 'check': ... no checkpoint (TC-82)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S3_job_end_withholds.json",
+      "id": "S3_job_end_withholds"
+    },
+    {
+      "error": "6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...response matters most.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'control_breach_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S4-A1', 'check': ...stion stressor (TC-84)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_always' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S4-A2', 'check': ...tend stressor) (TC-84)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.2\n  Input tag 'gateway_in_breach' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S4-A3', 'check': ...g NFR-2 breach (TC-84)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.3\n  Input tag 'dominant_in_breach_not' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S4-A4', 'check': ... during breach (TC-84)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.4\n  Input tag 'control_budget' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S4-A5', 'check': ... on every tick (TC-84)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S4_control_path_nfr2_breach.json",
+      "id": "S4_control_path_nfr2_breach"
+    },
+    {
+      "error": "2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...operational safeguard.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'gray_loss_elevated' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S5-A1', 'check': ...ove the injected floor'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S5_gray_failure.json",
+      "id": "S5_gray_failure"
+    },
+    {
+      "error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ch require an upgrade.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'capability_tier_assertion' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S6-A1', 'check': ...graded capability tier'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'phase_discrimination_false' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S6-A2', 'check': ...lable at degraded tier'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.2\n  Input tag 'verdict_never' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S6-A3', 'check': ...itted at degraded tier'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S6_baseline_tier_degradation.json",
+      "id": "S6_baseline_tier_degradation"
+    },
+    {
+      "error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ontier model training.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S7-A1', 'check': ...eckpoint phase present'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S7-A2', 'check': ...during slow checkpoint'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.2\n  Input tag 'verdict_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S7-A3', 'check': ...er ELEPHANT_SUSTAIN_S)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S7_slow_checkpoint.json",
+      "id": "S7_slow_checkpoint"
+    },
+    {
+      "error": "2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ed unexpected results.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'crc_errors_present' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S8-A1', 'check': ...ero CRC error counters'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "file": "config/scenarios/S8_transceiver_degrade.json",
+      "id": "S8_transceiver_degrade"
+    },
+    {
+      "error": "10 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'_comment': 'Regression ...000.0, 'ramp_s': 60.0}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.0.event_type\n  Field required [type=missing, input_value={'timestamp': 0, 'job_id'... 1000.0, 'ramp_s': 60.0}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.1.event_type\n  Field required [type=missing, input_value={'timestamp': 1800, 'job_...1000.0, 'ramp_s': 120.0}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.2.event_type\n  Field required [type=missing, input_value={'timestamp': 3600, 'job_...1000.0, 'ramp_s': 120.0}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.3.event_type\n  Field required [type=missing, input_value={'timestamp': 4800, 'job_... 1000.0, 'ramp_s': 60.0}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nturbine_units.0.gt_mode\n  Input should be 'frame' or 'aero' [type=literal_error, input_value='open_cycle', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error\nturbine_units.1.gt_mode\n  Input should be 'frame' or 'aero' [type=literal_error, input_value='open_cycle', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error\nturbine_units.2.gt_mode\n  Input should be 'frame' or 'aero' [type=literal_error, input_value='open_cycle', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error\nturbine_units.3.gt_mode\n  Input should be 'frame' or 'aero' [type=literal_error, input_value='open_cycle', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error\nturbine_units.4.gt_mode\n  Input should be 'frame' or 'aero' [type=literal_error, input_value='open_cycle', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error",
+      "file": "config/scenarios/S9_islanded_ramp_protection.json",
+      "id": "S9_islanded_ramp_protection"
+    },
+    {
+      "error": "1 validation error for ScenarioSpec\nworkload_events.2.workload_class\n  Input should be 'training', 'inference' or 'other' [type=literal_error, input_value='checkpointing', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error",
+      "file": "config/scenarios/addendum-h-cav-1-workload-class-validation.json",
+      "id": "addendum-h-cav-1-workload-class-validation"
+    }
+  ],
+  "scenario_json_count": 46,
+  "valid_count": 36,
+  "valid_scenarios": [
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.9284516364503763,
+          "rated_mw": 18.0,
+          "usable_mwh": 14.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 86400.0,
+      "file": "config/scenarios/S10_mit_supercloud_2021-08-11.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "S10_mit_supercloud_2021-08-11",
+      "island_mode": true,
+      "name": "S10_mit_supercloud_2021-08-11",
+      "turbine_count": 5
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.25,
+      "bess_normal_dispatch_depth_fraction_raw": 0.25,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 18.0,
+          "usable_mwh": 14.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 86400.0,
+      "file": "config/scenarios/S11_mit_supercloud_2021-08-11_bchydro.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": 80.0,
+      "id": "S11_mit_supercloud_2021-08-11_bchydro",
+      "island_mode": false,
+      "name": "S11_mit_supercloud_2021-08-11_bchydro",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.25,
+      "bess_normal_dispatch_depth_fraction_raw": 0.25,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 18.0,
+          "usable_mwh": 14.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 86400.0,
+      "file": "config/scenarios/S11b_mit_supercloud_2021-08-11_bchydro_60mw.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": 60.0,
+      "id": "S11b_mit_supercloud_2021-08-11_bchydro_60mw",
+      "island_mode": false,
+      "name": "S11b_mit_supercloud_2021-08-11_bchydro_60mw",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 5.0,
+          "usable_mwh": 2.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 90.0,
+      "file": "config/scenarios/addendum-h-lead-time-profile-validation.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "addendum-h-lead-time-profile-validation",
+      "island_mode": true,
+      "name": "36 Addendum H — lead-time profile validation",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-1",
+          "initial_soc_fraction": 0.85,
+          "rated_mw": 6.0,
+          "usable_mwh": 8.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 10800.0,
+      "file": "config/scenarios/demo-10-tenant-full-ceiling.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "demo-10-tenant-full-ceiling",
+      "island_mode": false,
+      "name": "14 10-Tenant Full-Ceiling GPU Load — 3 h (tight headroom)",
+      "turbine_count": 3
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-1",
+          "initial_soc_fraction": 0.85,
+          "rated_mw": 6.0,
+          "usable_mwh": 8.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 5400.0,
+      "file": "config/scenarios/demo-10-tenant-overload-120pct.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "demo-10-tenant-overload-120pct",
+      "island_mode": false,
+      "name": "15 Shaped Load — 5%→40%→120%→40%→20% (90 min)",
+      "turbine_count": 3
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-1",
+          "initial_soc_fraction": 0.8,
+          "rated_mw": 10.0,
+          "usable_mwh": 40.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 10800.0,
+      "file": "config/scenarios/demo-10-tenant-random-gpu.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "demo-10-tenant-random-gpu",
+      "island_mode": false,
+      "name": "13 10-Tenant Random GPU Load — 3 h",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-1",
+          "initial_soc_fraction": 0.85,
+          "rated_mw": 5.0,
+          "usable_mwh": 6.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 3600.0,
+      "file": "config/scenarios/demo-20-tenant-contract-breach.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "demo-20-tenant-contract-breach",
+      "island_mode": false,
+      "name": "17 20-Tenant Contract Breach — T01 Spikes to ~150 % of 1 MW Ceiling at t=5 min",
+      "turbine_count": 5
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.85,
+          "rated_mw": 18.0,
+          "usable_mwh": 8.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 3600.0,
+      "file": "config/scenarios/demo-fc-bess-grid-peak.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "demo-fc-bess-grid-peak",
+      "island_mode": false,
+      "name": "20 BESS · Fuel Cell · Grid — Peak Stress 80%→120%→60% (60 min)",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-1",
+          "initial_soc_fraction": 0.85,
+          "rated_mw": 6.0,
+          "usable_mwh": 8.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 5400.0,
+      "file": "config/scenarios/demo-grid-fc-bess-shaped-load.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "demo-grid-fc-bess-shaped-load",
+      "island_mode": false,
+      "name": "16 Grid · Fuel Cell · BESS — Shaped Load 5%→40%→120%→40%→20% (90 min)",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 1.0,
+          "rated_mw": 18.0,
+          "usable_mwh": 14.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 10800.0,
+      "file": "config/scenarios/demo-islanded-ramp.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "demo-islanded-ramp",
+      "island_mode": true,
+      "name": "10 Islanded 8-60-10 MW ramp - sequential commitment and release",
+      "turbine_count": 5
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 18.0,
+          "usable_mwh": 14.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 10800.0,
+      "file": "config/scenarios/demo-operator-trip.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "demo-operator-trip",
+      "island_mode": true,
+      "name": "11 demo-operator-trip",
+      "turbine_count": 5
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.85,
+          "rated_mw": 18.0,
+          "usable_mwh": 8.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 14400.0,
+      "file": "config/scenarios/demo-rolling-planning-peaks.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "demo-rolling-planning-peaks",
+      "island_mode": false,
+      "name": "22 Rolling Planning — Three Forecast Peaks",
+      "turbine_count": 2
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-1",
+          "initial_soc_fraction": 0.85,
+          "rated_mw": 5.0,
+          "usable_mwh": 6.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 3600.0,
+      "file": "config/scenarios/demo-turbine-fc-bess-20-tenants-overage.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "demo-turbine-fc-bess-20-tenants-overage",
+      "island_mode": false,
+      "name": "18 Turbine, Fuel Cell, BESS — 20 Tenants — 1 Tenant Exceeds Capacity",
+      "turbine_count": 5
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 1.0,
+          "rated_mw": 18.0,
+          "usable_mwh": 8.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 5400.0,
+      "file": "config/scenarios/islanded-8-60-10-ramp.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "islanded-8-60-10-ramp",
+      "island_mode": true,
+      "name": "19 Islanded 8-60-10 MW ramp - sequential commitment and release",
+      "turbine_count": 5
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 18.0,
+          "usable_mwh": 14.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 10800.0,
+      "file": "config/scenarios/islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+      "island_mode": true,
+      "name": "12 islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+      "turbine_count": 5
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 5.0,
+          "usable_mwh": 2.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 60.0,
+      "file": "config/scenarios/lead-time-enterprise-8gpu-air-inference.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "lead-time-enterprise-8gpu-air-inference",
+      "island_mode": true,
+      "name": "31 Lead-time collection — enterprise 8-GPU air — inference",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 5.0,
+          "usable_mwh": 2.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 60.0,
+      "file": "config/scenarios/lead-time-enterprise-8gpu-air-training.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "lead-time-enterprise-8gpu-air-training",
+      "island_mode": true,
+      "name": "30 Lead-time collection — enterprise 8-GPU air — training",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 5.0,
+          "usable_mwh": 2.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 60.0,
+      "file": "config/scenarios/lead-time-h100-sxm5-8way-nvl4-inference.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "lead-time-h100-sxm5-8way-nvl4-inference",
+      "island_mode": true,
+      "name": "33 Lead-time collection — H100 SXM5 8-way NVL4 — inference",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 5.0,
+          "usable_mwh": 2.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 60.0,
+      "file": "config/scenarios/lead-time-h100-sxm5-8way-nvl4-training.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "lead-time-h100-sxm5-8way-nvl4-training",
+      "island_mode": true,
+      "name": "32 Lead-time collection — H100 SXM5 8-way NVL4 — training",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 5.0,
+          "usable_mwh": 2.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 60.0,
+      "file": "config/scenarios/lead-time-nextgen-rack-liquid-inference.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "lead-time-nextgen-rack-liquid-inference",
+      "island_mode": true,
+      "name": "35 Lead-time collection — GB200 NVL72 liquid — inference",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 5.0,
+          "usable_mwh": 2.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 60.0,
+      "file": "config/scenarios/lead-time-nextgen-rack-liquid-training.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "lead-time-nextgen-rack-liquid-training",
+      "island_mode": true,
+      "name": "34 Lead-time collection — GB200 NVL72 liquid — training",
+      "turbine_count": 1
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": 0.0,
+      "bess_units": [
+        {
+          "asset_id": "bess-100mw-bridge",
+          "initial_soc_fraction": 1.0,
+          "rated_mw": 25.0,
+          "usable_mwh": 25.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": true,
+      "end_sim_time": 1260.0,
+      "file": "config/scenarios/scenario-100mw-fuel-cell-bess-diesel.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "scenario-100mw-fuel-cell-bess-diesel",
+      "island_mode": true,
+      "name": "27 100 MW Fuel Cell Data Center — BESS + N+1 Diesel Backup",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.03,
+      "bess_normal_dispatch_depth_fraction_raw": 0.03,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 30.0,
+          "usable_mwh": 60.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 3600.0,
+      "file": "config/scenarios/scenario-equinix-sj-1.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": 5.0,
+      "id": "scenario-equinix-sj-1",
+      "island_mode": false,
+      "name": "23 scenario-equinix-sj-1",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.03,
+      "bess_normal_dispatch_depth_fraction_raw": 0.03,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 30.0,
+          "usable_mwh": 60.0
+        }
+      ],
+      "category": "GRID-TIED+BESS (in scope)",
+      "diesel_enabled": false,
+      "end_sim_time": 3600.0,
+      "file": "config/scenarios/scenario-equinox-sj-1.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": 5.0,
+      "id": "scenario-equinox-sj-1",
+      "island_mode": false,
+      "name": "39 scenario-equinix-sj-1",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 1.0,
+      "bess_normal_dispatch_depth_fraction_raw": 1,
+      "bess_units": [
+        {
+          "asset_id": "bess-fc100",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 60.0,
+          "usable_mwh": 40.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": true,
+      "end_sim_time": 1320.0,
+      "file": "config/scenarios/scenario-fc100-islanded-v2.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "scenario-fc100-islanded-v2",
+      "island_mode": true,
+      "name": "28 FC100 Islanded Readiness Reference",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 1.0,
+      "bess_normal_dispatch_depth_fraction_raw": 1,
+      "bess_units": [
+        {
+          "asset_id": "bess-fc100",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 60.0,
+          "usable_mwh": 40.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": true,
+      "end_sim_time": 1320.0,
+      "file": "config/scenarios/scenario-fc100-islanded-zero-hot-v2.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "scenario-fc100-islanded-zero-hot-v2",
+      "island_mode": true,
+      "name": "29 FC100 Islanded Zero-Hot-Standby Reference",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 300.0,
+      "file": "config/scenarios/scenario-h1-k8s-ray-24h.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "scenario-h1-k8s-ray-24h",
+      "island_mode": true,
+      "name": "Addendum H-1 Kubernetes + Ray reference — 24h",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 300.0,
+      "file": "config/scenarios/scenario-h1-k8s-ray-7d.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "scenario-h1-k8s-ray-7d",
+      "island_mode": true,
+      "name": "Addendum H-1 Kubernetes + Ray reference — 7d",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 300.0,
+      "file": "config/scenarios/scenario-h2-slurm-24h.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "scenario-h2-slurm-24h",
+      "island_mode": true,
+      "name": "Addendum H-2 Slurm fixed-allocation reference — 24h",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 300.0,
+      "file": "config/scenarios/scenario-h2-slurm-7d.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "scenario-h2-slurm-7d",
+      "island_mode": true,
+      "name": "Addendum H-2 Slurm fixed-allocation reference — 7d",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.03,
+      "bess_normal_dispatch_depth_fraction_raw": 0.03,
+      "bess_units": [
+        {
+          "asset_id": "bess-hybrid-edge",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 15.0,
+          "usable_mwh": 6.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": true,
+      "end_sim_time": 600.0,
+      "file": "config/scenarios/scenario-hybrid-ai-100mw-addendum-i.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "scenario-hybrid-ai-100mw-addendum-i",
+      "island_mode": true,
+      "name": "38 100MW Hybrid AI Data Center — Addendum I Combined Load",
+      "turbine_count": 0
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 18.0,
+          "usable_mwh": 8.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 3600.0,
+      "file": "config/scenarios/scenario-kube-peak-overage.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "scenario-kube-peak-overage",
+      "island_mode": true,
+      "name": "21 scenario-kube-peak-overage",
+      "turbine_count": 4
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 12.0,
+          "usable_mwh": 24.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 1200.0,
+      "file": "config/scenarios/scenario-kubernetes-scheduler-demo.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "scenario-kubernetes-scheduler-demo",
+      "island_mode": true,
+      "name": "24 Kubernetes Scheduler - Resource Queue Demo",
+      "turbine_count": 2
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.03,
+      "bess_normal_dispatch_depth_fraction_raw": 0.03,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 30.0,
+          "usable_mwh": 60.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": false,
+      "end_sim_time": 3600.0,
+      "file": "config/scenarios/scenario-turbine-01.json",
+      "fuel_cell_present": true,
+      "grid_import_limit_mw": null,
+      "id": "scenario-turbine-01",
+      "island_mode": true,
+      "name": "26 scenario-turbine-01",
+      "turbine_count": 3
+    },
+    {
+      "bess_normal_dispatch_depth_fraction_effective": 0.0,
+      "bess_normal_dispatch_depth_fraction_raw": null,
+      "bess_units": [
+        {
+          "asset_id": "bess-0",
+          "initial_soc_fraction": 0.95,
+          "rated_mw": 30.0,
+          "usable_mwh": 60.0
+        }
+      ],
+      "category": "ISLANDED (protected)",
+      "diesel_enabled": true,
+      "end_sim_time": 7200.0,
+      "file": "config/scenarios/scenario-uneven-multisched-01.json",
+      "fuel_cell_present": false,
+      "grid_import_limit_mw": null,
+      "id": "scenario-uneven-multisched-01",
+      "island_mode": true,
+      "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+      "turbine_count": 4
+    }
+  ]
+}

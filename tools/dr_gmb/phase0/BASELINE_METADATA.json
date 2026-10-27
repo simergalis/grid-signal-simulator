@@ -1,0 +1,9 @@
+{
+  "captured_before_phase0_evidence_creation": true,
+  "git_rev_parse_HEAD": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f",
+  "git_status_porcelain": "",
+  "pinned_runner_reference": "tools/dr_isl/d6f/run_existing_gates.py",
+  "pinned_wall_clock_unix_seconds": 1792454400.0,
+  "scenario_json_files_found_by_glob": 46,
+  "seed": 1729
+}

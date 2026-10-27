@@ -1,0 +1,49 @@
+{
+  "a_arbitrator_dispatch_inputs": {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+    "lines": "2196-2206",
+    "meaning": "DispatchArbitrator.tick receives p_dispatch_required_mw minus fuel-cell/diesel achieved output, dt_seconds, BESS target, per-unit ceilings and SoC floors."
+  },
+  "b_grid_exchange": {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+    "lines": "3371-3395",
+    "meaning": "Islanded mode sets grid exchange to zero; grid-tied mode applies grid_import_limit_mw to import and adds allowed imports to p_generation_mw."
+  },
+  "c_soc_floor": {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py",
+    "lines": "518-596",
+    "meaning": "soc_floor_mwh computes diesel, configured normal-depth and D2-R bridge terms; floor is their maximum."
+  },
+  "d_absorb_surplus": {
+    "asset_module_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "asset_module_lines": "1780-1834",
+    "dispatch_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py",
+    "dispatch_lines": "963-978",
+    "meaning": "Current charging branch is turbine surplus absorption; it is not a grid-import charging path."
+  },
+  "e_efficiency_and_charge_rate": {
+    "charge_acceptance_ceiling_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+    "charge_acceptance_ceiling_formula": "sum(min(unit rated_mw, remaining usable_mwh / dt_hours)) for non-tripped BESS units",
+    "charge_acceptance_ceiling_lines": "2252-2258",
+    "charge_power_limit": "BessConfig.rated_mw; no separate scenario charge-rate field found",
+    "charge_power_limit_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "charge_power_limit_lines": "1802-1814",
+    "config_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py",
+    "config_lines": "1002-1009, 1059-1066",
+    "one_way_efficiency": "sqrt(0.917) = 0.957601169590",
+    "response_lag_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/gridsignal_parameters.json",
+    "response_lag_lines": "997-1008",
+    "response_tau_s": 0.05,
+    "round_trip_catalogue_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/gridsignal_parameters.json",
+    "round_trip_catalogue_lines": "1363-1374, 1545",
+    "round_trip_efficiency": 0.917,
+    "scenario_charge_price_is_accounting_only": "bess_charge_price_override_per_mwh is a billing input; no physical charge-rate parameter found in the scenario schema.",
+    "scenario_charge_price_is_accounting_only_file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/api/schemas.py",
+    "scenario_charge_price_is_accounting_only_lines": "2494-2507"
+  },
+  "single_grid_mode_branch_location": {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py",
+    "lines": "920-995",
+    "meaning": "One grid-mode branch within DispatchArbitrator.tick, adjacent to the existing island_mode read and the central BESS discharge/surplus-absorption decision, keeps the existing islanded path as the other branch."
+  }
+}
