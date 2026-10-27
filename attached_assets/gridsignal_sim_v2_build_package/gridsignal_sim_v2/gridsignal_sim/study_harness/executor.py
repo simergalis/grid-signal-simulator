@@ -135,7 +135,10 @@ def make_study_run_identity(
     identity_parameters["turbine_commitment_mode"] = mode
     identity_parameters.pop("kube_clusters", None)
     identity_parameters.pop("slurm_config", None)
-    if scenario_id == SUPER_CLOUD_REPLAY_SCENARIO_ID:
+    if scenario_id in (
+        SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+    ):
         # PROPOSED_HERE: S10's source event timeline is an identity input even
         # though the common study executor replaces it with a replay trace.
         identity_parameters["workload_events_sha256"] = (
@@ -364,10 +367,10 @@ class StudyRunExecutor:
                 Path(__file__).resolve().parents[1]
                 / "config"
                 / "scenarios"
-                / f"{SUPER_CLOUD_REPLAY_SCENARIO_ID}.json"
+                / f"{scenario_id}.json"
             )
-            # IMPL-ISL-25: use S10's own tracked inputs; its fuel and operating
-            # cost blocks are authored data, not the base/H study overlay.
+            # IMPL-ISL-25 / IMPL-S11-06: load this scenario's own tracked
+            # inputs; authored fuel and operating-cost blocks are not overlays.
             spec = _canonical_scenario_spec(scenario_path)
         else:
             base_path = (
