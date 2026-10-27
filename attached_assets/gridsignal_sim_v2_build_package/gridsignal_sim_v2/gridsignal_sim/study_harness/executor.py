@@ -56,6 +56,7 @@ STUDY_CLASS_BASE_DEMO = "base_demo"
 # PROPOSED_HERE: isolate the operational, single-day SuperCloud replay from
 # certified study classes. Source: DR-2026-10-20-ISLAND-COLLAPSE IMPL-ISL-25.
 SUPER_CLOUD_REPLAY_SCENARIO_ID = "S10_mit_supercloud_2021-08-11"
+S11_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11_mit_supercloud_2021-08-11_bchydro"
 STUDY_CLASS_SUPERCLOUD_REPLAY = "supercloud_replay"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
 # PROPOSED_HERE: bump the identity contract because synthetic submit times,
@@ -85,7 +86,10 @@ def study_class_for_scenario(scenario_id: str) -> str:
         return STUDY_CLASS_ADDENDUM_H
     if scenario_id == BASE_DEMO_SCENARIO_ID:
         return STUDY_CLASS_BASE_DEMO
-    if scenario_id == SUPER_CLOUD_REPLAY_SCENARIO_ID:
+    if scenario_id in (
+        SUPER_CLOUD_REPLAY_SCENARIO_ID,
+        S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+    ):
         return STUDY_CLASS_SUPERCLOUD_REPLAY
     raise UnsupportedScenarioError(
         scenario_id=scenario_id,
@@ -93,6 +97,7 @@ def study_class_for_scenario(scenario_id: str) -> str:
             *REFERENCE_IDS,
             BASE_DEMO_SCENARIO_ID,
             SUPER_CLOUD_REPLAY_SCENARIO_ID,
+            S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
         ],
     )
 
