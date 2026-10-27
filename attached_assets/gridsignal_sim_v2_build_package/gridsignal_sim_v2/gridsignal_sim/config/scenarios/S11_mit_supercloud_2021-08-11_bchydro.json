@@ -1,0 +1,3729 @@
+{
+  "name": "S11_mit_supercloud_2021-08-11_bchydro",
+  "description": "Clone of S10_mit_supercloud_2021-08-11 with the on-site gas turbines removed and primary power supplied by a BC Hydro transmission-voltage grid connection (hydro-dominated system). Same real MIT SuperCloud TX-GAIA GPU job timeline for 2021-08-11 (UTC) and same additive CPU load as S10. All primary energy is grid import, capped at 80 MW at the PCC via grid_import_limit_mw (PROPOSED_HERE: ~125% of the 61.8 MW observed facility peak; covers peak plus the 18 MW BESS charge rate; revised from 60 MW on 2026-10-27, CAV-S11-03). No turbines, solar, or fuel cells. The 18 MW / 14 MWh grid-forming BESS provides ride-through. A 60 MW (6 x 10 MW) diesel block is configured but DISABLED (enabled=false) because the diesel coordinator currently starts on any local gap before grid import is counted; re-enable after a grid-loss gate exists (IMPL-S11-03). No grid-outage event is scripted. grid_import_price_per_mwh 53.74 is BC Hydro RS 1830C (5.374 c/kWh, CAD). BESS initial SoC and diesel sizing are PROPOSED_HERE.",
+  "workload_events": [
+    {
+      "event_id": "evt-s10-job-00001-start",
+      "job_id": "s10-job-00001",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": -33047.0
+    },
+    {
+      "event_id": "evt-s10-job-00002-start",
+      "job_id": "s10-job-00002",
+      "event_type": "starting",
+      "timestamp": 527.0,
+      "node_count": 2960,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3428.0
+    },
+    {
+      "event_id": "evt-s10-job-00002-end",
+      "job_id": "s10-job-00002",
+      "event_type": "job_end",
+      "timestamp": 1490.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00003-start",
+      "job_id": "s10-job-00003",
+      "event_type": "starting",
+      "timestamp": 2092.0,
+      "node_count": 2960,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3384.0
+    },
+    {
+      "event_id": "evt-s10-job-00003-end",
+      "job_id": "s10-job-00003",
+      "event_type": "job_end",
+      "timestamp": 3299.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00004-start",
+      "job_id": "s10-job-00004",
+      "event_type": "starting",
+      "timestamp": 3902.0,
+      "node_count": 2960,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3351.0
+    },
+    {
+      "event_id": "evt-s10-job-00004-end",
+      "job_id": "s10-job-00004",
+      "event_type": "job_end",
+      "timestamp": 4687.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00005-start",
+      "job_id": "s10-job-00005",
+      "event_type": "starting",
+      "timestamp": 5288.0,
+      "node_count": 2960,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3280.0
+    },
+    {
+      "event_id": "evt-s10-job-00005-end",
+      "job_id": "s10-job-00005",
+      "event_type": "job_end",
+      "timestamp": 6266.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00001-end",
+      "job_id": "s10-job-00001",
+      "event_type": "job_end",
+      "timestamp": 6485.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00006-start",
+      "job_id": "s10-job-00006",
+      "event_type": "starting",
+      "timestamp": 6867.0,
+      "node_count": 2960,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": -3245.0
+    },
+    {
+      "event_id": "evt-s10-job-00006-end",
+      "job_id": "s10-job-00006",
+      "event_type": "job_end",
+      "timestamp": 8135.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00007-start",
+      "job_id": "s10-job-00007",
+      "event_type": "starting",
+      "timestamp": 9569.0,
+      "node_count": 4532,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 9569.0
+    },
+    {
+      "event_id": "evt-s10-job-00007-end",
+      "job_id": "s10-job-00007",
+      "event_type": "job_end",
+      "timestamp": 13073.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00008-start",
+      "job_id": "s10-job-00008",
+      "event_type": "starting",
+      "timestamp": 13678.0,
+      "node_count": 4902,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 13346.0
+    },
+    {
+      "event_id": "evt-s10-job-00008-end",
+      "job_id": "s10-job-00008",
+      "event_type": "job_end",
+      "timestamp": 16160.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00009-start",
+      "job_id": "s10-job-00009",
+      "event_type": "starting",
+      "timestamp": 16771.0,
+      "node_count": 4902,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 13812.0
+    },
+    {
+      "event_id": "evt-s10-job-00009-end",
+      "job_id": "s10-job-00009",
+      "event_type": "job_end",
+      "timestamp": 19973.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00010-start",
+      "job_id": "s10-job-00010",
+      "event_type": "starting",
+      "timestamp": 20584.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 14397.0
+    },
+    {
+      "event_id": "evt-s10-job-00010-end",
+      "job_id": "s10-job-00010",
+      "event_type": "job_end",
+      "timestamp": 25747.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00011-start",
+      "job_id": "s10-job-00011",
+      "event_type": "starting",
+      "timestamp": 26347.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 14711.0
+    },
+    {
+      "event_id": "evt-s10-job-00011-end",
+      "job_id": "s10-job-00011",
+      "event_type": "job_end",
+      "timestamp": 32703.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00012-start",
+      "job_id": "s10-job-00012",
+      "event_type": "starting",
+      "timestamp": 33303.0,
+      "node_count": 4902,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 15448.0
+    },
+    {
+      "event_id": "evt-s10-job-00012-end",
+      "job_id": "s10-job-00012",
+      "event_type": "job_end",
+      "timestamp": 35939.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00013-start",
+      "job_id": "s10-job-00013",
+      "event_type": "starting",
+      "timestamp": 36548.0,
+      "node_count": 4532,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 15706.0
+    },
+    {
+      "event_id": "evt-s10-job-00013-end",
+      "job_id": "s10-job-00013",
+      "event_type": "job_end",
+      "timestamp": 39291.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00014-start",
+      "job_id": "s10-job-00014",
+      "event_type": "starting",
+      "timestamp": 39897.0,
+      "node_count": 2960,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 16036.0
+    },
+    {
+      "event_id": "evt-s10-job-00014-end",
+      "job_id": "s10-job-00014",
+      "event_type": "job_end",
+      "timestamp": 42583.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00015-start",
+      "job_id": "s10-job-00015",
+      "event_type": "starting",
+      "timestamp": 43186.0,
+      "node_count": 1480,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 16242.0
+    },
+    {
+      "event_id": "evt-s10-job-00015-end",
+      "job_id": "s10-job-00015",
+      "event_type": "job_end",
+      "timestamp": 46336.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00016-start",
+      "job_id": "s10-job-00016",
+      "event_type": "starting",
+      "timestamp": 46938.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 45531.0
+    },
+    {
+      "event_id": "evt-s10-job-00016-end",
+      "job_id": "s10-job-00016",
+      "event_type": "job_end",
+      "timestamp": 52388.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00017-start",
+      "job_id": "s10-job-00017",
+      "event_type": "starting",
+      "timestamp": 52449.0,
+      "node_count": 1480,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51090.0
+    },
+    {
+      "event_id": "evt-s10-job-00018-start",
+      "job_id": "s10-job-00018",
+      "event_type": "starting",
+      "timestamp": 52449.0,
+      "node_count": 1480,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51101.0
+    },
+    {
+      "event_id": "evt-s10-job-00019-start",
+      "job_id": "s10-job-00019",
+      "event_type": "starting",
+      "timestamp": 52449.0,
+      "node_count": 1480,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51058.0
+    },
+    {
+      "event_id": "evt-s10-job-00017-end",
+      "job_id": "s10-job-00017",
+      "event_type": "job_end",
+      "timestamp": 53494.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00020-start",
+      "job_id": "s10-job-00020",
+      "event_type": "starting",
+      "timestamp": 53495.0,
+      "node_count": 1480,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51114.0
+    },
+    {
+      "event_id": "evt-s10-job-00018-end",
+      "job_id": "s10-job-00018",
+      "event_type": "job_end",
+      "timestamp": 53910.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00021-start",
+      "job_id": "s10-job-00021",
+      "event_type": "starting",
+      "timestamp": 53911.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51090.0
+    },
+    {
+      "event_id": "evt-s10-job-00022-start",
+      "job_id": "s10-job-00022",
+      "event_type": "starting",
+      "timestamp": 53911.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51058.0
+    },
+    {
+      "event_id": "evt-s10-job-00020-end",
+      "job_id": "s10-job-00020",
+      "event_type": "job_end",
+      "timestamp": 54251.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00023-start",
+      "job_id": "s10-job-00023",
+      "event_type": "starting",
+      "timestamp": 54251.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51114.0
+    },
+    {
+      "event_id": "evt-s10-job-00024-start",
+      "job_id": "s10-job-00024",
+      "event_type": "starting",
+      "timestamp": 54251.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 51101.0
+    },
+    {
+      "event_id": "evt-s10-job-00021-end",
+      "job_id": "s10-job-00021",
+      "event_type": "job_end",
+      "timestamp": 55070.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00023-end",
+      "job_id": "s10-job-00023",
+      "event_type": "job_end",
+      "timestamp": 55093.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00022-end",
+      "job_id": "s10-job-00022",
+      "event_type": "job_end",
+      "timestamp": 55952.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00019-end",
+      "job_id": "s10-job-00019",
+      "event_type": "job_end",
+      "timestamp": 56056.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00024-end",
+      "job_id": "s10-job-00024",
+      "event_type": "job_end",
+      "timestamp": 56177.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00025-start",
+      "job_id": "s10-job-00025",
+      "event_type": "starting",
+      "timestamp": 56777.0,
+      "node_count": 4902,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 56365.0
+    },
+    {
+      "event_id": "evt-s10-job-00025-end",
+      "job_id": "s10-job-00025",
+      "event_type": "job_end",
+      "timestamp": 59312.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00026-start",
+      "job_id": "s10-job-00026",
+      "event_type": "starting",
+      "timestamp": 59918.0,
+      "node_count": 2960,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 57431.0
+    },
+    {
+      "event_id": "evt-s10-job-00026-end",
+      "job_id": "s10-job-00026",
+      "event_type": "job_end",
+      "timestamp": 62513.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00027-start",
+      "job_id": "s10-job-00027",
+      "event_type": "starting",
+      "timestamp": 62576.0,
+      "node_count": 1480,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 57865.0
+    },
+    {
+      "event_id": "evt-s10-job-00028-start",
+      "job_id": "s10-job-00028",
+      "event_type": "starting",
+      "timestamp": 63326.0,
+      "node_count": 370,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 63325.0
+    },
+    {
+      "event_id": "evt-s10-job-00029-start",
+      "job_id": "s10-job-00029",
+      "event_type": "starting",
+      "timestamp": 63805.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 63803.0
+    },
+    {
+      "event_id": "evt-s10-job-00030-start",
+      "job_id": "s10-job-00030",
+      "event_type": "starting",
+      "timestamp": 63822.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 63822.0
+    },
+    {
+      "event_id": "evt-s10-job-00031-start",
+      "job_id": "s10-job-00031",
+      "event_type": "starting",
+      "timestamp": 64022.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 64022.0
+    },
+    {
+      "event_id": "evt-s10-job-00028-end",
+      "job_id": "s10-job-00028",
+      "event_type": "job_end",
+      "timestamp": 64072.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00032-start",
+      "job_id": "s10-job-00032",
+      "event_type": "starting",
+      "timestamp": 64549.0,
+      "node_count": 740,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 64548.0
+    },
+    {
+      "event_id": "evt-s10-job-00033-start",
+      "job_id": "s10-job-00033",
+      "event_type": "starting",
+      "timestamp": 64889.0,
+      "node_count": 370,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 64889.0
+    },
+    {
+      "event_id": "evt-s10-job-00031-end",
+      "job_id": "s10-job-00031",
+      "event_type": "job_end",
+      "timestamp": 65072.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00029-end",
+      "job_id": "s10-job-00029",
+      "event_type": "job_end",
+      "timestamp": 65108.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00034-start",
+      "job_id": "s10-job-00034",
+      "event_type": "starting",
+      "timestamp": 65428.0,
+      "node_count": 370,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 65428.0
+    },
+    {
+      "event_id": "evt-s10-job-00035-start",
+      "job_id": "s10-job-00035",
+      "event_type": "starting",
+      "timestamp": 65445.0,
+      "node_count": 370,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 65445.0
+    },
+    {
+      "event_id": "evt-s10-job-00030-end",
+      "job_id": "s10-job-00030",
+      "event_type": "job_end",
+      "timestamp": 65559.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00032-end",
+      "job_id": "s10-job-00032",
+      "event_type": "job_end",
+      "timestamp": 65818.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00027-end",
+      "job_id": "s10-job-00027",
+      "event_type": "job_end",
+      "timestamp": 66196.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00036-start",
+      "job_id": "s10-job-00036",
+      "event_type": "starting",
+      "timestamp": 66265.0,
+      "node_count": 185,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
+    },
+    {
+      "event_id": "evt-s10-job-00037-start",
+      "job_id": "s10-job-00037",
+      "event_type": "starting",
+      "timestamp": 66265.0,
+      "node_count": 92,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
+    },
+    {
+      "event_id": "evt-s10-job-00038-start",
+      "job_id": "s10-job-00038",
+      "event_type": "starting",
+      "timestamp": 66265.0,
+      "node_count": 46,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
+    },
+    {
+      "event_id": "evt-s10-job-00039-start",
+      "job_id": "s10-job-00039",
+      "event_type": "starting",
+      "timestamp": 66265.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66261.0
+    },
+    {
+      "event_id": "evt-s10-job-00040-start",
+      "job_id": "s10-job-00040",
+      "event_type": "starting",
+      "timestamp": 66276.0,
+      "node_count": 185,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
+    },
+    {
+      "event_id": "evt-s10-job-00041-start",
+      "job_id": "s10-job-00041",
+      "event_type": "starting",
+      "timestamp": 66276.0,
+      "node_count": 92,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
+    },
+    {
+      "event_id": "evt-s10-job-00042-start",
+      "job_id": "s10-job-00042",
+      "event_type": "starting",
+      "timestamp": 66276.0,
+      "node_count": 46,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
+    },
+    {
+      "event_id": "evt-s10-job-00043-start",
+      "job_id": "s10-job-00043",
+      "event_type": "starting",
+      "timestamp": 66276.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66276.0
+    },
+    {
+      "event_id": "evt-s10-job-00044-start",
+      "job_id": "s10-job-00044",
+      "event_type": "starting",
+      "timestamp": 66286.0,
+      "node_count": 185,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
+    },
+    {
+      "event_id": "evt-s10-job-00045-start",
+      "job_id": "s10-job-00045",
+      "event_type": "starting",
+      "timestamp": 66286.0,
+      "node_count": 92,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
+    },
+    {
+      "event_id": "evt-s10-job-00046-start",
+      "job_id": "s10-job-00046",
+      "event_type": "starting",
+      "timestamp": 66286.0,
+      "node_count": 46,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
+    },
+    {
+      "event_id": "evt-s10-job-00047-start",
+      "job_id": "s10-job-00047",
+      "event_type": "starting",
+      "timestamp": 66286.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 66286.0
+    },
+    {
+      "event_id": "evt-s10-job-00034-end",
+      "job_id": "s10-job-00034",
+      "event_type": "job_end",
+      "timestamp": 66878.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00048-start",
+      "job_id": "s10-job-00048",
+      "event_type": "starting",
+      "timestamp": 67974.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 67974.0
+    },
+    {
+      "event_id": "evt-s10-job-00033-end",
+      "job_id": "s10-job-00033",
+      "event_type": "job_end",
+      "timestamp": 67989.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00035-end",
+      "job_id": "s10-job-00035",
+      "event_type": "job_end",
+      "timestamp": 68159.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00040-end",
+      "job_id": "s10-job-00040",
+      "event_type": "job_end",
+      "timestamp": 68322.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00049-start",
+      "job_id": "s10-job-00049",
+      "event_type": "starting",
+      "timestamp": 68546.0,
+      "node_count": 92,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 68545.0
+    },
+    {
+      "event_id": "evt-s10-job-00041-end",
+      "job_id": "s10-job-00041",
+      "event_type": "job_end",
+      "timestamp": 69589.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00049-end",
+      "job_id": "s10-job-00049",
+      "event_type": "job_end",
+      "timestamp": 69831.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00044-end",
+      "job_id": "s10-job-00044",
+      "event_type": "job_end",
+      "timestamp": 71045.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00050-start",
+      "job_id": "s10-job-00050",
+      "event_type": "starting",
+      "timestamp": 71634.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 71634.0
+    },
+    {
+      "event_id": "evt-s10-job-00042-end",
+      "job_id": "s10-job-00042",
+      "event_type": "job_end",
+      "timestamp": 71960.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00036-end",
+      "job_id": "s10-job-00036",
+      "event_type": "job_end",
+      "timestamp": 72041.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00051-start",
+      "job_id": "s10-job-00051",
+      "event_type": "starting",
+      "timestamp": 73623.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73622.0
+    },
+    {
+      "event_id": "evt-s10-job-00052-start",
+      "job_id": "s10-job-00052",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00053-start",
+      "job_id": "s10-job-00053",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00054-start",
+      "job_id": "s10-job-00054",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00055-start",
+      "job_id": "s10-job-00055",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00056-start",
+      "job_id": "s10-job-00056",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00057-start",
+      "job_id": "s10-job-00057",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00058-start",
+      "job_id": "s10-job-00058",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00059-start",
+      "job_id": "s10-job-00059",
+      "event_type": "starting",
+      "timestamp": 73666.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73665.0
+    },
+    {
+      "event_id": "evt-s10-job-00060-start",
+      "job_id": "s10-job-00060",
+      "event_type": "starting",
+      "timestamp": 73715.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73711.0
+    },
+    {
+      "event_id": "evt-s10-job-00061-start",
+      "job_id": "s10-job-00061",
+      "event_type": "starting",
+      "timestamp": 73781.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73781.0
+    },
+    {
+      "event_id": "evt-s10-job-00062-start",
+      "job_id": "s10-job-00062",
+      "event_type": "starting",
+      "timestamp": 73940.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 73940.0
+    },
+    {
+      "event_id": "evt-s10-job-00063-start",
+      "job_id": "s10-job-00063",
+      "event_type": "starting",
+      "timestamp": 74290.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74287.0
+    },
+    {
+      "event_id": "evt-s10-job-00064-start",
+      "job_id": "s10-job-00064",
+      "event_type": "starting",
+      "timestamp": 74305.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74297.0
+    },
+    {
+      "event_id": "evt-s10-job-00065-start",
+      "job_id": "s10-job-00065",
+      "event_type": "starting",
+      "timestamp": 74315.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74313.0
+    },
+    {
+      "event_id": "evt-s10-job-00066-start",
+      "job_id": "s10-job-00066",
+      "event_type": "starting",
+      "timestamp": 74335.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74328.0
+    },
+    {
+      "event_id": "evt-s10-job-00067-start",
+      "job_id": "s10-job-00067",
+      "event_type": "starting",
+      "timestamp": 74345.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74343.0
+    },
+    {
+      "event_id": "evt-s10-job-00068-start",
+      "job_id": "s10-job-00068",
+      "event_type": "starting",
+      "timestamp": 74355.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74351.0
+    },
+    {
+      "event_id": "evt-s10-job-00069-start",
+      "job_id": "s10-job-00069",
+      "event_type": "starting",
+      "timestamp": 74369.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74369.0
+    },
+    {
+      "event_id": "evt-s10-job-00070-start",
+      "job_id": "s10-job-00070",
+      "event_type": "starting",
+      "timestamp": 74379.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74376.0
+    },
+    {
+      "event_id": "evt-s10-job-00071-start",
+      "job_id": "s10-job-00071",
+      "event_type": "starting",
+      "timestamp": 74767.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 74761.0
+    },
+    {
+      "event_id": "evt-s10-job-00045-end",
+      "job_id": "s10-job-00045",
+      "event_type": "job_end",
+      "timestamp": 74768.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00072-start",
+      "job_id": "s10-job-00072",
+      "event_type": "starting",
+      "timestamp": 75085.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75078.0
+    },
+    {
+      "event_id": "evt-s10-job-00048-end",
+      "job_id": "s10-job-00048",
+      "event_type": "job_end",
+      "timestamp": 75096.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00073-start",
+      "job_id": "s10-job-00073",
+      "event_type": "starting",
+      "timestamp": 75119.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75117.0
+    },
+    {
+      "event_id": "evt-s10-job-00074-start",
+      "job_id": "s10-job-00074",
+      "event_type": "starting",
+      "timestamp": 75141.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75136.0
+    },
+    {
+      "event_id": "evt-s10-job-00075-start",
+      "job_id": "s10-job-00075",
+      "event_type": "starting",
+      "timestamp": 75167.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75166.0
+    },
+    {
+      "event_id": "evt-s10-job-00076-start",
+      "job_id": "s10-job-00076",
+      "event_type": "starting",
+      "timestamp": 75184.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75183.0
+    },
+    {
+      "event_id": "evt-s10-job-00077-start",
+      "job_id": "s10-job-00077",
+      "event_type": "starting",
+      "timestamp": 75217.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75216.0
+    },
+    {
+      "event_id": "evt-s10-job-00051-end",
+      "job_id": "s10-job-00051",
+      "event_type": "job_end",
+      "timestamp": 75522.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00078-start",
+      "job_id": "s10-job-00078",
+      "event_type": "starting",
+      "timestamp": 75576.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75575.0
+    },
+    {
+      "event_id": "evt-s10-job-00079-start",
+      "job_id": "s10-job-00079",
+      "event_type": "starting",
+      "timestamp": 75587.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75587.0
+    },
+    {
+      "event_id": "evt-s10-job-00080-start",
+      "job_id": "s10-job-00080",
+      "event_type": "starting",
+      "timestamp": 75603.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75603.0
+    },
+    {
+      "event_id": "evt-s10-job-00081-start",
+      "job_id": "s10-job-00081",
+      "event_type": "starting",
+      "timestamp": 75613.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75610.0
+    },
+    {
+      "event_id": "evt-s10-job-00082-start",
+      "job_id": "s10-job-00082",
+      "event_type": "starting",
+      "timestamp": 75725.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75724.0
+    },
+    {
+      "event_id": "evt-s10-job-00083-start",
+      "job_id": "s10-job-00083",
+      "event_type": "starting",
+      "timestamp": 75791.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75787.0
+    },
+    {
+      "event_id": "evt-s10-job-00084-start",
+      "job_id": "s10-job-00084",
+      "event_type": "starting",
+      "timestamp": 75829.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75829.0
+    },
+    {
+      "event_id": "evt-s10-job-00085-start",
+      "job_id": "s10-job-00085",
+      "event_type": "starting",
+      "timestamp": 75846.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 75845.0
+    },
+    {
+      "event_id": "evt-s10-job-00086-start",
+      "job_id": "s10-job-00086",
+      "event_type": "starting",
+      "timestamp": 76067.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76066.0
+    },
+    {
+      "event_id": "evt-s10-job-00087-start",
+      "job_id": "s10-job-00087",
+      "event_type": "starting",
+      "timestamp": 76067.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76066.0
+    },
+    {
+      "event_id": "evt-s10-job-00088-start",
+      "job_id": "s10-job-00088",
+      "event_type": "starting",
+      "timestamp": 76075.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76068.0
+    },
+    {
+      "event_id": "evt-s10-job-00089-start",
+      "job_id": "s10-job-00089",
+      "event_type": "starting",
+      "timestamp": 76075.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76069.0
+    },
+    {
+      "event_id": "evt-s10-job-00090-start",
+      "job_id": "s10-job-00090",
+      "event_type": "starting",
+      "timestamp": 76075.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76069.0
+    },
+    {
+      "event_id": "evt-s10-job-00091-start",
+      "job_id": "s10-job-00091",
+      "event_type": "starting",
+      "timestamp": 76075.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76070.0
+    },
+    {
+      "event_id": "evt-s10-job-00092-start",
+      "job_id": "s10-job-00092",
+      "event_type": "starting",
+      "timestamp": 76075.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76070.0
+    },
+    {
+      "event_id": "evt-s10-job-00093-start",
+      "job_id": "s10-job-00093",
+      "event_type": "starting",
+      "timestamp": 76075.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76070.0
+    },
+    {
+      "event_id": "evt-s10-job-00043-end",
+      "job_id": "s10-job-00043",
+      "event_type": "job_end",
+      "timestamp": 76173.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00094-start",
+      "job_id": "s10-job-00094",
+      "event_type": "starting",
+      "timestamp": 76603.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 76603.0
+    },
+    {
+      "event_id": "evt-s10-job-00083-end",
+      "job_id": "s10-job-00083",
+      "event_type": "job_end",
+      "timestamp": 76960.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00095-start",
+      "job_id": "s10-job-00095",
+      "event_type": "starting",
+      "timestamp": 77365.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77358.0
+    },
+    {
+      "event_id": "evt-s10-job-00096-start",
+      "job_id": "s10-job-00096",
+      "event_type": "starting",
+      "timestamp": 77642.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77642.0
+    },
+    {
+      "event_id": "evt-s10-job-00097-start",
+      "job_id": "s10-job-00097",
+      "event_type": "starting",
+      "timestamp": 77785.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77785.0
+    },
+    {
+      "event_id": "evt-s10-job-00098-start",
+      "job_id": "s10-job-00098",
+      "event_type": "starting",
+      "timestamp": 77796.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 77796.0
+    },
+    {
+      "event_id": "evt-s10-job-00099-start",
+      "job_id": "s10-job-00099",
+      "event_type": "starting",
+      "timestamp": 78099.0,
+      "node_count": 23,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 78099.0
+    },
+    {
+      "event_id": "evt-s10-job-00085-end",
+      "job_id": "s10-job-00085",
+      "event_type": "job_end",
+      "timestamp": 78160.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00100-start",
+      "job_id": "s10-job-00100",
+      "event_type": "starting",
+      "timestamp": 79044.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79043.0
+    },
+    {
+      "event_id": "evt-s10-job-00037-end",
+      "job_id": "s10-job-00037",
+      "event_type": "job_end",
+      "timestamp": 79126.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00101-start",
+      "job_id": "s10-job-00101",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00102-start",
+      "job_id": "s10-job-00102",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00103-start",
+      "job_id": "s10-job-00103",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00104-start",
+      "job_id": "s10-job-00104",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00105-start",
+      "job_id": "s10-job-00105",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00106-start",
+      "job_id": "s10-job-00106",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00107-start",
+      "job_id": "s10-job-00107",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00108-start",
+      "job_id": "s10-job-00108",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00109-start",
+      "job_id": "s10-job-00109",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00110-start",
+      "job_id": "s10-job-00110",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00111-start",
+      "job_id": "s10-job-00111",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00112-start",
+      "job_id": "s10-job-00112",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00113-start",
+      "job_id": "s10-job-00113",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00114-start",
+      "job_id": "s10-job-00114",
+      "event_type": "starting",
+      "timestamp": 79247.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00082-end",
+      "job_id": "s10-job-00082",
+      "event_type": "job_end",
+      "timestamp": 79294.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00115-start",
+      "job_id": "s10-job-00115",
+      "event_type": "starting",
+      "timestamp": 79315.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00116-start",
+      "job_id": "s10-job-00116",
+      "event_type": "starting",
+      "timestamp": 79315.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79247.0
+    },
+    {
+      "event_id": "evt-s10-job-00075-end",
+      "job_id": "s10-job-00075",
+      "event_type": "job_end",
+      "timestamp": 79751.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00117-start",
+      "job_id": "s10-job-00117",
+      "event_type": "starting",
+      "timestamp": 79919.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 79918.0
+    },
+    {
+      "event_id": "evt-s10-job-00038-end",
+      "job_id": "s10-job-00038",
+      "event_type": "job_end",
+      "timestamp": 80687.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00039-end",
+      "job_id": "s10-job-00039",
+      "event_type": "job_end",
+      "timestamp": 80687.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00046-end",
+      "job_id": "s10-job-00046",
+      "event_type": "job_end",
+      "timestamp": 80687.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00047-end",
+      "job_id": "s10-job-00047",
+      "event_type": "job_end",
+      "timestamp": 80687.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00118-start",
+      "job_id": "s10-job-00118",
+      "event_type": "starting",
+      "timestamp": 80798.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 80798.0
+    },
+    {
+      "event_id": "evt-s10-job-00119-start",
+      "job_id": "s10-job-00119",
+      "event_type": "starting",
+      "timestamp": 81262.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 81258.0
+    },
+    {
+      "event_id": "evt-s10-job-00119-end",
+      "job_id": "s10-job-00119",
+      "event_type": "job_end",
+      "timestamp": 81691.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00120-start",
+      "job_id": "s10-job-00120",
+      "event_type": "starting",
+      "timestamp": 81931.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 81930.0
+    },
+    {
+      "event_id": "evt-s10-job-00121-start",
+      "job_id": "s10-job-00121",
+      "event_type": "starting",
+      "timestamp": 82206.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82206.0
+    },
+    {
+      "event_id": "evt-s10-job-00122-start",
+      "job_id": "s10-job-00122",
+      "event_type": "starting",
+      "timestamp": 82215.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82208.0
+    },
+    {
+      "event_id": "evt-s10-job-00123-start",
+      "job_id": "s10-job-00123",
+      "event_type": "starting",
+      "timestamp": 82215.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
+    },
+    {
+      "event_id": "evt-s10-job-00124-start",
+      "job_id": "s10-job-00124",
+      "event_type": "starting",
+      "timestamp": 82215.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
+    },
+    {
+      "event_id": "evt-s10-job-00125-start",
+      "job_id": "s10-job-00125",
+      "event_type": "starting",
+      "timestamp": 82215.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
+    },
+    {
+      "event_id": "evt-s10-job-00126-start",
+      "job_id": "s10-job-00126",
+      "event_type": "starting",
+      "timestamp": 82215.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82213.0
+    },
+    {
+      "event_id": "evt-s10-job-00127-start",
+      "job_id": "s10-job-00127",
+      "event_type": "starting",
+      "timestamp": 82215.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82207.0
+    },
+    {
+      "event_id": "evt-s10-job-00117-end",
+      "job_id": "s10-job-00117",
+      "event_type": "job_end",
+      "timestamp": 82780.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00128-start",
+      "job_id": "s10-job-00128",
+      "event_type": "starting",
+      "timestamp": 82804.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
+    },
+    {
+      "event_id": "evt-s10-job-00129-start",
+      "job_id": "s10-job-00129",
+      "event_type": "starting",
+      "timestamp": 82804.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
+    },
+    {
+      "event_id": "evt-s10-job-00130-start",
+      "job_id": "s10-job-00130",
+      "event_type": "starting",
+      "timestamp": 82804.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
+    },
+    {
+      "event_id": "evt-s10-job-00131-start",
+      "job_id": "s10-job-00131",
+      "event_type": "starting",
+      "timestamp": 82804.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82803.0
+    },
+    {
+      "event_id": "evt-s10-job-00122-end",
+      "job_id": "s10-job-00122",
+      "event_type": "job_end",
+      "timestamp": 82948.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00132-start",
+      "job_id": "s10-job-00132",
+      "event_type": "starting",
+      "timestamp": 83005.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
+    },
+    {
+      "event_id": "evt-s10-job-00133-start",
+      "job_id": "s10-job-00133",
+      "event_type": "starting",
+      "timestamp": 83005.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
+    },
+    {
+      "event_id": "evt-s10-job-00134-start",
+      "job_id": "s10-job-00134",
+      "event_type": "starting",
+      "timestamp": 83005.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
+    },
+    {
+      "event_id": "evt-s10-job-00135-start",
+      "job_id": "s10-job-00135",
+      "event_type": "starting",
+      "timestamp": 83005.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 82998.0
+    },
+    {
+      "event_id": "evt-s10-job-00136-start",
+      "job_id": "s10-job-00136",
+      "event_type": "starting",
+      "timestamp": 83593.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 83593.0
+    },
+    {
+      "event_id": "evt-s10-job-00137-start",
+      "job_id": "s10-job-00137",
+      "event_type": "starting",
+      "timestamp": 83680.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 83680.0
+    },
+    {
+      "event_id": "evt-s10-job-00138-start",
+      "job_id": "s10-job-00138",
+      "event_type": "starting",
+      "timestamp": 83890.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 83890.0
+    },
+    {
+      "event_id": "evt-s10-job-00139-start",
+      "job_id": "s10-job-00139",
+      "event_type": "starting",
+      "timestamp": 84308.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84308.0
+    },
+    {
+      "event_id": "evt-s10-job-00140-start",
+      "job_id": "s10-job-00140",
+      "event_type": "starting",
+      "timestamp": 84312.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84312.0
+    },
+    {
+      "event_id": "evt-s10-job-00141-start",
+      "job_id": "s10-job-00141",
+      "event_type": "starting",
+      "timestamp": 84317.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84317.0
+    },
+    {
+      "event_id": "evt-s10-job-00142-start",
+      "job_id": "s10-job-00142",
+      "event_type": "starting",
+      "timestamp": 84335.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84335.0
+    },
+    {
+      "event_id": "evt-s10-job-00143-start",
+      "job_id": "s10-job-00143",
+      "event_type": "starting",
+      "timestamp": 84340.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84340.0
+    },
+    {
+      "event_id": "evt-s10-job-00144-start",
+      "job_id": "s10-job-00144",
+      "event_type": "starting",
+      "timestamp": 84343.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84343.0
+    },
+    {
+      "event_id": "evt-s10-job-00145-start",
+      "job_id": "s10-job-00145",
+      "event_type": "starting",
+      "timestamp": 84432.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84432.0
+    },
+    {
+      "event_id": "evt-s10-job-00146-start",
+      "job_id": "s10-job-00146",
+      "event_type": "starting",
+      "timestamp": 84517.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84517.0
+    },
+    {
+      "event_id": "evt-s10-job-00147-start",
+      "job_id": "s10-job-00147",
+      "event_type": "starting",
+      "timestamp": 84537.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84537.0
+    },
+    {
+      "event_id": "evt-s10-job-00148-start",
+      "job_id": "s10-job-00148",
+      "event_type": "starting",
+      "timestamp": 84576.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84576.0
+    },
+    {
+      "event_id": "evt-s10-job-00149-start",
+      "job_id": "s10-job-00149",
+      "event_type": "starting",
+      "timestamp": 84584.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84584.0
+    },
+    {
+      "event_id": "evt-s10-job-00150-start",
+      "job_id": "s10-job-00150",
+      "event_type": "starting",
+      "timestamp": 84702.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84702.0
+    },
+    {
+      "event_id": "evt-s10-job-00151-start",
+      "job_id": "s10-job-00151",
+      "event_type": "starting",
+      "timestamp": 84715.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84715.0
+    },
+    {
+      "event_id": "evt-s10-job-00152-start",
+      "job_id": "s10-job-00152",
+      "event_type": "starting",
+      "timestamp": 84728.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84728.0
+    },
+    {
+      "event_id": "evt-s10-job-00153-start",
+      "job_id": "s10-job-00153",
+      "event_type": "starting",
+      "timestamp": 84738.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84738.0
+    },
+    {
+      "event_id": "evt-s10-job-00154-start",
+      "job_id": "s10-job-00154",
+      "event_type": "starting",
+      "timestamp": 84740.0,
+      "node_count": 12,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM",
+      "submit_time_s": 84740.0
+    },
+    {
+      "event_id": "evt-s10-job-00101-end",
+      "job_id": "s10-job-00101",
+      "event_type": "job_end",
+      "timestamp": 84810.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00102-end",
+      "job_id": "s10-job-00102",
+      "event_type": "job_end",
+      "timestamp": 84812.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00103-end",
+      "job_id": "s10-job-00103",
+      "event_type": "job_end",
+      "timestamp": 84812.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00104-end",
+      "job_id": "s10-job-00104",
+      "event_type": "job_end",
+      "timestamp": 84823.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00105-end",
+      "job_id": "s10-job-00105",
+      "event_type": "job_end",
+      "timestamp": 84824.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00106-end",
+      "job_id": "s10-job-00106",
+      "event_type": "job_end",
+      "timestamp": 84838.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00107-end",
+      "job_id": "s10-job-00107",
+      "event_type": "job_end",
+      "timestamp": 84838.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00108-end",
+      "job_id": "s10-job-00108",
+      "event_type": "job_end",
+      "timestamp": 84843.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00109-end",
+      "job_id": "s10-job-00109",
+      "event_type": "job_end",
+      "timestamp": 84869.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00115-end",
+      "job_id": "s10-job-00115",
+      "event_type": "job_end",
+      "timestamp": 84882.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00110-end",
+      "job_id": "s10-job-00110",
+      "event_type": "job_end",
+      "timestamp": 84888.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00111-end",
+      "job_id": "s10-job-00111",
+      "event_type": "job_end",
+      "timestamp": 84893.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00116-end",
+      "job_id": "s10-job-00116",
+      "event_type": "job_end",
+      "timestamp": 84893.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00112-end",
+      "job_id": "s10-job-00112",
+      "event_type": "job_end",
+      "timestamp": 84899.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00113-end",
+      "job_id": "s10-job-00113",
+      "event_type": "job_end",
+      "timestamp": 84933.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00114-end",
+      "job_id": "s10-job-00114",
+      "event_type": "job_end",
+      "timestamp": 84942.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00128-end",
+      "job_id": "s10-job-00128",
+      "event_type": "job_end",
+      "timestamp": 85261.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00129-end",
+      "job_id": "s10-job-00129",
+      "event_type": "job_end",
+      "timestamp": 85276.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00123-end",
+      "job_id": "s10-job-00123",
+      "event_type": "job_end",
+      "timestamp": 85343.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00130-end",
+      "job_id": "s10-job-00130",
+      "event_type": "job_end",
+      "timestamp": 85352.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00131-end",
+      "job_id": "s10-job-00131",
+      "event_type": "job_end",
+      "timestamp": 85377.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00124-end",
+      "job_id": "s10-job-00124",
+      "event_type": "job_end",
+      "timestamp": 85386.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00125-end",
+      "job_id": "s10-job-00125",
+      "event_type": "job_end",
+      "timestamp": 85407.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00126-end",
+      "job_id": "s10-job-00126",
+      "event_type": "job_end",
+      "timestamp": 85429.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00132-end",
+      "job_id": "s10-job-00132",
+      "event_type": "job_end",
+      "timestamp": 85919.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00133-end",
+      "job_id": "s10-job-00133",
+      "event_type": "job_end",
+      "timestamp": 85983.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00134-end",
+      "job_id": "s10-job-00134",
+      "event_type": "job_end",
+      "timestamp": 86013.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    },
+    {
+      "event_id": "evt-s10-job-00135-end",
+      "job_id": "s10-job-00135",
+      "event_type": "job_end",
+      "timestamp": 86013.0,
+      "node_count": 0,
+      "hardware_profile_id": "hopper_8gpu_air",
+      "scheduler_type": "SLURM"
+    }
+  ],
+  "hardware_profile_id": "hopper_8gpu_air",
+  "dt_lead_seconds": 45.0,
+  "bess_units": [
+    {
+      "asset_id": "bess-0",
+      "rated_mw": 18.0,
+      "usable_mwh": 14.0,
+      "initial_soc_fraction": 0.95,
+      "grid_forming": true,
+      "p_anchor_reserve_mw": 1.0,
+      "authority_tier": "autonomous"
+    }
+  ],
+  "turbine_units": [],
+  "solar_rated_mw": 0.0,
+  "design_peak_load_mw": 50.0,
+  "irradiance_steps": [
+    [
+      0.0,
+      1.0
+    ]
+  ],
+  "gpu_load_profile": [],
+  "island_mode": false,
+  "frequency_nominal_hz": 60.0,
+  "uf_warning_hz": null,
+  "ufls_stage1_hz": null,
+  "island_collapse_hz": null,
+  "of_warning_hz": null,
+  "of_trip_hz": null,
+  "ufls_stages": null,
+  "relay_81u_threshold_hz": null,
+  "relay_81u_delay_s": null,
+  "power_factor": 0.85,
+  "pue_base": 1.03,
+  "end_sim_time": 86400.0,
+  "demo_description": "",
+  "default_playback_speed": 1.0,
+  "dt_thermal_seconds": 90.0,
+  "plant_dt_thermal_seconds": null,
+  "alpha_max": 0.2,
+  "plant_alpha_max": null,
+  "tau_seconds": 20.0,
+  "plant_tau_seconds": null,
+  "anchor_reserve_pct": 0.0,
+  "band_enabled": false,
+  "band_pct_calibrated": 0.0,
+  "band_mult_uncalibrated": 2.0,
+  "band_mult_unmapped_hw": 1.5,
+  "pre_staging_config": null,
+  "pms_config": null,
+  "procurement_config": {
+    "firm_available_mw": 80.0,
+    "reserved_available_mw": 0.0,
+    "non_firm_available_mw": 0.0,
+    "price_curve_seed": 42
+  },
+  "maintenance_config": null,
+  "ramp_relaxation_config": null,
+  "kube_config": null,
+  "load_config": null,
+  "ambient_steps": [],
+  "cluster_gen_config": null,
+  "stressor_gen_config": null,
+  "param_sampling_config": null,
+  "telemetry_corruption_config": null,
+  "generation_block": null,
+  "calibrated": false,
+  "solar_origin_utc_hour": 20,
+  "assertions": [],
+  "workload_floor_fraction": null,
+  "fabric_scenario_id": null,
+  "ui_bess_rated_mw": 50,
+  "ui_bess_usable_mwh": 50,
+  "non_gpu_load_profile_mw": [
+    [
+      0.0,
+      7.948344432112468e-05
+    ],
+    [
+      527.0,
+      0.0
+    ],
+    [
+      1492.0,
+      7.948344432112468e-05
+    ],
+    [
+      2092.0,
+      0.0
+    ],
+    [
+      3302.0,
+      7.948344432112468e-05
+    ],
+    [
+      3902.0,
+      0.0
+    ],
+    [
+      4688.0,
+      7.948344432112468e-05
+    ],
+    [
+      5288.0,
+      0.0
+    ],
+    [
+      6267.0,
+      7.948344432112468e-05
+    ],
+    [
+      6867.0,
+      0.0
+    ],
+    [
+      8136.0,
+      7.948344432112468e-05
+    ],
+    [
+      8736.0,
+      0.0
+    ],
+    [
+      13078.0,
+      7.948344432112468e-05
+    ],
+    [
+      13678.0,
+      0.0
+    ],
+    [
+      16171.0,
+      7.948344432112468e-05
+    ],
+    [
+      16771.0,
+      0.0
+    ],
+    [
+      19984.0,
+      7.948344432112468e-05
+    ],
+    [
+      20584.0,
+      0.0
+    ],
+    [
+      25747.0,
+      7.948344432112468e-05
+    ],
+    [
+      26347.0,
+      0.0
+    ],
+    [
+      32703.0,
+      7.948344432112468e-05
+    ],
+    [
+      33303.0,
+      0.0
+    ],
+    [
+      35947.0,
+      7.948344432112468e-05
+    ],
+    [
+      36548.0,
+      0.0
+    ],
+    [
+      39296.0,
+      7.948344432112468e-05
+    ],
+    [
+      39897.0,
+      0.0
+    ],
+    [
+      42586.0,
+      7.948344432112468e-05
+    ],
+    [
+      43186.0,
+      0.0
+    ],
+    [
+      46338.0,
+      7.948344432112468e-05
+    ],
+    [
+      46908.0,
+      0.00016619265630780613
+    ],
+    [
+      46938.0,
+      8.670921198668145e-05
+    ],
+    [
+      50025.0,
+      0.0
+    ],
+    [
+      52389.0,
+      7.948344432112466e-05
+    ],
+    [
+      52989.0,
+      0.0
+    ],
+    [
+      56177.0,
+      7.948344432112466e-05
+    ],
+    [
+      56777.0,
+      0.0
+    ],
+    [
+      59318.0,
+      7.948344432112466e-05
+    ],
+    [
+      59918.0,
+      0.0
+    ],
+    [
+      62516.0,
+      7.948344432112466e-05
+    ],
+    [
+      63116.0,
+      0.0
+    ],
+    [
+      68637.0,
+      0.0003179337772844987
+    ],
+    [
+      69574.0,
+      0.00040464298927118014
+    ],
+    [
+      70368.0,
+      0.0005636098779134295
+    ],
+    [
+      73202.0,
+      0.0008815436551979283
+    ],
+    [
+      73553.0,
+      0.0314031862745098
+    ],
+    [
+      73705.0,
+      0.046664007584165744
+    ],
+    [
+      74054.0,
+      0.046981941361450244
+    ],
+    [
+      74187.0,
+      0.04706142480577137
+    ],
+    [
+      74245.0,
+      0.048651093692193864
+    ],
+    [
+      74255.0,
+      0.05151249768775435
+    ],
+    [
+      74260.0,
+      0.053102166574176844
+    ],
+    [
+      74265.0,
+      0.05469183546059934
+    ],
+    [
+      74269.0,
+      0.05596357056973733
+    ],
+    [
+      74275.0,
+      0.057871173233444324
+    ],
+    [
+      74276.0,
+      0.06168637856085831
+    ],
+    [
+      74279.0,
+      0.0629581136699963
+    ],
+    [
+      74285.0,
+      0.06486571633370329
+    ],
+    [
+      74295.0,
+      0.06518365011098778
+    ],
+    [
+      74313.0,
+      0.0655810673325934
+    ],
+    [
+      74320.0,
+      0.0658990011098779
+    ],
+    [
+      74402.0,
+      0.09642064372918976
+    ],
+    [
+      74410.0,
+      0.09769237883832776
+    ],
+    [
+      74412.0,
+      0.09832824639289676
+    ],
+    [
+      74415.0,
+      0.09928204772475026
+    ],
+    [
+      74425.0,
+      0.10246138549759524
+    ],
+    [
+      74435.0,
+      0.10564072327044023
+    ],
+    [
+      74440.0,
+      0.10723039215686272
+    ],
+    [
+      74445.0,
+      0.10882006104328522
+    ],
+    [
+      74455.0,
+      0.11040972992970771
+    ],
+    [
+      74581.0,
+      0.1126352663706992
+    ],
+    [
+      74620.0,
+      0.1129532001479837
+    ],
+    [
+      74737.0,
+      0.11327113392526819
+    ],
+    [
+      74775.0,
+      0.12757815390307065
+    ],
+    [
+      74799.0,
+      0.12789608768035515
+    ],
+    [
+      74811.0,
+      0.13067078246392896
+    ],
+    [
+      74847.0,
+      0.13067078246392896
+    ],
+    [
+      74854.0,
+      0.13067078246392896
+    ],
+    [
+      74861.0,
+      0.13098871624121347
+    ],
+    [
+      74879.0,
+      0.13130665001849798
+    ],
+    [
+      74898.0,
+      0.13130665001849798
+    ],
+    [
+      74905.0,
+      0.13130665001849798
+    ],
+    [
+      74927.0,
+      0.13098871624121347
+    ],
+    [
+      74929.0,
+      0.13130665001849798
+    ],
+    [
+      74942.0,
+      0.13162458379578248
+    ],
+    [
+      74992.0,
+      0.131942517573067
+    ],
+    [
+      75066.0,
+      0.1548337495375509
+    ],
+    [
+      75069.0,
+      0.1548337495375509
+    ],
+    [
+      75072.0,
+      0.17000786163522016
+    ],
+    [
+      75100.0,
+      0.1695309609692934
+    ],
+    [
+      75123.0,
+      0.16905406030336664
+    ],
+    [
+      75141.0,
+      0.16905406030336664
+    ],
+    [
+      75157.0,
+      0.1696104444136145
+    ],
+    [
+      75178.0,
+      0.1696104444136145
+    ],
+    [
+      75193.0,
+      0.171200113300037
+    ],
+    [
+      75200.0,
+      0.171200113300037
+    ],
+    [
+      75220.0,
+      0.171200113300037
+    ],
+    [
+      75291.0,
+      0.171200113300037
+    ],
+    [
+      75325.0,
+      0.1684254185164632
+    ],
+    [
+      75358.0,
+      0.16794851785053644
+    ],
+    [
+      75364.0,
+      0.16802800129485757
+    ],
+    [
+      75368.0,
+      0.16802800129485757
+    ],
+    [
+      75389.0,
+      0.1675511006289308
+    ],
+    [
+      75465.0,
+      0.1675511006289308
+    ],
+    [
+      75473.0,
+      0.1675511006289308
+    ],
+    [
+      75493.0,
+      0.17136630595634478
+    ],
+    [
+      75523.0,
+      0.17104837217906027
+    ],
+    [
+      75524.0,
+      0.17136630595634478
+    ],
+    [
+      75597.0,
+      0.17104837217906027
+    ],
+    [
+      75606.0,
+      0.17104837217906027
+    ],
+    [
+      75646.0,
+      0.17104837217906027
+    ],
+    [
+      75691.0,
+      0.1705714715131335
+    ],
+    [
+      75750.0,
+      0.1737508092859785
+    ],
+    [
+      75830.0,
+      0.14322916666666663
+    ],
+    [
+      75858.0,
+      0.14322916666666663
+    ],
+    [
+      75882.0,
+      0.14354710044395114
+    ],
+    [
+      75936.0,
+      0.14307019977802438
+    ],
+    [
+      75946.0,
+      0.14688540510543835
+    ],
+    [
+      75971.0,
+      0.1464085044395116
+    ],
+    [
+      75978.0,
+      0.14481883555308908
+    ],
+    [
+      76001.0,
+      0.14481883555308908
+    ],
+    [
+      76003.0,
+      0.14497780244173133
+    ],
+    [
+      76054.0,
+      0.14179846466888635
+    ],
+    [
+      76057.0,
+      0.14338813355530886
+    ],
+    [
+      76078.0,
+      0.13241941823899364
+    ],
+    [
+      76098.0,
+      0.1629410608583055
+    ],
+    [
+      76099.0,
+      0.1629410608583055
+    ],
+    [
+      76158.0,
+      0.16302054430262664
+    ],
+    [
+      76162.0,
+      0.16341796152423227
+    ],
+    [
+      76220.0,
+      0.16310002774694776
+    ],
+    [
+      76222.0,
+      0.16341796152423227
+    ],
+    [
+      76250.0,
+      0.16341796152423227
+    ],
+    [
+      76317.0,
+      0.16333847807991114
+    ],
+    [
+      76320.0,
+      0.16492814696633365
+    ],
+    [
+      76332.0,
+      0.16484866352201252
+    ],
+    [
+      76340.0,
+      0.16492814696633365
+    ],
+    [
+      76379.0,
+      0.16492814696633365
+    ],
+    [
+      76381.0,
+      0.16524608074361816
+    ],
+    [
+      76393.0,
+      0.16492814696633365
+    ],
+    [
+      76395.0,
+      0.16524608074361816
+    ],
+    [
+      76420.0,
+      0.16683574963004066
+    ],
+    [
+      76448.0,
+      0.16683574963004066
+    ],
+    [
+      76492.0,
+      0.17065095495745464
+    ],
+    [
+      76494.0,
+      0.17033302118017013
+    ],
+    [
+      76495.0,
+      0.17065095495745464
+    ],
+    [
+      76570.0,
+      0.17065095495745464
+    ],
+    [
+      76586.0,
+      0.17065095495745464
+    ],
+    [
+      76599.0,
+      0.17065095495745464
+    ],
+    [
+      76619.0,
+      0.17065095495745464
+    ],
+    [
+      76730.0,
+      0.14012931233814277
+    ],
+    [
+      76743.0,
+      0.15539013364779872
+    ],
+    [
+      76746.0,
+      0.1550721998705142
+    ],
+    [
+      76793.0,
+      0.18559384248982608
+    ],
+    [
+      76902.0,
+      0.18559384248982608
+    ],
+    [
+      76923.0,
+      0.18940904781724005
+    ],
+    [
+      76931.0,
+      0.19703945847206802
+    ],
+    [
+      76989.0,
+      0.19672152469478352
+    ],
+    [
+      76990.0,
+      0.19703945847206802
+    ],
+    [
+      77019.0,
+      0.19672152469478352
+    ],
+    [
+      77020.0,
+      0.19703945847206802
+    ],
+    [
+      77054.0,
+      0.19656255780614126
+    ],
+    [
+      77081.0,
+      0.1960856571402145
+    ],
+    [
+      77192.0,
+      0.1960856571402145
+    ],
+    [
+      77205.0,
+      0.19616514058453563
+    ],
+    [
+      77254.0,
+      0.18185812060673318
+    ],
+    [
+      77259.0,
+      0.18154018682944867
+    ],
+    [
+      77260.0,
+      0.18185812060673318
+    ],
+    [
+      77293.0,
+      0.19330373658897512
+    ],
+    [
+      77398.0,
+      0.19298580281169062
+    ],
+    [
+      77493.0,
+      0.1968010081391046
+    ],
+    [
+      77583.0,
+      0.2006956969108397
+    ],
+    [
+      77605.0,
+      0.2006956969108397
+    ],
+    [
+      77607.0,
+      0.2006956969108397
+    ],
+    [
+      77635.0,
+      0.2006956969108397
+    ],
+    [
+      77650.0,
+      0.2006956969108397
+    ],
+    [
+      77703.0,
+      0.2006956969108397
+    ],
+    [
+      77755.0,
+      0.2006956969108397
+    ],
+    [
+      77760.0,
+      0.2006956969108397
+    ],
+    [
+      78062.0,
+      0.2006956969108397
+    ],
+    [
+      78069.0,
+      0.20149053135405093
+    ],
+    [
+      78141.0,
+      0.20149053135405093
+    ],
+    [
+      78318.0,
+      0.19767532602663695
+    ],
+    [
+      78336.0,
+      0.19926499491305946
+    ],
+    [
+      78379.0,
+      0.19847016046984822
+    ],
+    [
+      78402.0,
+      0.19815222669256372
+    ],
+    [
+      78405.0,
+      0.19847016046984822
+    ],
+    [
+      78524.0,
+      0.19847016046984822
+    ],
+    [
+      78596.0,
+      0.2022853657972622
+    ],
+    [
+      78722.0,
+      0.2289918030891601
+    ],
+    [
+      78753.0,
+      0.2289918030891601
+    ],
+    [
+      78862.0,
+      0.2289918030891601
+    ],
+    [
+      78902.0,
+      0.2289918030891601
+    ],
+    [
+      78924.0,
+      0.2289918030891601
+    ],
+    [
+      78994.0,
+      0.2289918030891601
+    ],
+    [
+      79032.0,
+      0.22859438586755446
+    ],
+    [
+      79044.0,
+      0.22859438586755446
+    ],
+    [
+      79056.0,
+      0.23113785608583046
+    ],
+    [
+      79058.0,
+      0.23113785608583046
+    ],
+    [
+      79117.0,
+      0.23113785608583046
+    ],
+    [
+      79208.0,
+      0.23113785608583046
+    ],
+    [
+      79384.0,
+      0.23113785608583046
+    ],
+    [
+      79406.0,
+      0.23113785608583046
+    ],
+    [
+      79430.0,
+      0.23113785608583046
+    ],
+    [
+      79469.0,
+      0.23113785608583046
+    ],
+    [
+      79546.0,
+      0.23113785608583046
+    ],
+    [
+      79547.0,
+      0.22732265075841648
+    ],
+    [
+      79549.0,
+      0.23113785608583046
+    ],
+    [
+      79670.0,
+      0.23113785608583046
+    ],
+    [
+      79691.0,
+      0.23113785608583046
+    ],
+    [
+      79705.0,
+      0.23145578986311496
+    ],
+    [
+      79732.0,
+      0.23145578986311496
+    ],
+    [
+      79906.0,
+      0.2313690806511283
+    ],
+    [
+      79972.0,
+      0.23121011376248604
+    ],
+    [
+      79981.0,
+      0.23089217998520153
+    ],
+    [
+      79982.0,
+      0.23121011376248604
+    ],
+    [
+      80082.0,
+      0.23121011376248604
+    ],
+    [
+      80094.0,
+      0.23121011376248604
+    ],
+    [
+      80133.0,
+      0.23121011376248604
+    ],
+    [
+      80141.0,
+      0.23121011376248604
+    ],
+    [
+      80149.0,
+      0.22739490843507207
+    ],
+    [
+      80150.0,
+      0.23121011376248604
+    ],
+    [
+      80289.0,
+      0.23121011376248604
+    ],
+    [
+      80372.0,
+      0.23121011376248604
+    ],
+    [
+      80488.0,
+      0.23121011376248604
+    ],
+    [
+      80521.0,
+      0.23121011376248604
+    ],
+    [
+      80611.0,
+      0.23121011376248604
+    ],
+    [
+      80732.0,
+      0.23121011376248604
+    ],
+    [
+      80737.0,
+      0.23121011376248604
+    ],
+    [
+      80793.0,
+      0.23160753098409168
+    ],
+    [
+      80798.0,
+      0.2277923256566777
+    ],
+    [
+      80799.0,
+      0.23160753098409168
+    ],
+    [
+      80845.0,
+      0.26181123982611904
+    ],
+    [
+      80857.0,
+      0.26149330604883453
+    ],
+    [
+      80858.0,
+      0.26181123982611904
+    ],
+    [
+      80955.0,
+      0.26149330604883453
+    ],
+    [
+      80957.0,
+      0.26181123982611904
+    ],
+    [
+      81221.0,
+      0.28724594200887893
+    ],
+    [
+      81247.0,
+      0.28724594200887893
+    ],
+    [
+      81327.0,
+      0.28724594200887893
+    ],
+    [
+      81339.0,
+      0.28764335923048456
+    ],
+    [
+      81355.0,
+      0.28764335923048456
+    ],
+    [
+      81376.0,
+      0.2838281539030706
+    ],
+    [
+      81378.0,
+      0.28764335923048456
+    ],
+    [
+      81414.0,
+      0.28764335923048456
+    ],
+    [
+      81469.0,
+      0.2574396503884572
+    ],
+    [
+      81485.0,
+      0.2536244450610432
+    ],
+    [
+      81486.0,
+      0.2574396503884572
+    ],
+    [
+      81539.0,
+      0.2574396503884572
+    ],
+    [
+      81571.0,
+      0.2574396503884572
+    ],
+    [
+      81603.0,
+      0.2536244450610432
+    ],
+    [
+      81604.0,
+      0.2574396503884572
+    ],
+    [
+      81799.0,
+      0.2574396503884572
+    ],
+    [
+      81854.0,
+      0.2574396503884572
+    ],
+    [
+      81952.0,
+      0.2574396503884572
+    ],
+    [
+      81964.0,
+      0.2574396503884572
+    ],
+    [
+      81999.0,
+      0.2574396503884572
+    ],
+    [
+      82041.0,
+      0.2574396503884572
+    ],
+    [
+      82045.0,
+      0.28764335923048456
+    ],
+    [
+      82164.0,
+      0.28764335923048456
+    ],
+    [
+      82224.0,
+      0.28764335923048456
+    ],
+    [
+      82277.0,
+      0.28732542545320006
+    ],
+    [
+      82278.0,
+      0.28764335923048456
+    ],
+    [
+      82436.0,
+      0.28764335923048456
+    ],
+    [
+      82461.0,
+      0.28764335923048456
+    ],
+    [
+      82549.0,
+      0.28764335923048456
+    ],
+    [
+      82584.0,
+      0.28764335923048456
+    ],
+    [
+      82629.0,
+      0.2838281539030706
+    ],
+    [
+      82631.0,
+      0.2835102201257861
+    ],
+    [
+      82632.0,
+      0.2838281539030706
+    ],
+    [
+      82684.0,
+      0.2838281539030706
+    ],
+    [
+      82772.0,
+      0.2838281539030706
+    ],
+    [
+      82839.0,
+      0.2838281539030706
+    ],
+    [
+      82843.0,
+      0.2838281539030706
+    ],
+    [
+      82979.0,
+      0.2838281539030706
+    ],
+    [
+      83010.0,
+      0.2838281539030706
+    ],
+    [
+      83082.0,
+      0.2838281539030706
+    ],
+    [
+      83107.0,
+      0.2838281539030706
+    ],
+    [
+      83217.0,
+      0.2838281539030706
+    ],
+    [
+      83251.0,
+      0.2838281539030706
+    ],
+    [
+      83295.0,
+      0.2838281539030706
+    ],
+    [
+      83368.0,
+      0.2838281539030706
+    ],
+    [
+      83395.0,
+      0.2838281539030706
+    ],
+    [
+      83569.0,
+      0.2838281539030706
+    ],
+    [
+      83581.0,
+      0.2835102201257861
+    ],
+    [
+      83605.0,
+      0.28430505456899735
+    ],
+    [
+      83747.0,
+      0.2804898492415834
+    ],
+    [
+      83748.0,
+      0.28430505456899735
+    ],
+    [
+      83897.0,
+      0.28398712079171284
+    ],
+    [
+      83898.0,
+      0.28430505456899735
+    ],
+    [
+      83943.0,
+      0.28430505456899735
+    ],
+    [
+      84037.0,
+      0.2839076373473917
+    ],
+    [
+      84069.0,
+      0.2839076373473917
+    ],
+    [
+      84223.0,
+      0.2839076373473917
+    ],
+    [
+      84228.0,
+      0.2839076373473917
+    ],
+    [
+      84276.0,
+      0.2839076373473917
+    ],
+    [
+      84389.0,
+      0.2839076373473917
+    ],
+    [
+      84404.0,
+      0.28009243201997774
+    ],
+    [
+      84405.0,
+      0.2839076373473917
+    ],
+    [
+      84445.0,
+      0.29408151822049566
+    ],
+    [
+      84449.0,
+      0.2935251341102478
+    ],
+    [
+      84588.0,
+      0.2897099287828338
+    ],
+    [
+      84695.0,
+      0.2935251341102478
+    ],
+    [
+      84774.0,
+      0.2935251341102478
+    ],
+    [
+      84871.0,
+      0.2935251341102478
+    ],
+    [
+      85163.0,
+      0.2935251341102478
+    ],
+    [
+      85340.0,
+      0.2936046175545689
+    ],
+    [
+      85475.0,
+      0.2936046175545689
+    ],
+    [
+      85557.0,
+      0.2936046175545689
+    ],
+    [
+      85691.0,
+      0.2932866837772844
+    ],
+    [
+      85696.0,
+      0.2894714784498704
+    ],
+    [
+      85697.0,
+      0.2932866837772844
+    ],
+    [
+      85739.0,
+      0.2932866837772844
+    ],
+    [
+      85773.0,
+      0.2932866837772844
+    ],
+    [
+      85833.0,
+      0.2936046175545689
+    ],
+    [
+      85939.0,
+      0.2939225513318534
+    ],
+    [
+      85947.0,
+      0.2939225513318534
+    ],
+    [
+      86019.0,
+      0.2939225513318534
+    ],
+    [
+      86144.0,
+      0.2939225513318534
+    ],
+    [
+      86249.0,
+      0.2939225513318534
+    ],
+    [
+      86351.0,
+      0.2939225513318534
+    ],
+    [
+      86400.0,
+      0.0
+    ]
+  ],
+  "operating_cost_inputs": {
+    "gas_price_usd_per_mmbtu": 5.140790742526519,
+    "gas_price_basis": "HHV",
+    "gas_price_usd_per_mmbtu_provenance": "CITED: EIA U.S. Natural Gas Industrial Price, Aug 2025–Jul 2026 12-month mean $5.331/Mcf (https://www.eia.gov/dnav/ng/hist/n3035us3m.htm), divided by EIA 2025 average heat content 1,037 Btu/cf = 1.037 MMBtu/Mcf (https://www.eia.gov/tools/faqs/faq.php?id=45&t=5).",
+    "gas_price_basis_provenance": "CITED: EIA heat-content conversion above; price is recorded on an HHV basis.",
+    "diesel_price_usd_per_gal": 6.276,
+    "diesel_price_usd_per_gal_provenance": "CITED: EIA U.S. on-highway No. 2 diesel retail, week of 2026-10-19, $6.276/gal, including taxes (https://www.eia.gov/petroleum/gasdiesel/). Off-road generator fuel may exclude road taxes. S11: US price retained from S10; a BC off-road diesel price has not been sourced (PROPOSED_HERE).",
+    "turbine_variable_om_usd_per_mwh": 5.7,
+    "turbine_variable_om_usd_per_mwh_provenance": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 × 54 MW; $5.70/MWh, 2023 dollars (https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf).",
+    "turbine_fixed_om_usd_per_kw_yr": 9.56,
+    "turbine_fixed_om_usd_per_kw_yr_provenance": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 × 54 MW; $9.56/kW-year, 2023 dollars; proxy for larger aeroderivative units.",
+    "turbine_start_cost_usd_per_start": null,
+    "turbine_start_cost_usd_per_start_provenance": "No cited non-fuel start-cost source; intentionally left null.",
+    "bess_degradation_usd_per_mwh": null,
+    "bess_degradation_usd_per_mwh_provenance": "No cited degradation-cost source; intentionally left null.",
+    "unserved_energy_value_usd_per_mwh": null,
+    "unserved_energy_value_usd_per_mwh_provenance": "No cited unserved-energy value; intentionally left null.",
+    "currency_year": "mixed: 2023 USD O&M; 2026 USD fuel prices",
+    "currency_year_provenance": "CITED: EIA AEO2025 O&M proxy is 2023 dollars; fuel prices are US public prices observed in 2026. Values are not inflation-normalized."
+  },
+  "site_name": "Generic BC Hydro transmission-connected site (location PROPOSED_HERE)",
+  "grid_import_limit_mw": 80.0,
+  "bess_normal_dispatch_depth_fraction": 0.25,
+  "grid_import_price_per_mwh": 53.74,
+  "diesel_power_block": {
+    "enabled": false,
+    "target_capacity_mw": 60.0,
+    "unit_rating_mw": 10.0,
+    "p_start": 1.0,
+    "target_reliability": 1.0,
+    "f_block": 1.0,
+    "delta_t_start_s": 10.0,
+    "residual_ramp_s": 8.0,
+    "start_stagger_interval_s": 2.0,
+    "debounce_s": 1.0,
+    "restore_hold_s": 300.0,
+    "min_run_s": 900.0,
+    "min_down_s": 300.0,
+    "min_stable_load_mw_fraction": 0.3,
+    "cooldown_s": 300.0,
+    "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+    "fuel_type": "diesel",
+    "min_fuel_runtime_hours": 48.0,
+    "authority_tier": "advisory_only"
+  },
+  "grid_tariff_reference": {
+    "utility": "BC Hydro",
+    "rate_schedule": "RS 1830 Transmission Service (Flat Rate), energy charge 1830C",
+    "currency": "CAD",
+    "energy_charge_cad_per_kwh": 0.05374,
+    "demand_charge_cad_per_kva_month": 10.154,
+    "demand_interval_min": 30,
+    "time_of_use": false,
+    "consumed_by_simulator": false
+  },
+  "provenance_s11": {
+    "cloned_from": "S10_mit_supercloud_2021-08-11",
+    "created": "2026-10-26",
+    "diesel_status": "disabled 2026-10-26 by Lloyd ruling pending grid-loss gate",
+    "cap_revision": "60 -> 80 MW 2026-10-27 (CAV-S11-03; Lloyd ruling)",
+    "bess_reserve": "bess_normal_dispatch_depth_fraction 0.25 PROPOSED_HERE (Lloyd ruling 2026-10-27, IMPL-S11-05 stopgap): per core/dispatch.py soc_floor_mwh, reserve = usable_mwh x (initial_soc_fraction - depth) = 14 x (0.95 - 0.25) = 9.8 MWh (SoC floor 0.70), about 33 min at the 18 MW rating; 3.5 MWh available for normal dispatch. Interim until DR-2026-10-27-GRID-MODE-BESS; no grid-charging path exists, so SoC will hold at the floor rather than recover."
+  }
+}
