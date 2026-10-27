@@ -61,9 +61,9 @@ def test_mcp_tools_are_reachable_over_streamable_http(
         assert initialized.json()["result"]["capabilities"]["tools"] == {}
 
         scenarios = _call(client, "list_scenarios", {}, READ_TOKEN)
-        # IMPL-ISL-25 adds the operational S10 replay without reordering entries.
-        assert scenarios["scenarios"]["total"] == 6
-        assert scenarios["scenarios"]["returned"] == 6
+        # IMPL-S11-001 adds S11 after the existing study scenarios.
+        assert scenarios["scenarios"]["total"] == 7
+        assert scenarios["scenarios"]["returned"] == 7
         assert scenarios["scenarios"]["has_more"] is False
 
         metrics = _call(
@@ -172,8 +172,8 @@ def test_run_token_can_discover_read_tools_for_one_connector(
         assert {"get_scenario", "start_run"} <= tool_names
 
         scenarios = _call(client, "list_scenarios", {}, RUN_TOKEN)
-        # IMPL-ISL-25: S10 is the sixth additive MCP study-list entry.
-        assert scenarios["scenarios"]["total"] == 6
+        # IMPL-S11-001 adds S11 as the seventh additive MCP study-list entry.
+        assert scenarios["scenarios"]["total"] == 7
 
 
 def test_mcp_cache_hit_and_build_parity_error(
@@ -422,7 +422,7 @@ def _wait_for_run(client: TestClient, run_id: str) -> dict:
     pytest.fail(f"run {run_id} did not finish within 90 seconds")
 
 
-def test_tc160_list_scenarios_marks_all_six_study_scenarios(
+def test_tc160_list_scenarios_marks_all_seven_study_scenarios(
     monkeypatch,
 ) -> None:
     monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
@@ -430,9 +430,8 @@ def test_tc160_list_scenarios_marks_all_six_study_scenarios(
     with TestClient(app) as client:
         result = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
 
-        # IMPL-ISL-25: the four H entries and base demo keep their positions;
-        # the operational S10 replay is appended.
-        assert result["total"] == result["returned"] == 6
+        # IMPL-S11-001: the existing entries keep their positions; S11 is appended.
+        assert result["total"] == result["returned"] == 7
         by_id = {item["scenario_id"]: item for item in result["items"]}
         assert set(by_id) == set(server_module.STUDY_SCENARIOS)
         assert all(item["study_supported"] is True for item in by_id.values())
@@ -481,9 +480,13 @@ def test_tc_isl_65_s10_list_and_get_scenario_use_tracked_source(
         assert [item["scenario_id"] for item in items] == list(
             server_module.STUDY_SCENARIOS
         )
-        assert items[-1]["scenario_id"] == "S10_mit_supercloud_2021-08-11"
-        assert items[-1]["kind"] == "supercloud_replay"
-        assert items[-1]["study_class"] == "supercloud_replay"
+        s10 = next(
+            item
+            for item in items
+            if item["scenario_id"] == "S10_mit_supercloud_2021-08-11"
+        )
+        assert s10["kind"] == "supercloud_replay"
+        assert s10["study_class"] == "supercloud_replay"
 
         result = _call(
             client,
@@ -499,6 +502,53 @@ def test_tc_isl_65_s10_list_and_get_scenario_use_tracked_source(
         assert result["spec"]["name"] == "S10_mit_supercloud_2021-08-11"
         assert len(result["spec"]["workload_events"]) == 239
         assert len(result["spec"]["non_gpu_load_profile_mw"]) == 320
+
+
+def test_tc_s11_06_s11_list_and_get_scenario_use_tracked_source(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-S11-06: MCP and executor load S11's own tracked JSON."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
+    s11_id = "S11_mit_supercloud_2021-08-11_bchydro"
+    with TestClient(app) as client:
+        listing = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
+        s11 = next(
+            item for item in listing["items"] if item["scenario_id"] == s11_id
+        )
+        assert s11["study_supported"] is True
+        assert s11["study_class"] == "supercloud_replay"
+
+        result = _call(
+            client,
+            "get_scenario",
+            {"scenario_id": s11_id},
+            READ_TOKEN,
+        )
+        assert result["source"].endswith(
+            "config/scenarios/S11_mit_supercloud_2021-08-11_bchydro.json"
+        )
+        assert result["spec"]["island_mode"] is False
+        assert result["spec"]["grid_import_limit_mw"] == 60
+        assert result["spec"]["turbine_units"] == []
+        assert result["spec"]["diesel_power_block"]["enabled"] is False
+        assert len(result["spec"]["workload_events"]) == 239
+
+    # IMPL-S11-06: the replay executor must expand each scenario's own inputs.
+    from study_harness.executor import StudyRunExecutor
+
+    executor = StudyRunExecutor(output_dir=tmp_path / "s11-06-expansion")
+    s11_spec = executor._expanded_spec(s11_id, None, None)
+    assert s11_spec["island_mode"] is False
+    assert s11_spec["turbine_units"] == []
+    s10_spec = executor._expanded_spec(
+        "S10_mit_supercloud_2021-08-11",
+        None,
+        None,
+    )
+    assert s10_spec["island_mode"] is True
+    assert len(s10_spec["turbine_units"]) == 5
 
 
 def test_tc_isl_66_s10_start_run_metrics_and_compare_are_reachable(
