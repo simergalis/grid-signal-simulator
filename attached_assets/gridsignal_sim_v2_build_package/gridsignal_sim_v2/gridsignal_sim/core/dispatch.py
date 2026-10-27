@@ -489,6 +489,45 @@ class DispatchArbitrator:
 
         return allocations
 
+    def grid_charge_targets_to_initial_soc(
+        self,
+        dt_seconds: float,
+        grid_headroom_mw: float,
+    ) -> list[float]:
+        """Allocate grid charging up to each unit's configured initial SoC.
+
+        The configured initial SoC is reused as the grid-recharge target; this
+        adds no scenario field and prevents charging above the site's configured
+        operating target. `grid_headroom_mw` is the import capacity remaining
+        after non-storage generation serves site demand.
+        """
+        if dt_seconds <= 0.0 or grid_headroom_mw <= 0.0 or not self.bess_units:
+            return [0.0] * len(self.bess_units)
+
+        dt_hours = dt_seconds / 3600.0
+        charge_limits: list[float] = []
+        for bess in self.bess_units:
+            target_soc = min(1.0, max(0.0, bess.config.initial_soc_fraction))
+            target_energy_mwh = bess.config.usable_mwh * target_soc
+            energy_needed_mwh = max(0.0, target_energy_mwh - bess.soc_mwh)
+            charge_efficiency = max(0.0, bess.config.charge_efficiency)
+            if energy_needed_mwh <= 1e-12 or charge_efficiency <= 0.0:
+                charge_limits.append(0.0)
+                continue
+            energy_limited_mw = energy_needed_mwh / (
+                dt_hours * charge_efficiency
+            )
+            charge_limits.append(min(bess.config.rated_mw, energy_limited_mw))
+
+        total_charge_mw = min(
+            max(0.0, grid_headroom_mw),
+            sum(charge_limits),
+        )
+        return self._capped_equal_share_allocations(
+            total_charge_mw,
+            charge_limits,
+        )
+
     def diesel_worst_case_sync_s(self) -> float:
         """Return the configured fleet's worst-case synchronization duration.
 
@@ -858,6 +897,7 @@ class DispatchArbitrator:
         bess_dispatch_target_mw: float | None = None,
         bess_dispatch_ceilings_mw: list[float] | None = None,
         bess_soc_floors_mwh: list[float] | None = None,
+        bess_grid_charge_targets_mw: list[float] | None = None,
     ) -> tuple[float, float, list[CandidateResponse]]:
         """Called every tick.  Returns (turbine_output_mw, bess_output_mw, candidates).
 
@@ -952,6 +992,17 @@ class DispatchArbitrator:
                 max(0.0, float(floor_mwh))
                 for floor_mwh in bess_soc_floors_mwh
             ]
+        if bess_grid_charge_targets_mw is not None:
+            if len(bess_grid_charge_targets_mw) != len(self.bess_units):
+                raise ValueError(
+                    "bess_grid_charge_targets_mw must match the BESS fleet size"
+                )
+            grid_charge_targets = [
+                max(0.0, float(target_mw))
+                for target_mw in bess_grid_charge_targets_mw
+            ]
+        else:
+            grid_charge_targets = None
 
         # Phase 11.3: capture the BESS setpoint (what was commanded to the fleet)
         # BEFORE cover_shortfall() may clip it due to SOC or power limits.
@@ -975,6 +1026,15 @@ class DispatchArbitrator:
                 remaining = max(0.0, remaining - absorbed)
             bess_setpoint_mw = -fleet_surplus       # negative = absorption command
             bess_output_mw   = -bess_absorbed_mw    # negative = charging (physics sign)
+        elif grid_charge_targets is not None and any(
+            target_mw > 1e-12 for target_mw in grid_charge_targets
+        ):
+            # Grid-connected D2: use only the PCC headroom allocated by the
+            # caller, and charge through the same physical absorb_surplus path.
+            bess_setpoint_mw = -sum(grid_charge_targets)
+            bess_output_mw = 0.0
+            for bess, target_mw in zip(self.bess_units, grid_charge_targets):
+                bess_output_mw -= bess.absorb_surplus(target_mw, dt_seconds)
         else:
             allocations = self._capped_equal_share_allocations(fleet_shortfall, ceilings)
             bess_setpoint_mw = fleet_shortfall

@@ -261,8 +261,8 @@ def test_bess_reserve_releases_when_fuel_cell_and_grid_are_unavailable() -> None
     assert tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
 
 
-def test_sj1_validation_burst_uses_fixed_fuel_cell_and_bess_dispatch() -> None:
-    """The scheduled surge uses fixed FC output and the BESS residual."""
+def test_sj1_validation_burst_uses_grid_before_bess_dispatch() -> None:
+    """Grid imports cover residual load within the PCC cap before BESS."""
     spec_data = _load_raw(_SCENARIO_PATH)
     spec_data["end_sim_time"] = 970.0
     ctx = build_run_context_from_spec("sj1-pcc-import-validation", spec_data)
@@ -284,12 +284,25 @@ def test_sj1_validation_burst_uses_fixed_fuel_cell_and_bess_dispatch() -> None:
     ]
 
     assert validation_ticks
-    assert all(tick.bess_output_mw < -0.01 or tick.bess_output_mw > 0.1
-               for tick in validation_ticks)
+    # At t=900 the fixed fuel-cell output exceeds demand, so the existing
+    # local-surplus absorption path charges the BESS. On the following ticks,
+    # grid import is below its 5 MW cap and therefore serves the residual before
+    # normal BESS discharge (DR-GMB D1).
+    assert validation_ticks[0].bess_output_mw < -0.01
+    assert all(tick.grid_exchange_mw >= -5.0 - 1e-6 for tick in validation_ticks)
+    assert all(tick.bess_output_mw <= 1e-6 for tick in validation_ticks)
+    assert all(
+        tick.bess_output_mw == pytest.approx(0.0, abs=1e-6)
+        for tick in validation_ticks[1:]
+    )
     assert max(tick.fuel_cell_output_mw for tick in validation_ticks) == pytest.approx(24.0)
     assert min(tick.bess_output_mw for tick in validation_ticks) < -0.01
-    assert max(tick.bess_output_mw for tick in validation_ticks) > 0.1
-    assert all(tick.grid_exchange_mw >= -1e-6 for tick in validation_ticks)
+    assert max(tick.bess_output_mw for tick in validation_ticks) == pytest.approx(
+        0.0,
+        abs=1e-6,
+    )
+    assert validation_ticks[0].grid_exchange_mw == pytest.approx(0.0, abs=1e-6)
+    assert any(tick.grid_exchange_mw < -0.1 for tick in validation_ticks[1:])
     assert all(tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
                for tick in validation_ticks)
 

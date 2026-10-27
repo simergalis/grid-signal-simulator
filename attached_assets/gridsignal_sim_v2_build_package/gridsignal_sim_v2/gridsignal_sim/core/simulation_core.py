@@ -2180,10 +2180,42 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         ]
     else:
         _bess_dispatch_ceilings_mw = _bess_normal_dispatch_ceilings_mw
+    _grid_bess_dispatch_need_mw = None
+    _grid_charge_targets_mw = None
+    if not _islanded:
+        _grid_import_limit_mw = state.site.grid_import_limit_mw
+        # D1: grid-connected normal dispatch uses the PCC first. The BESS is
+        # allowed to discharge only for residual load above the configured cap;
+        # with no cap, grid capacity is unlimited and normal BESS discharge is 0.
+        _grid_bess_dispatch_need_mw = (
+            0.0
+            if _grid_import_limit_mw is None
+            else max(0.0, _physical_bess_shortfall_mw - max(0.0, _grid_import_limit_mw))
+        )
+        # D2: recharge only from import headroom, without price-based arbitration.
+        # The initial SoC configured for each unit is its recharge target.
+        _grid_headroom_mw = (
+            sum(b.config.rated_mw for b in state.bess_units)
+            if _grid_import_limit_mw is None
+            else max(
+                0.0,
+                max(0.0, _grid_import_limit_mw) - _physical_bess_shortfall_mw,
+            )
+        )
+        _grid_charge_targets_mw = state.arbitrator.grid_charge_targets_to_initial_soc(
+            dt_seconds,
+            _grid_headroom_mw,
+        )
+
     _effective_bess_setpoint_mw = min(
         _planned_bess_setpoint_mw + _emergency_bess_target_mw,
         _physical_bess_shortfall_mw,
     )
+    if _grid_bess_dispatch_need_mw is not None:
+        _effective_bess_setpoint_mw = min(
+            _effective_bess_setpoint_mw,
+            _grid_bess_dispatch_need_mw,
+        )
     # The same reconciled threshold that shaped the upstream ceiling is the
     # downstream physical floor.  The existing emergency-release condition
     # authorizes that retained energy for this tick only; no other contingency
@@ -2204,6 +2236,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         bess_dispatch_target_mw=_effective_bess_setpoint_mw,
         bess_dispatch_ceilings_mw=_bess_dispatch_ceilings_mw,
         bess_soc_floors_mwh=_bess_soc_floors_mwh,
+        bess_grid_charge_targets_mw=_grid_charge_targets_mw,
     )
     # DR D10-gap: this allocation's achieved pre-diesel residual includes the
     # emergency BESS release and supersedes the availability-based gap. Compute
