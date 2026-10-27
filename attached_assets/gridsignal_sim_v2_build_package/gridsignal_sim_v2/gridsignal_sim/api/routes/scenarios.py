@@ -1435,6 +1435,7 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         # S10 — one real day (2021-08-11 UTC) of MIT SuperCloud GPU jobs at true start/end times, scaled to 50 MW H100-equivalent.
         ("S10_mit_supercloud_2021-08-11", "S10_mit_supercloud_2021-08-11.json"),
         ("S11_mit_supercloud_2021-08-11_bchydro", "S11_mit_supercloud_2021-08-11_bchydro.json"),
+        ("S11b_mit_supercloud_2021-08-11_bchydro_60mw", "S11b_mit_supercloud_2021-08-11_bchydro_60mw.json"),
     ]
     _DISPLAY_NAME_OVERRIDES = {
         "scenario-equinix-sj-1": "23 Customer Scenario - scenario-equinix-sj-1",

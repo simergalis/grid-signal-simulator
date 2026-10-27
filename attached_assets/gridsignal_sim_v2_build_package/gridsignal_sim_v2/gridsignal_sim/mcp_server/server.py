@@ -40,6 +40,7 @@ from study_harness.executor import (
     STUDY_CLASS_SUPERCLOUD_REPLAY,
     SUPER_CLOUD_REPLAY_SCENARIO_ID,
     S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+    S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
     StudyRunExecutor,
     make_study_run_identity,
     seed_cache_bypass_reason,
@@ -75,6 +76,7 @@ STUDY_SCENARIOS = (
     BASE_SCENARIO,
     SUPER_CLOUD_REPLAY_SCENARIO_ID,
     S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+    S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
 )
 SCENARIO_IDS = STUDY_SCENARIOS
 
@@ -356,6 +358,7 @@ class StudyService:
                             in (
                                 SUPER_CLOUD_REPLAY_SCENARIO_ID,
                                 S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+                                S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
                             )
                             else "base"
                         )

@@ -61,9 +61,9 @@ def test_mcp_tools_are_reachable_over_streamable_http(
         assert initialized.json()["result"]["capabilities"]["tools"] == {}
 
         scenarios = _call(client, "list_scenarios", {}, READ_TOKEN)
-        # IMPL-S11-001 adds S11 after the existing study scenarios.
-        assert scenarios["scenarios"]["total"] == 7
-        assert scenarios["scenarios"]["returned"] == 7
+        # IMPL-S11-002 adds S11b after S11 in the study scenarios.
+        assert scenarios["scenarios"]["total"] == 8
+        assert scenarios["scenarios"]["returned"] == 8
         assert scenarios["scenarios"]["has_more"] is False
 
         metrics = _call(
@@ -172,8 +172,8 @@ def test_run_token_can_discover_read_tools_for_one_connector(
         assert {"get_scenario", "start_run"} <= tool_names
 
         scenarios = _call(client, "list_scenarios", {}, RUN_TOKEN)
-        # IMPL-S11-001 adds S11 as the seventh additive MCP study-list entry.
-        assert scenarios["scenarios"]["total"] == 7
+        # IMPL-S11-002 adds S11b as the eighth additive MCP study-list entry.
+        assert scenarios["scenarios"]["total"] == 8
 
 
 def test_mcp_cache_hit_and_build_parity_error(
@@ -422,7 +422,7 @@ def _wait_for_run(client: TestClient, run_id: str) -> dict:
     pytest.fail(f"run {run_id} did not finish within 90 seconds")
 
 
-def test_tc160_list_scenarios_marks_all_seven_study_scenarios(
+def test_tc160_list_scenarios_marks_all_eight_study_scenarios(
     monkeypatch,
 ) -> None:
     monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
@@ -430,8 +430,8 @@ def test_tc160_list_scenarios_marks_all_seven_study_scenarios(
     with TestClient(app) as client:
         result = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
 
-        # IMPL-S11-001: the existing entries keep their positions; S11 is appended.
-        assert result["total"] == result["returned"] == 7
+        # IMPL-S11-002: the existing entries keep their positions; S11b follows S11.
+        assert result["total"] == result["returned"] == 8
         by_id = {item["scenario_id"]: item for item in result["items"]}
         assert set(by_id) == set(server_module.STUDY_SCENARIOS)
         assert all(item["study_supported"] is True for item in by_id.values())
@@ -530,7 +530,7 @@ def test_tc_s11_06_s11_list_and_get_scenario_use_tracked_source(
             "config/scenarios/S11_mit_supercloud_2021-08-11_bchydro.json"
         )
         assert result["spec"]["island_mode"] is False
-        assert result["spec"]["grid_import_limit_mw"] == 60
+        assert result["spec"]["grid_import_limit_mw"] == 80
         assert result["spec"]["turbine_units"] == []
         assert result["spec"]["diesel_power_block"]["enabled"] is False
         assert len(result["spec"]["workload_events"]) == 239
@@ -541,7 +541,13 @@ def test_tc_s11_06_s11_list_and_get_scenario_use_tracked_source(
     executor = StudyRunExecutor(output_dir=tmp_path / "s11-06-expansion")
     s11_spec = executor._expanded_spec(s11_id, None, None)
     assert s11_spec["island_mode"] is False
+    assert s11_spec["grid_import_limit_mw"] == 80
     assert s11_spec["turbine_units"] == []
+    s11b_id = "S11b_mit_supercloud_2021-08-11_bchydro_60mw"
+    s11b_spec = executor._expanded_spec(s11b_id, None, None)
+    assert s11b_spec["island_mode"] is False
+    assert s11b_spec["grid_import_limit_mw"] == 60
+    assert s11b_spec["turbine_units"] == []
     s10_spec = executor._expanded_spec(
         "S10_mit_supercloud_2021-08-11",
         None,
@@ -549,6 +555,39 @@ def test_tc_s11_06_s11_list_and_get_scenario_use_tracked_source(
     )
     assert s10_spec["island_mode"] is True
     assert len(s10_spec["turbine_units"]) == 5
+
+
+def test_tc_s11b_list_and_get_scenario_use_tracked_source(
+    monkeypatch,
+) -> None:
+    """TC-S11-07: MCP discovers S11b and returns its tracked JSON."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
+    s11b_id = "S11b_mit_supercloud_2021-08-11_bchydro_60mw"
+    with TestClient(app) as client:
+        listing = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
+        s11b = next(
+            item
+            for item in listing["items"]
+            if item["scenario_id"] == s11b_id
+        )
+        assert s11b["study_supported"] is True
+        assert s11b["study_class"] == "supercloud_replay"
+
+        result = _call(
+            client,
+            "get_scenario",
+            {"scenario_id": s11b_id},
+            READ_TOKEN,
+        )
+        assert result["source"].endswith(
+            "config/scenarios/S11b_mit_supercloud_2021-08-11_bchydro_60mw.json"
+        )
+        assert result["spec"]["island_mode"] is False
+        assert result["spec"]["grid_import_limit_mw"] == 60
+        assert result["spec"]["turbine_units"] == []
+        assert result["spec"]["diesel_power_block"]["enabled"] is False
+        assert len(result["spec"]["workload_events"]) == 239
 
 
 def test_tc_isl_66_s10_start_run_metrics_and_compare_are_reachable(

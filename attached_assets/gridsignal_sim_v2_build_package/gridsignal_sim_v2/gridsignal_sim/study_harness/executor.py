@@ -57,6 +57,7 @@ STUDY_CLASS_BASE_DEMO = "base_demo"
 # certified study classes. Source: DR-2026-10-20-ISLAND-COLLAPSE IMPL-ISL-25.
 SUPER_CLOUD_REPLAY_SCENARIO_ID = "S10_mit_supercloud_2021-08-11"
 S11_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11_mit_supercloud_2021-08-11_bchydro"
+S11B_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11b_mit_supercloud_2021-08-11_bchydro_60mw"
 STUDY_CLASS_SUPERCLOUD_REPLAY = "supercloud_replay"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
 # PROPOSED_HERE: bump the identity contract because synthetic submit times,
@@ -89,6 +90,7 @@ def study_class_for_scenario(scenario_id: str) -> str:
     if scenario_id in (
         SUPER_CLOUD_REPLAY_SCENARIO_ID,
         S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+        S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
     ):
         return STUDY_CLASS_SUPERCLOUD_REPLAY
     raise UnsupportedScenarioError(
@@ -98,6 +100,7 @@ def study_class_for_scenario(scenario_id: str) -> str:
             BASE_DEMO_SCENARIO_ID,
             SUPER_CLOUD_REPLAY_SCENARIO_ID,
             S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+            S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
         ],
     )
 
@@ -138,6 +141,7 @@ def make_study_run_identity(
     if scenario_id in (
         SUPER_CLOUD_REPLAY_SCENARIO_ID,
         S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
+        S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
     ):
         # PROPOSED_HERE: S10's source event timeline is an identity input even
         # though the common study executor replaces it with a replay trace.
