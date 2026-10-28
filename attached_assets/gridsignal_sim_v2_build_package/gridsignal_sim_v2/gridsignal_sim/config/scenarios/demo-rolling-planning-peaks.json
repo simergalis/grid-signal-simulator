@@ -1,6 +1,6 @@
 {
   "name": "22 Rolling Planning — Three Forecast Peaks",
-  "description": "A four-hour planning scenario with three deterministic GPU demand peaks scheduled at 15 minutes, 1 hour, and 3 hours. Use it to exercise the rolling planning forecast view and compare the operator urgency tiers as the forecast horizon changes.",
+  "description": "A four-hour planning scenario with three deterministic GPU demand peaks scheduled at 15 minutes, 1 hour, and 3 hours. Use it to exercise the rolling planning forecast view and compare the operator urgency tiers as the forecast horizon changes. Grid-connected with no import cap: grid import carries the peaks and the BESS stays in reserve (DR-2026-10-27-GRID-MODE-BESS).",
   "workload_events": [
     {
       "event_id": "evt-rolling-base-start",
