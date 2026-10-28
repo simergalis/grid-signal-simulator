@@ -872,6 +872,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # asset_delivery_error_mw:   physical shortfall (asset setpoint tracking); ~0 steady-state (D3).
         # channel_source for all three: derived (see models.py TickResult docstring).
         "grid_exchange_mw":          round(tick.grid_exchange_mw, 5),
+        # Positive-direction aliases for the grid panel; the physical channel
+        # remains signed (negative import, positive export).
+        "grid_import_mw":             round(max(0.0, -tick.grid_exchange_mw), 5),
+        "grid_export_mw":             round(max(0.0, tick.grid_exchange_mw), 5),
         "frequency_forcing_mw":      round(tick.frequency_forcing_mw, 5),
         "asset_delivery_error_mw":   round(tick.asset_delivery_error_mw, 5),
         # ── Phase 13.4: setpoint/actual split ────────────────────────────────

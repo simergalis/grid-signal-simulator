@@ -225,6 +225,8 @@ export interface TickPayload {
   //   Phase 13.3: does NOT participate in the swing equation. Non-zero = delivery fault (diagnostic only).
   //   "Model error must not move frequency." Renamed from model_error_mw (Phase 13.2 addendum).
   grid_exchange_mw:          number
+  grid_import_mw:             number
+  grid_export_mw:             number
   frequency_forcing_mw:      number
   asset_delivery_error_mw:   number
   // Phase 13.4: setpoint/actual split.

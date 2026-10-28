@@ -515,6 +515,9 @@ class TestFuelCellAggregate:
             "power_factor": 0.85,
             "pue_base": 1.03,
             "island_mode": False,
+            # D1: a finite PCC cap is required for the BESS to cover demand
+            # after the grid-first dispatch rule.
+            "grid_import_limit_mw": 0.0,
             "turbine_units": [{"asset_id": "turbine-0", "rated_mw": 5.0}],
             "bess_units": [{
                 "asset_id": "bess-0",
@@ -701,6 +704,9 @@ class TestAllSourcesAggregate:
             bess_soc=0.6,
             island_mode=IslandMode.GRID_TIE,
         )
+        # D1: make the grid-connected BESS active only for the residual above
+        # a deliberately bounded PCC import, rather than assuming BESS-first.
+        state.site.grid_import_limit_mw = 0.3
         sig = _starting_signal(nodes=200, ramp_s=2.0, timestamp=0.0)
         state.apply_workload_signal(sig, dt_lead_seconds=0.0)
 
