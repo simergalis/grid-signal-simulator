@@ -1,0 +1,473 @@
+{
+  "current_HEAD": "7b629317176ed5c3ac707365235132e0b4bbaf84",
+  "current_HEAD_run": {
+    "current_code_hashes_match_phase0_count": 2,
+    "hash_mismatch_scenarios": [
+      "demo-10-tenant-overload-120pct",
+      "demo-20-tenant-contract-breach",
+      "demo-fc-bess-grid-peak",
+      "demo-grid-fc-bess-shaped-load",
+      "demo-rolling-planning-peaks",
+      "demo-turbine-fc-bess-20-tenants-overage"
+    ],
+    "runner": "ScenarioSpec.model_validate -> build_run_context_from_spec -> ctx.step -> PhysicalIdentityHasher.update",
+    "scenario_count": 8,
+    "seed": 1729,
+    "wall_clock": 1792454400.0
+  },
+  "definitions": {
+    "C_excess_MWh": "sum(max(pre_bess_local_residual_mw - C, 0) * dt_seconds / 3600) over ticks where residual > C; represents BESS energy required above cap under D1",
+    "C_plus_BESS_excess_MWh": "sum(max(pre_bess_local_residual_mw - C - total_configured_BESS_rated_mw, 0) * dt_seconds / 3600) over ticks where residual > C + BESS rated MW; indicative energy above combined limit",
+    "bess_discharge_mwh": "sum(max(0, bess_output_mw) * dt_seconds / 3600)",
+    "grid_import_mw": "max(0, -TickResult.grid_exchange_mw); grid_exchange_mw positive means export",
+    "peak_time": "TickResult interval-end sim_time_seconds",
+    "pre_bess_local_residual_mw": "p_demand_mw - turbine_output_mw - diesel_output_mw - fuel_cell_output_mw - p_renewable_mw"
+  },
+  "phase0_source_replay": {
+    "all_eight_hashes_match_phase0": true,
+    "hashes": [
+      {
+        "matches": true,
+        "phase0_physical_sha256": "9a16b201ebc6f56b2d3d83b37590e787d3615697a79233918651120310cdcfb7",
+        "physical_sha256": "9a16b201ebc6f56b2d3d83b37590e787d3615697a79233918651120310cdcfb7",
+        "scenario_id": "demo-10-tenant-full-ceiling"
+      },
+      {
+        "matches": true,
+        "phase0_physical_sha256": "82d9d3c45f012abc83568269c832e5d6f60c94d58c1c2242897b2991767c1148",
+        "physical_sha256": "82d9d3c45f012abc83568269c832e5d6f60c94d58c1c2242897b2991767c1148",
+        "scenario_id": "demo-10-tenant-overload-120pct"
+      },
+      {
+        "matches": true,
+        "phase0_physical_sha256": "9d3d182d8bf76b585c7cf95092ff264c86fac204b9b78aff43d1eb700f4587a5",
+        "physical_sha256": "9d3d182d8bf76b585c7cf95092ff264c86fac204b9b78aff43d1eb700f4587a5",
+        "scenario_id": "demo-10-tenant-random-gpu"
+      },
+      {
+        "matches": true,
+        "phase0_physical_sha256": "6892279e688331685808e1beacc19b7c08a22cd5eb4ff00902d3b12fbe393033",
+        "physical_sha256": "6892279e688331685808e1beacc19b7c08a22cd5eb4ff00902d3b12fbe393033",
+        "scenario_id": "demo-20-tenant-contract-breach"
+      },
+      {
+        "matches": true,
+        "phase0_physical_sha256": "06f0d7a6f3c957f0e6f822c53d9186213f4547c4cb82c08294f6edfc16b5840c",
+        "physical_sha256": "06f0d7a6f3c957f0e6f822c53d9186213f4547c4cb82c08294f6edfc16b5840c",
+        "scenario_id": "demo-fc-bess-grid-peak"
+      },
+      {
+        "matches": true,
+        "phase0_physical_sha256": "6c0e72877fd38c90c7c532c8567b18c386f282d0024f8438561e68e92575878f",
+        "physical_sha256": "6c0e72877fd38c90c7c532c8567b18c386f282d0024f8438561e68e92575878f",
+        "scenario_id": "demo-grid-fc-bess-shaped-load"
+      },
+      {
+        "matches": true,
+        "phase0_physical_sha256": "175974fdd4d44ee1940573008095e700942a7805b3a58cab1603ecc1686797fe",
+        "physical_sha256": "175974fdd4d44ee1940573008095e700942a7805b3a58cab1603ecc1686797fe",
+        "scenario_id": "demo-rolling-planning-peaks"
+      },
+      {
+        "matches": true,
+        "phase0_physical_sha256": "ecb5c03d82a2653115975cf6bf25005284dc3fd8e58ae90b5131723a2c793c4a",
+        "physical_sha256": "ecb5c03d82a2653115975cf6bf25005284dc3fd8e58ae90b5131723a2c793c4a",
+        "scenario_id": "demo-turbine-fc-bess-20-tenants-overage"
+      }
+    ],
+    "runner": "ScenarioSpec.model_validate -> build_run_context_from_spec -> ctx.step -> PhysicalIdentityHasher.update",
+    "seed": 1729,
+    "source_commit": "1f0cb9ef082079b3127bc0d6ae2b511606e9ca3f",
+    "wall_clock": 1792454400.0
+  },
+  "scenarios": [
+    {
+      "bess_total_rated_mw": 6.0,
+      "candidate_cap_C_firm_available_mw": null,
+      "capacity_evidence": {
+        "other_capacity_claims": [
+          {
+            "interpretation": "local generation fleet, not grid import capacity",
+            "line": 3,
+            "quote": "Fleet reduced to three 10 MW gas turbines (30 MW rated, 20 MW N-1 firm)"
+          }
+        ],
+        "procurement_config_line": 122,
+        "procurement_config_quote": "\"procurement_config\": null"
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NO DECLARED CAPACITY",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 0.0,
+        "phase0_saved_physical_sha256": "9a16b201ebc6f56b2d3d83b37590e787d3615697a79233918651120310cdcfb7",
+        "physical_hash_matches_phase0": true,
+        "physical_sha256": "9a16b201ebc6f56b2d3d83b37590e787d3615697a79233918651120310cdcfb7",
+        "pre_bess_local_residual_peak_mw": -2.89935,
+        "pre_bess_local_residual_peak_time_s": 4240.0,
+        "residual_gt_C_excess_mwh": null,
+        "residual_gt_C_plus_bess_excess_mwh": null,
+        "residual_gt_C_plus_bess_mw_ticks": null,
+        "residual_gt_C_ticks": null,
+        "tick_count": 2160
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 0.0,
+        "grid_import_mw_peak": 0.0,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "9a16b201ebc6f56b2d3d83b37590e787d3615697a79233918651120310cdcfb7"
+      },
+      "procurement_config": null,
+      "scenario_id": "demo-10-tenant-full-ceiling",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-10-tenant-full-ceiling.json",
+      "scenario_name": "14 10-Tenant Full-Ceiling GPU Load — 3 h (tight headroom)"
+    },
+    {
+      "bess_total_rated_mw": 6.0,
+      "candidate_cap_C_firm_available_mw": null,
+      "capacity_evidence": {
+        "other_capacity_claims": [
+          {
+            "interpretation": "local generation nameplate, not grid import capacity",
+            "line": 3,
+            "quote": "SV1 generation fleet (40.25 MW nameplate — 3×10 MW turbines, 5 MW solar, 6 MW/8 MWh BESS)"
+          },
+          {
+            "interpretation": "load relative to local generation nameplate",
+            "line": 3,
+            "quote": "overload burst to 120% (48.3 MW — 8 MW above nameplate, BESS depletes, reserve-gap alert fires)"
+          }
+        ],
+        "procurement_config_line": 204,
+        "procurement_config_quote": "\"procurement_config\": null"
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NO DECLARED CAPACITY",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 28.481612478427536,
+        "phase0_saved_physical_sha256": "82d9d3c45f012abc83568269c832e5d6f60c94d58c1c2242897b2991767c1148",
+        "physical_hash_matches_phase0": false,
+        "physical_sha256": "c52aba0ecf9efcef66a632a913fc0e839735fa8aaec095c0265916dcc1e1b12c",
+        "pre_bess_local_residual_peak_mw": 28.481612478427536,
+        "pre_bess_local_residual_peak_time_s": 1995.0,
+        "residual_gt_C_excess_mwh": null,
+        "residual_gt_C_plus_bess_excess_mwh": null,
+        "residual_gt_C_plus_bess_mw_ticks": null,
+        "residual_gt_C_ticks": null,
+        "tick_count": 1080
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 6.511687953211636,
+        "grid_import_mw_peak": 22.481612478427536,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "82d9d3c45f012abc83568269c832e5d6f60c94d58c1c2242897b2991767c1148"
+      },
+      "procurement_config": null,
+      "scenario_id": "demo-10-tenant-overload-120pct",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-10-tenant-overload-120pct.json",
+      "scenario_name": "15 Shaped Load — 5%→40%→120%→40%→20% (90 min)"
+    },
+    {
+      "bess_total_rated_mw": 10.0,
+      "candidate_cap_C_firm_available_mw": null,
+      "capacity_evidence": {
+        "other_capacity_claims": [
+          {
+            "interpretation": "tenant contract value, not grid/utility capacity",
+            "line": 3,
+            "quote": "F–J custom at 0.20 MW contract each"
+          }
+        ],
+        "procurement_config_line": 78,
+        "procurement_config_quote": "\"procurement_config\": null"
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NO DECLARED CAPACITY",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 0.0,
+        "phase0_saved_physical_sha256": "9d3d182d8bf76b585c7cf95092ff264c86fac204b9b78aff43d1eb700f4587a5",
+        "physical_hash_matches_phase0": true,
+        "physical_sha256": "9d3d182d8bf76b585c7cf95092ff264c86fac204b9b78aff43d1eb700f4587a5",
+        "pre_bess_local_residual_peak_mw": -6.12845,
+        "pre_bess_local_residual_peak_time_s": 3695.0,
+        "residual_gt_C_excess_mwh": null,
+        "residual_gt_C_plus_bess_excess_mwh": null,
+        "residual_gt_C_plus_bess_mw_ticks": null,
+        "residual_gt_C_ticks": null,
+        "tick_count": 2160
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 0.0,
+        "grid_import_mw_peak": 0.0,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "9d3d182d8bf76b585c7cf95092ff264c86fac204b9b78aff43d1eb700f4587a5"
+      },
+      "procurement_config": null,
+      "scenario_id": "demo-10-tenant-random-gpu",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-10-tenant-random-gpu.json",
+      "scenario_name": "13 10-Tenant Random GPU Load — 3 h"
+    },
+    {
+      "bess_total_rated_mw": 5.0,
+      "candidate_cap_C_firm_available_mw": null,
+      "capacity_evidence": {
+        "other_capacity_claims": [
+          {
+            "interpretation": "local generation fleet, not grid import capacity",
+            "line": 3,
+            "quote": "five 5 MW gas turbines (25 MW nameplate, 20 MW N-1 firm)"
+          },
+          {
+            "interpretation": "local generation firm capacity claim",
+            "line": 3,
+            "quote": "Total peak site demand during the breach window is ~8.1 MW, comfortably within firm capacity"
+          }
+        ],
+        "procurement_config_line": 167,
+        "procurement_config_quote": "\"procurement_config\": null"
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NO DECLARED CAPACITY",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 1.6214000000000004,
+        "phase0_saved_physical_sha256": "6892279e688331685808e1beacc19b7c08a22cd5eb4ff00902d3b12fbe393033",
+        "physical_hash_matches_phase0": false,
+        "physical_sha256": "a544f7e42611158860911e5c4dc353a0e893d2383c2173bbd68efdbad8a1a8da",
+        "pre_bess_local_residual_peak_mw": 1.6214,
+        "pre_bess_local_residual_peak_time_s": 305.0,
+        "residual_gt_C_excess_mwh": null,
+        "residual_gt_C_plus_bess_excess_mwh": null,
+        "residual_gt_C_plus_bess_mw_ticks": null,
+        "residual_gt_C_ticks": null,
+        "tick_count": 720
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 0.0715783333333334,
+        "grid_import_mw_peak": 8.881784197001252e-16,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "6892279e688331685808e1beacc19b7c08a22cd5eb4ff00902d3b12fbe393033"
+      },
+      "procurement_config": null,
+      "scenario_id": "demo-20-tenant-contract-breach",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-20-tenant-contract-breach.json",
+      "scenario_name": "17 20-Tenant Contract Breach — T01 Spikes to ~150 % of 1 MW Ceiling at t=5 min"
+    },
+    {
+      "bess_total_rated_mw": 18.0,
+      "candidate_cap_C_firm_available_mw": 50.0,
+      "capacity_evidence": {
+        "other_capacity_claims": [
+          {
+            "interpretation": "grid import firm capacity",
+            "line": 3,
+            "quote": "Power is supplied entirely by grid import (50 MW firm)"
+          }
+        ],
+        "procurement_config_line": 99,
+        "procurement_config_quote": "\"procurement_config\": {",
+        "procurement_lines": {
+          "firm_available_mw": 100,
+          "non_firm_available_mw": 102,
+          "reserved_available_mw": 101
+        }
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NON-BINDING",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 44.33994847842753,
+        "phase0_saved_physical_sha256": "06f0d7a6f3c957f0e6f822c53d9186213f4547c4cb82c08294f6edfc16b5840c",
+        "physical_hash_matches_phase0": false,
+        "physical_sha256": "e010621577487855471959d884c7802c91c0620b0b25cbc14be0c8e579f59b0a",
+        "pre_bess_local_residual_peak_mw": 44.33994847842753,
+        "pre_bess_local_residual_peak_time_s": 1095.0,
+        "residual_gt_C_excess_mwh": 0,
+        "residual_gt_C_plus_bess_excess_mwh": 0,
+        "residual_gt_C_plus_bess_mw_ticks": 0,
+        "residual_gt_C_ticks": 0,
+        "tick_count": 720
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 6.511687953211538,
+        "grid_import_mw_peak": 26.33994847842753,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "06f0d7a6f3c957f0e6f822c53d9186213f4547c4cb82c08294f6edfc16b5840c"
+      },
+      "procurement_config": {
+        "firm_available_mw": 50.0,
+        "non_firm_available_mw": 5.0,
+        "price_curve_seed": 42,
+        "reserved_available_mw": 10.0
+      },
+      "scenario_id": "demo-fc-bess-grid-peak",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-fc-bess-grid-peak.json",
+      "scenario_name": "20 BESS · Fuel Cell · Grid — Peak Stress 80%→120%→60% (60 min)"
+    },
+    {
+      "bess_total_rated_mw": 6.0,
+      "candidate_cap_C_firm_available_mw": 50.0,
+      "capacity_evidence": {
+        "other_capacity_claims": [
+          {
+            "interpretation": "utility/grid firm capacity",
+            "line": 3,
+            "quote": "grid-tied to PG&E at 50 MW firm"
+          }
+        ],
+        "procurement_config_line": 135,
+        "procurement_config_quote": "\"procurement_config\": {",
+        "procurement_lines": {
+          "firm_available_mw": 136,
+          "non_firm_available_mw": 138,
+          "reserved_available_mw": 137
+        }
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NON-BINDING",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 42.731612478427536,
+        "phase0_saved_physical_sha256": "6c0e72877fd38c90c7c532c8567b18c386f282d0024f8438561e68e92575878f",
+        "physical_hash_matches_phase0": false,
+        "physical_sha256": "7d791087ef0959aa1ca7754969b0b0c016575322a3c067b4c1480e6dd0fd0360",
+        "pre_bess_local_residual_peak_mw": 42.731612478427536,
+        "pre_bess_local_residual_peak_time_s": 1995.0,
+        "residual_gt_C_excess_mwh": 0,
+        "residual_gt_C_plus_bess_excess_mwh": 0,
+        "residual_gt_C_plus_bess_mw_ticks": 0,
+        "residual_gt_C_ticks": 0,
+        "tick_count": 1080
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 6.511687953211636,
+        "grid_import_mw_peak": 36.731612478427536,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "6c0e72877fd38c90c7c532c8567b18c386f282d0024f8438561e68e92575878f"
+      },
+      "procurement_config": {
+        "firm_available_mw": 50.0,
+        "non_firm_available_mw": 5.0,
+        "price_curve_seed": 42,
+        "reserved_available_mw": 10.0
+      },
+      "scenario_id": "demo-grid-fc-bess-shaped-load",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-grid-fc-bess-shaped-load.json",
+      "scenario_name": "16 Grid · Fuel Cell · BESS — Shaped Load 5%→40%→120%→40%→20% (90 min)"
+    },
+    {
+      "bess_total_rated_mw": 18.0,
+      "candidate_cap_C_firm_available_mw": 50.0,
+      "capacity_evidence": {
+        "other_capacity_claims": [],
+        "procurement_config_line": 109,
+        "procurement_config_quote": "\"procurement_config\": {",
+        "procurement_lines": {
+          "firm_available_mw": 110,
+          "non_firm_available_mw": 112,
+          "reserved_available_mw": 111
+        }
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NON-BINDING",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 22.0,
+        "phase0_saved_physical_sha256": "175974fdd4d44ee1940573008095e700942a7805b3a58cab1603ecc1686797fe",
+        "physical_hash_matches_phase0": false,
+        "physical_sha256": "23702fa481c48282e39bcadb2396b8b88f4ec3241f4ed49c8d599d33558d699c",
+        "pre_bess_local_residual_peak_mw": 22.0,
+        "pre_bess_local_residual_peak_time_s": 920.0,
+        "residual_gt_C_excess_mwh": 0,
+        "residual_gt_C_plus_bess_excess_mwh": 0,
+        "residual_gt_C_plus_bess_mw_ticks": 0,
+        "residual_gt_C_ticks": 0,
+        "tick_count": 2880
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 6.511687953211541,
+        "grid_import_mw_peak": 17.821600000000004,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "175974fdd4d44ee1940573008095e700942a7805b3a58cab1603ecc1686797fe"
+      },
+      "procurement_config": {
+        "firm_available_mw": 50.0,
+        "non_firm_available_mw": 5.0,
+        "price_curve_seed": 42,
+        "reserved_available_mw": 10.0
+      },
+      "scenario_id": "demo-rolling-planning-peaks",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-rolling-planning-peaks.json",
+      "scenario_name": "22 Rolling Planning — Three Forecast Peaks"
+    },
+    {
+      "bess_total_rated_mw": 5.0,
+      "candidate_cap_C_firm_available_mw": null,
+      "capacity_evidence": {
+        "other_capacity_claims": [
+          {
+            "interpretation": "local generation fleet, not grid import capacity",
+            "line": 3,
+            "quote": "five 5 MW gas turbines (25 MW nameplate, 20 MW N-1 firm)"
+          },
+          {
+            "interpretation": "local generation firm capacity claim",
+            "line": 3,
+            "quote": "Total peak site demand during the overage window is ~8.1 MW, comfortably within firm capacity"
+          }
+        ],
+        "procurement_config_line": 169,
+        "procurement_config_quote": "\"procurement_config\": null"
+      },
+      "current_HEAD_run": {
+        "bess_discharge_mwh": 0.0,
+        "classification": "NO DECLARED CAPACITY",
+        "dt_seconds": 5.0,
+        "peak_grid_import_mw": 1.6214000000000004,
+        "phase0_saved_physical_sha256": "ecb5c03d82a2653115975cf6bf25005284dc3fd8e58ae90b5131723a2c793c4a",
+        "physical_hash_matches_phase0": false,
+        "physical_sha256": "2aa04468caf36f287ce4f382785c26b1a2a726229c1cf807d72038575c0be7e8",
+        "pre_bess_local_residual_peak_mw": 1.6214,
+        "pre_bess_local_residual_peak_time_s": 305.0,
+        "residual_gt_C_excess_mwh": null,
+        "residual_gt_C_plus_bess_excess_mwh": null,
+        "residual_gt_C_plus_bess_mw_ticks": null,
+        "residual_gt_C_ticks": null,
+        "tick_count": 720
+      },
+      "grid_import_limit_mw_key_present": false,
+      "island_mode": false,
+      "phase0_run_metrics": {
+        "bess_discharge_mwh": 0.0715783333333334,
+        "grid_import_mw_peak": 8.881784197001252e-16,
+        "phase0_hash_reproduction_at_source_commit": true,
+        "physical_sha256": "ecb5c03d82a2653115975cf6bf25005284dc3fd8e58ae90b5131723a2c793c4a"
+      },
+      "procurement_config": null,
+      "scenario_id": "demo-turbine-fc-bess-20-tenants-overage",
+      "scenario_json": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-turbine-fc-bess-20-tenants-overage.json",
+      "scenario_name": "18 Turbine, Fuel Cell, BESS — 20 Tenants — 1 Tenant Exceeds Capacity"
+    }
+  ],
+  "step0": {
+    "head_at_start": "7b629317176ed5c3ac707365235132e0b4bbaf84",
+    "status_porcelain_at_start": " M artifacts/mockup-sandbox/src/.generated/mockup-components.ts"
+  },
+  "task": "DR-2026-10-27-GRID-MODE-BESS Phase 0b cap inventory"
+}
