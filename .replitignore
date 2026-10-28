@@ -3,3 +3,6 @@
 
 # No need to store the pnpm store twice.
 .local
+
+# Vendor reference sources are not application or deployment content.
+/vendor/

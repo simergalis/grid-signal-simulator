@@ -4,3 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = []
+
+[tool.pytest.ini_options]
+# Do not discover tests from top-level vendor reference snapshots.
+addopts = ["--ignore=vendor"]
