@@ -416,18 +416,16 @@ def test_d8_staging_sizes_against_dispatch_required_not_p_total():
 
 
 # ---------------------------------------------------------------------------
-# D9 — demo-20mw with PROTO-7 solar sizing produces non-zero BESS output
+# D9 — demo-20mw D1 behavior with PROTO-7 solar sizing
 # ---------------------------------------------------------------------------
 
 def test_d9_demo_20mw_produces_nonzero_bess_output():
-    """D9: after correcting the demo-20mw node count to 1900 (≈ 19.96 MW) and
-    sizing solar at 25% of peak compute (PROTO-7 ≈ 4.99 MW), the dispatch
-    arbitrator must call on the BESS at some tick.
-
-    This confirms that the PROTO-7 solar fraction is not so large it clamps
-    P_dispatch_required to zero (the old degenerate scenario with 16 MW solar
-    against a 2.5 MW load), and that the single default turbine cannot ramp
-    fast enough within dt_lead=30 s to cover a ≈ 15 MW requirement alone.
+    """D9 / PROTO-7 under DR-2026-10-27-GRID-MODE-BESS D1 and Lloyd's
+    2026-10-29 F-GMB-2 ruling: with 1900 nodes (≈19.96 MW) and PROTO-7 solar
+    (≈4.99 MW), positive pre-BESS residual must remain on at least one tick,
+    proving solar does not clamp the requirement to zero and the turbine cannot
+    ramp to cover the load alone. With no PCC import cap, D1 keeps the BESS idle
+    and the grid supplies each positive residual.
     """
     from core.simulation_core import SimulationState, evaluate_tick
 
@@ -479,21 +477,142 @@ def test_d9_demo_20mw_produces_nonzero_bess_output():
         dt_lead_seconds=30.0,
     )
 
-    bess_outputs: list[float] = []
+    ticks = []
     t = 0.0
     DT = 5.0
     with _plane_guard_active():
         for i in range(20):   # 100 simulated seconds — plenty of time to see BESS fire
             tick = evaluate_tick(state, _make_clock(t, DT, tick_seq=i))
-            bess_outputs.append(tick.bess_output_mw)
+            ticks.append(tick)
             t += DT
 
-    assert any(b > 0.0 for b in bess_outputs), (
-        f"demo-20mw with PROTO-7 solar sizing must produce non-zero BESS output "
-        f"at some tick within the first 100 s; all values were zero.\n"
-        f"  solar_rated_mw={solar_rated_mw:.3f}, peak_compute_mw={peak_compute_mw:.3f}\n"
-        f"  bess_outputs (first 10 ticks): {bess_outputs[:10]}"
+    residuals = [
+        tick.p_demand_mw
+        - tick.turbine_output_mw
+        - tick.fuel_cell_output_mw
+        - tick.diesel_output_mw
+        - tick.p_renewable_mw
+        for tick in ticks
+    ]
+    assert any(residual > 0.0 for residual in residuals), (
+        "D9 / PROTO-7 must retain a positive pre-BESS residual on at least one "
+        f"tick; solar_rated_mw={solar_rated_mw:.3f}, "
+        f"peak_compute_mw={peak_compute_mw:.3f}, residuals={residuals}"
     )
+    assert all(tick.bess_output_mw == pytest.approx(0.0, abs=1e-9) for tick in ticks)
+    for tick, residual in zip(ticks, residuals):
+        if residual > 0.0:
+            assert max(0.0, -tick.grid_exchange_mw) == pytest.approx(
+                residual,
+                abs=1e-6,
+            )
+
+
+def test_d9_demo_20mw_capped_bess_covers_above_cap_only():
+    """D9 / PROTO-7 under DR-2026-10-27-GRID-MODE-BESS D1 and Lloyd's
+    2026-10-29 F-GMB-2 ruling: with a PROPOSED_HERE 10 MW PCC cap below the
+    ~14.43 MW residual peak, the ~4.43 MW peak above-cap need fits the 5 MW
+    BESS rating; the BESS covers only residual above the cap when rating and
+    SoC floor permit, and grid import stays at or below 10 MW.
+    """
+    from core.simulation_core import SimulationState, evaluate_tick
+
+    NODE_COUNT = 1900
+    PROFILE_ID = "enterprise_8gpu_air"
+    RATED_KW = 10.2
+    PUE = 1.03
+    GRID_IMPORT_LIMIT_MW = 10.0  # PROPOSED_HERE: ~4.43 MW peak excess fits the 5 MW rating.
+
+    library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
+    from core.models import IslandMode
+    site = SiteConfig(
+        frequency_nominal_hz=50.0,
+        power_factor=0.85,
+        site_id="site-demo20-capped",
+        pue_base=PUE,
+        island_mode=IslandMode.GRID_TIE,
+        grid_import_limit_mw=GRID_IMPORT_LIMIT_MW,
+    )
+
+    peak_compute_mw = NODE_COUNT * RATED_KW * PUE / 1000.0
+    solar_rated_mw = 0.25 * peak_compute_mw
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=10.0))
+    bess = BessModule(BessConfig(asset_id="bess-0", rated_mw=5.0, usable_mwh=2.0))
+    solar = SolarModule(
+        SolarConfig(asset_id="solar-0", rated_mw=solar_rated_mw),
+        irradiance_profile=IrradianceProfile([(0.0, 1.0), (600.0, 1.0)]),
+    )
+    cooling = CoolingModule(asset_id="cool-0", site=site)
+    state = SimulationState(
+        run_id="run-d9-demo20-capped",
+        site=site,
+        gpu_modules=[GPUModule(asset_id="gpu-0", site=site, hardware_library=library)],
+        turbines=[turbine],
+        bess_units=[bess],
+        solar_arrays=[solar],
+        cooling=cooling,
+    )
+    state.apply_workload_signal(
+        WorkloadSignal(
+            event_id="e1",
+            job_id="job-big",
+            event_type=WorkloadEventType.STARTING,
+            timestamp=0.0,
+            hardware_profile_id=PROFILE_ID,
+            node_count=NODE_COUNT,
+            workload_class=WorkloadClass.TRAINING,
+            site_id="site-demo20-capped",
+        ),
+        dt_lead_seconds=30.0,
+    )
+
+    rows = []
+    t = 0.0
+    DT = 5.0
+    with _plane_guard_active():
+        for i in range(20):
+            soc_before_mwh = bess.soc_mwh
+            soc_floor_mwh = state.arbitrator.soc_floor_mwh(bess)
+            tick = evaluate_tick(state, _make_clock(t, DT, tick_seq=i))
+            residual_mw = (
+                tick.p_demand_mw
+                - tick.turbine_output_mw
+                - tick.fuel_cell_output_mw
+                - tick.diesel_output_mw
+                - tick.p_renewable_mw
+            )
+            expected_bess_mw = max(0.0, residual_mw - GRID_IMPORT_LIMIT_MW)
+            available_energy_mw = (
+                max(0.0, soc_before_mwh - soc_floor_mwh)
+                * bess.config.discharge_efficiency
+                / (DT / 3600.0)
+            )
+            deliverable_mw = min(bess.config.rated_mw, available_energy_mw)
+            rate_limited = expected_bess_mw > bess.config.rated_mw + 1e-6
+            floor_limited = (
+                not rate_limited and expected_bess_mw > available_energy_mw + 1e-6
+            )
+            rows.append(
+                (
+                    tick,
+                    residual_mw,
+                    expected_bess_mw,
+                    rate_limited,
+                    floor_limited,
+                    deliverable_mw,
+                )
+            )
+            t += DT
+
+    assert any(residual > GRID_IMPORT_LIMIT_MW for _, residual, *_ in rows)
+    for tick, residual, expected, rate_limited, floor_limited, deliverable in rows:
+        if rate_limited or floor_limited:
+            assert tick.bess_output_mw <= deliverable + 1e-6
+        else:
+            assert tick.bess_output_mw == pytest.approx(expected, abs=1e-6)
+        assert max(0.0, -tick.grid_exchange_mw) <= GRID_IMPORT_LIMIT_MW + 1e-6
+        if residual <= GRID_IMPORT_LIMIT_MW:
+            assert tick.bess_output_mw == pytest.approx(0.0, abs=1e-6)
 
 
 # ---------------------------------------------------------------------------
