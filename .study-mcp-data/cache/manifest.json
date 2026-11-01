@@ -1,5 +1,1474 @@
 {
   "runs": {
+    "0058f275101d45e1d065c8009b336d6b57b24299ef353bd46f9310f6bc94b1e6": {
+      "identity": {
+        "duration_seconds": 86400.0,
+        "engine_commit": "cdadfef0d42cf3e115227c9ca8a61b94b5c695eb-dirty",
+        "harness_commit": "cdadfef0d42cf3e115227c9ca8a61b94b5c695eb-dirty",
+        "mode": "baseline",
+        "parameter_set": {
+          "alpha_max": 0.2,
+          "ambient_steps": [],
+          "anchor_reserve_pct": 0.0,
+          "assertions": [],
+          "band_enabled": false,
+          "band_mult_uncalibrated": 2.0,
+          "band_mult_unmapped_hw": 1.5,
+          "band_pct_calibrated": 0.0,
+          "base_load_mw": null,
+          "bess_bridging_floor_anchor_multiple": 2.0,
+          "bess_bridging_floor_fraction": 0.15,
+          "bess_catchup_bridge_margin": 0.8,
+          "bess_catchup_slope_window_s": 15.0,
+          "bess_catchup_sustain_s": 30.0,
+          "bess_charge_price_override_per_mwh": null,
+          "bess_material_discharge_fraction": 0.05,
+          "bess_material_discharge_min_mw": 1.0,
+          "bess_normal_dispatch_depth_fraction": 0.25,
+          "bess_units": [
+            {
+              "asset_id": "bess-0",
+              "authority_tier": "autonomous",
+              "grid_forming": true,
+              "initial_soc_fraction": 0.95,
+              "p_anchor_reserve_mw": 1.0,
+              "rated_mw": 18.0,
+              "usable_mwh": 14.0
+            }
+          ],
+          "calibrated": false,
+          "cascade_commit_fraction": null,
+          "cluster_gen_config": null,
+          "default_playback_speed": 1.0,
+          "demo_description": "",
+          "description": "Clone of S10_mit_supercloud_2021-08-11 with the on-site gas turbines removed and primary power supplied by a BC Hydro transmission-voltage grid connection (hydro-dominated system). Same real MIT SuperCloud TX-GAIA GPU job timeline for 2021-08-11 (UTC) and same additive CPU load as S10. All primary energy is grid import, capped at 80 MW at the PCC via grid_import_limit_mw (PROPOSED_HERE: ~125% of the 61.8 MW observed facility peak; covers peak plus the 18 MW BESS charge rate; revised from 60 MW on 2026-10-27, CAV-S11-03). No turbines, solar, or fuel cells. The 18 MW / 14 MWh grid-forming BESS provides ride-through. A 60 MW (6 x 10 MW) diesel block is configured but DISABLED (enabled=false) because the diesel coordinator currently starts on any local gap before grid import is counted; re-enable after a grid-loss gate exists (IMPL-S11-03). No grid-outage event is scripted. grid_import_price_per_mwh 53.74 is BC Hydro RS 1830C (5.374 c/kWh, CAD). BESS initial SoC and diesel sizing are PROPOSED_HERE.",
+          "design_peak_load_mw": 50.0,
+          "diesel_power_block": {
+            "authority_tier": "advisory_only",
+            "cooldown_s": 300.0,
+            "debounce_s": 1.0,
+            "delta_t_start_s": 10.0,
+            "enabled": false,
+            "f_block": 1.0,
+            "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+            "fuel_type": "diesel",
+            "min_down_s": 300.0,
+            "min_fuel_runtime_hours": 48.0,
+            "min_run_s": 900.0,
+            "min_stable_load_mw_fraction": 0.3,
+            "p_start": 1.0,
+            "residual_ramp_s": 8.0,
+            "restore_hold_s": 300.0,
+            "start_stagger_interval_s": 2.0,
+            "target_capacity_mw": 60.0,
+            "target_reliability": 1.0,
+            "unit_rating_mw": 10.0
+          },
+          "diesel_units": [],
+          "dispatch_curtailment_response_delay_s": 0.5,
+          "dq_inject_events": [],
+          "dt_lead_seconds": 45.0,
+          "dt_thermal_seconds": 90.0,
+          "edl_calendar_month": null,
+          "end_sim_time": 86400.0,
+          "fabric_scenario_id": null,
+          "frequency_nominal_hz": 60.0,
+          "frequency_reporting_metrics_version": 2,
+          "fuel_cell_baseload_target_mw": null,
+          "fuel_cell_enabled": false,
+          "fuel_cell_initial_state": null,
+          "fuel_cell_load_following": false,
+          "fuel_cell_min_stable_fraction": 0.5,
+          "fuel_cell_ramp_down_rate_mw_per_s": null,
+          "fuel_cell_ramp_rate_mw_per_s": 0.02,
+          "fuel_cell_rated_mw": 0.0,
+          "fuel_cell_stack_count": 1,
+          "fuel_cell_state": null,
+          "fuel_cell_turbine_commit_fraction": null,
+          "fuel_cell_units": [],
+          "generation_baseload_mw": null,
+          "generation_block": null,
+          "generation_peak_following": true,
+          "generator_config": null,
+          "gpu_load_profile": [],
+          "grid_authority_tier": "autonomous",
+          "grid_import_limit_mw": 80.0,
+          "grid_import_price_per_mwh": 53.74,
+          "hardware_profile_id": "hopper_8gpu_air",
+          "initial_spinning_count": null,
+          "irradiance_steps": [
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "island_collapse_hz": null,
+          "island_mode": false,
+          "kube_config": null,
+          "load_config": null,
+          "maintenance_config": null,
+          "n_plus_one_required": false,
+          "name": "S11_mit_supercloud_2021-08-11_bchydro",
+          "non_gpu_load_profile_mw": [
+            [
+              0.0,
+              7.948344432112468e-05
+            ],
+            [
+              527.0,
+              0.0
+            ],
+            [
+              1492.0,
+              7.948344432112468e-05
+            ],
+            [
+              2092.0,
+              0.0
+            ],
+            [
+              3302.0,
+              7.948344432112468e-05
+            ],
+            [
+              3902.0,
+              0.0
+            ],
+            [
+              4688.0,
+              7.948344432112468e-05
+            ],
+            [
+              5288.0,
+              0.0
+            ],
+            [
+              6267.0,
+              7.948344432112468e-05
+            ],
+            [
+              6867.0,
+              0.0
+            ],
+            [
+              8136.0,
+              7.948344432112468e-05
+            ],
+            [
+              8736.0,
+              0.0
+            ],
+            [
+              13078.0,
+              7.948344432112468e-05
+            ],
+            [
+              13678.0,
+              0.0
+            ],
+            [
+              16171.0,
+              7.948344432112468e-05
+            ],
+            [
+              16771.0,
+              0.0
+            ],
+            [
+              19984.0,
+              7.948344432112468e-05
+            ],
+            [
+              20584.0,
+              0.0
+            ],
+            [
+              25747.0,
+              7.948344432112468e-05
+            ],
+            [
+              26347.0,
+              0.0
+            ],
+            [
+              32703.0,
+              7.948344432112468e-05
+            ],
+            [
+              33303.0,
+              0.0
+            ],
+            [
+              35947.0,
+              7.948344432112468e-05
+            ],
+            [
+              36548.0,
+              0.0
+            ],
+            [
+              39296.0,
+              7.948344432112468e-05
+            ],
+            [
+              39897.0,
+              0.0
+            ],
+            [
+              42586.0,
+              7.948344432112468e-05
+            ],
+            [
+              43186.0,
+              0.0
+            ],
+            [
+              46338.0,
+              7.948344432112468e-05
+            ],
+            [
+              46908.0,
+              0.00016619265630780613
+            ],
+            [
+              46938.0,
+              8.670921198668145e-05
+            ],
+            [
+              50025.0,
+              0.0
+            ],
+            [
+              52389.0,
+              7.948344432112466e-05
+            ],
+            [
+              52989.0,
+              0.0
+            ],
+            [
+              56177.0,
+              7.948344432112466e-05
+            ],
+            [
+              56777.0,
+              0.0
+            ],
+            [
+              59318.0,
+              7.948344432112466e-05
+            ],
+            [
+              59918.0,
+              0.0
+            ],
+            [
+              62516.0,
+              7.948344432112466e-05
+            ],
+            [
+              63116.0,
+              0.0
+            ],
+            [
+              68637.0,
+              0.0003179337772844987
+            ],
+            [
+              69574.0,
+              0.00040464298927118014
+            ],
+            [
+              70368.0,
+              0.0005636098779134295
+            ],
+            [
+              73202.0,
+              0.0008815436551979283
+            ],
+            [
+              73553.0,
+              0.0314031862745098
+            ],
+            [
+              73705.0,
+              0.046664007584165744
+            ],
+            [
+              74054.0,
+              0.046981941361450244
+            ],
+            [
+              74187.0,
+              0.04706142480577137
+            ],
+            [
+              74245.0,
+              0.048651093692193864
+            ],
+            [
+              74255.0,
+              0.05151249768775435
+            ],
+            [
+              74260.0,
+              0.053102166574176844
+            ],
+            [
+              74265.0,
+              0.05469183546059934
+            ],
+            [
+              74269.0,
+              0.05596357056973733
+            ],
+            [
+              74275.0,
+              0.057871173233444324
+            ],
+            [
+              74276.0,
+              0.06168637856085831
+            ],
+            [
+              74279.0,
+              0.0629581136699963
+            ],
+            [
+              74285.0,
+              0.06486571633370329
+            ],
+            [
+              74295.0,
+              0.06518365011098778
+            ],
+            [
+              74313.0,
+              0.0655810673325934
+            ],
+            [
+              74320.0,
+              0.0658990011098779
+            ],
+            [
+              74402.0,
+              0.09642064372918976
+            ],
+            [
+              74410.0,
+              0.09769237883832776
+            ],
+            [
+              74412.0,
+              0.09832824639289676
+            ],
+            [
+              74415.0,
+              0.09928204772475026
+            ],
+            [
+              74425.0,
+              0.10246138549759524
+            ],
+            [
+              74435.0,
+              0.10564072327044023
+            ],
+            [
+              74440.0,
+              0.10723039215686272
+            ],
+            [
+              74445.0,
+              0.10882006104328522
+            ],
+            [
+              74455.0,
+              0.11040972992970771
+            ],
+            [
+              74581.0,
+              0.1126352663706992
+            ],
+            [
+              74620.0,
+              0.1129532001479837
+            ],
+            [
+              74737.0,
+              0.11327113392526819
+            ],
+            [
+              74775.0,
+              0.12757815390307065
+            ],
+            [
+              74799.0,
+              0.12789608768035515
+            ],
+            [
+              74811.0,
+              0.13067078246392896
+            ],
+            [
+              74847.0,
+              0.13067078246392896
+            ],
+            [
+              74854.0,
+              0.13067078246392896
+            ],
+            [
+              74861.0,
+              0.13098871624121347
+            ],
+            [
+              74879.0,
+              0.13130665001849798
+            ],
+            [
+              74898.0,
+              0.13130665001849798
+            ],
+            [
+              74905.0,
+              0.13130665001849798
+            ],
+            [
+              74927.0,
+              0.13098871624121347
+            ],
+            [
+              74929.0,
+              0.13130665001849798
+            ],
+            [
+              74942.0,
+              0.13162458379578248
+            ],
+            [
+              74992.0,
+              0.131942517573067
+            ],
+            [
+              75066.0,
+              0.1548337495375509
+            ],
+            [
+              75069.0,
+              0.1548337495375509
+            ],
+            [
+              75072.0,
+              0.17000786163522016
+            ],
+            [
+              75100.0,
+              0.1695309609692934
+            ],
+            [
+              75123.0,
+              0.16905406030336664
+            ],
+            [
+              75141.0,
+              0.16905406030336664
+            ],
+            [
+              75157.0,
+              0.1696104444136145
+            ],
+            [
+              75178.0,
+              0.1696104444136145
+            ],
+            [
+              75193.0,
+              0.171200113300037
+            ],
+            [
+              75200.0,
+              0.171200113300037
+            ],
+            [
+              75220.0,
+              0.171200113300037
+            ],
+            [
+              75291.0,
+              0.171200113300037
+            ],
+            [
+              75325.0,
+              0.1684254185164632
+            ],
+            [
+              75358.0,
+              0.16794851785053644
+            ],
+            [
+              75364.0,
+              0.16802800129485757
+            ],
+            [
+              75368.0,
+              0.16802800129485757
+            ],
+            [
+              75389.0,
+              0.1675511006289308
+            ],
+            [
+              75465.0,
+              0.1675511006289308
+            ],
+            [
+              75473.0,
+              0.1675511006289308
+            ],
+            [
+              75493.0,
+              0.17136630595634478
+            ],
+            [
+              75523.0,
+              0.17104837217906027
+            ],
+            [
+              75524.0,
+              0.17136630595634478
+            ],
+            [
+              75597.0,
+              0.17104837217906027
+            ],
+            [
+              75606.0,
+              0.17104837217906027
+            ],
+            [
+              75646.0,
+              0.17104837217906027
+            ],
+            [
+              75691.0,
+              0.1705714715131335
+            ],
+            [
+              75750.0,
+              0.1737508092859785
+            ],
+            [
+              75830.0,
+              0.14322916666666663
+            ],
+            [
+              75858.0,
+              0.14322916666666663
+            ],
+            [
+              75882.0,
+              0.14354710044395114
+            ],
+            [
+              75936.0,
+              0.14307019977802438
+            ],
+            [
+              75946.0,
+              0.14688540510543835
+            ],
+            [
+              75971.0,
+              0.1464085044395116
+            ],
+            [
+              75978.0,
+              0.14481883555308908
+            ],
+            [
+              76001.0,
+              0.14481883555308908
+            ],
+            [
+              76003.0,
+              0.14497780244173133
+            ],
+            [
+              76054.0,
+              0.14179846466888635
+            ],
+            [
+              76057.0,
+              0.14338813355530886
+            ],
+            [
+              76078.0,
+              0.13241941823899364
+            ],
+            [
+              76098.0,
+              0.1629410608583055
+            ],
+            [
+              76099.0,
+              0.1629410608583055
+            ],
+            [
+              76158.0,
+              0.16302054430262664
+            ],
+            [
+              76162.0,
+              0.16341796152423227
+            ],
+            [
+              76220.0,
+              0.16310002774694776
+            ],
+            [
+              76222.0,
+              0.16341796152423227
+            ],
+            [
+              76250.0,
+              0.16341796152423227
+            ],
+            [
+              76317.0,
+              0.16333847807991114
+            ],
+            [
+              76320.0,
+              0.16492814696633365
+            ],
+            [
+              76332.0,
+              0.16484866352201252
+            ],
+            [
+              76340.0,
+              0.16492814696633365
+            ],
+            [
+              76379.0,
+              0.16492814696633365
+            ],
+            [
+              76381.0,
+              0.16524608074361816
+            ],
+            [
+              76393.0,
+              0.16492814696633365
+            ],
+            [
+              76395.0,
+              0.16524608074361816
+            ],
+            [
+              76420.0,
+              0.16683574963004066
+            ],
+            [
+              76448.0,
+              0.16683574963004066
+            ],
+            [
+              76492.0,
+              0.17065095495745464
+            ],
+            [
+              76494.0,
+              0.17033302118017013
+            ],
+            [
+              76495.0,
+              0.17065095495745464
+            ],
+            [
+              76570.0,
+              0.17065095495745464
+            ],
+            [
+              76586.0,
+              0.17065095495745464
+            ],
+            [
+              76599.0,
+              0.17065095495745464
+            ],
+            [
+              76619.0,
+              0.17065095495745464
+            ],
+            [
+              76730.0,
+              0.14012931233814277
+            ],
+            [
+              76743.0,
+              0.15539013364779872
+            ],
+            [
+              76746.0,
+              0.1550721998705142
+            ],
+            [
+              76793.0,
+              0.18559384248982608
+            ],
+            [
+              76902.0,
+              0.18559384248982608
+            ],
+            [
+              76923.0,
+              0.18940904781724005
+            ],
+            [
+              76931.0,
+              0.19703945847206802
+            ],
+            [
+              76989.0,
+              0.19672152469478352
+            ],
+            [
+              76990.0,
+              0.19703945847206802
+            ],
+            [
+              77019.0,
+              0.19672152469478352
+            ],
+            [
+              77020.0,
+              0.19703945847206802
+            ],
+            [
+              77054.0,
+              0.19656255780614126
+            ],
+            [
+              77081.0,
+              0.1960856571402145
+            ],
+            [
+              77192.0,
+              0.1960856571402145
+            ],
+            [
+              77205.0,
+              0.19616514058453563
+            ],
+            [
+              77254.0,
+              0.18185812060673318
+            ],
+            [
+              77259.0,
+              0.18154018682944867
+            ],
+            [
+              77260.0,
+              0.18185812060673318
+            ],
+            [
+              77293.0,
+              0.19330373658897512
+            ],
+            [
+              77398.0,
+              0.19298580281169062
+            ],
+            [
+              77493.0,
+              0.1968010081391046
+            ],
+            [
+              77583.0,
+              0.2006956969108397
+            ],
+            [
+              77605.0,
+              0.2006956969108397
+            ],
+            [
+              77607.0,
+              0.2006956969108397
+            ],
+            [
+              77635.0,
+              0.2006956969108397
+            ],
+            [
+              77650.0,
+              0.2006956969108397
+            ],
+            [
+              77703.0,
+              0.2006956969108397
+            ],
+            [
+              77755.0,
+              0.2006956969108397
+            ],
+            [
+              77760.0,
+              0.2006956969108397
+            ],
+            [
+              78062.0,
+              0.2006956969108397
+            ],
+            [
+              78069.0,
+              0.20149053135405093
+            ],
+            [
+              78141.0,
+              0.20149053135405093
+            ],
+            [
+              78318.0,
+              0.19767532602663695
+            ],
+            [
+              78336.0,
+              0.19926499491305946
+            ],
+            [
+              78379.0,
+              0.19847016046984822
+            ],
+            [
+              78402.0,
+              0.19815222669256372
+            ],
+            [
+              78405.0,
+              0.19847016046984822
+            ],
+            [
+              78524.0,
+              0.19847016046984822
+            ],
+            [
+              78596.0,
+              0.2022853657972622
+            ],
+            [
+              78722.0,
+              0.2289918030891601
+            ],
+            [
+              78753.0,
+              0.2289918030891601
+            ],
+            [
+              78862.0,
+              0.2289918030891601
+            ],
+            [
+              78902.0,
+              0.2289918030891601
+            ],
+            [
+              78924.0,
+              0.2289918030891601
+            ],
+            [
+              78994.0,
+              0.2289918030891601
+            ],
+            [
+              79032.0,
+              0.22859438586755446
+            ],
+            [
+              79044.0,
+              0.22859438586755446
+            ],
+            [
+              79056.0,
+              0.23113785608583046
+            ],
+            [
+              79058.0,
+              0.23113785608583046
+            ],
+            [
+              79117.0,
+              0.23113785608583046
+            ],
+            [
+              79208.0,
+              0.23113785608583046
+            ],
+            [
+              79384.0,
+              0.23113785608583046
+            ],
+            [
+              79406.0,
+              0.23113785608583046
+            ],
+            [
+              79430.0,
+              0.23113785608583046
+            ],
+            [
+              79469.0,
+              0.23113785608583046
+            ],
+            [
+              79546.0,
+              0.23113785608583046
+            ],
+            [
+              79547.0,
+              0.22732265075841648
+            ],
+            [
+              79549.0,
+              0.23113785608583046
+            ],
+            [
+              79670.0,
+              0.23113785608583046
+            ],
+            [
+              79691.0,
+              0.23113785608583046
+            ],
+            [
+              79705.0,
+              0.23145578986311496
+            ],
+            [
+              79732.0,
+              0.23145578986311496
+            ],
+            [
+              79906.0,
+              0.2313690806511283
+            ],
+            [
+              79972.0,
+              0.23121011376248604
+            ],
+            [
+              79981.0,
+              0.23089217998520153
+            ],
+            [
+              79982.0,
+              0.23121011376248604
+            ],
+            [
+              80082.0,
+              0.23121011376248604
+            ],
+            [
+              80094.0,
+              0.23121011376248604
+            ],
+            [
+              80133.0,
+              0.23121011376248604
+            ],
+            [
+              80141.0,
+              0.23121011376248604
+            ],
+            [
+              80149.0,
+              0.22739490843507207
+            ],
+            [
+              80150.0,
+              0.23121011376248604
+            ],
+            [
+              80289.0,
+              0.23121011376248604
+            ],
+            [
+              80372.0,
+              0.23121011376248604
+            ],
+            [
+              80488.0,
+              0.23121011376248604
+            ],
+            [
+              80521.0,
+              0.23121011376248604
+            ],
+            [
+              80611.0,
+              0.23121011376248604
+            ],
+            [
+              80732.0,
+              0.23121011376248604
+            ],
+            [
+              80737.0,
+              0.23121011376248604
+            ],
+            [
+              80793.0,
+              0.23160753098409168
+            ],
+            [
+              80798.0,
+              0.2277923256566777
+            ],
+            [
+              80799.0,
+              0.23160753098409168
+            ],
+            [
+              80845.0,
+              0.26181123982611904
+            ],
+            [
+              80857.0,
+              0.26149330604883453
+            ],
+            [
+              80858.0,
+              0.26181123982611904
+            ],
+            [
+              80955.0,
+              0.26149330604883453
+            ],
+            [
+              80957.0,
+              0.26181123982611904
+            ],
+            [
+              81221.0,
+              0.28724594200887893
+            ],
+            [
+              81247.0,
+              0.28724594200887893
+            ],
+            [
+              81327.0,
+              0.28724594200887893
+            ],
+            [
+              81339.0,
+              0.28764335923048456
+            ],
+            [
+              81355.0,
+              0.28764335923048456
+            ],
+            [
+              81376.0,
+              0.2838281539030706
+            ],
+            [
+              81378.0,
+              0.28764335923048456
+            ],
+            [
+              81414.0,
+              0.28764335923048456
+            ],
+            [
+              81469.0,
+              0.2574396503884572
+            ],
+            [
+              81485.0,
+              0.2536244450610432
+            ],
+            [
+              81486.0,
+              0.2574396503884572
+            ],
+            [
+              81539.0,
+              0.2574396503884572
+            ],
+            [
+              81571.0,
+              0.2574396503884572
+            ],
+            [
+              81603.0,
+              0.2536244450610432
+            ],
+            [
+              81604.0,
+              0.2574396503884572
+            ],
+            [
+              81799.0,
+              0.2574396503884572
+            ],
+            [
+              81854.0,
+              0.2574396503884572
+            ],
+            [
+              81952.0,
+              0.2574396503884572
+            ],
+            [
+              81964.0,
+              0.2574396503884572
+            ],
+            [
+              81999.0,
+              0.2574396503884572
+            ],
+            [
+              82041.0,
+              0.2574396503884572
+            ],
+            [
+              82045.0,
+              0.28764335923048456
+            ],
+            [
+              82164.0,
+              0.28764335923048456
+            ],
+            [
+              82224.0,
+              0.28764335923048456
+            ],
+            [
+              82277.0,
+              0.28732542545320006
+            ],
+            [
+              82278.0,
+              0.28764335923048456
+            ],
+            [
+              82436.0,
+              0.28764335923048456
+            ],
+            [
+              82461.0,
+              0.28764335923048456
+            ],
+            [
+              82549.0,
+              0.28764335923048456
+            ],
+            [
+              82584.0,
+              0.28764335923048456
+            ],
+            [
+              82629.0,
+              0.2838281539030706
+            ],
+            [
+              82631.0,
+              0.2835102201257861
+            ],
+            [
+              82632.0,
+              0.2838281539030706
+            ],
+            [
+              82684.0,
+              0.2838281539030706
+            ],
+            [
+              82772.0,
+              0.2838281539030706
+            ],
+            [
+              82839.0,
+              0.2838281539030706
+            ],
+            [
+              82843.0,
+              0.2838281539030706
+            ],
+            [
+              82979.0,
+              0.2838281539030706
+            ],
+            [
+              83010.0,
+              0.2838281539030706
+            ],
+            [
+              83082.0,
+              0.2838281539030706
+            ],
+            [
+              83107.0,
+              0.2838281539030706
+            ],
+            [
+              83217.0,
+              0.2838281539030706
+            ],
+            [
+              83251.0,
+              0.2838281539030706
+            ],
+            [
+              83295.0,
+              0.2838281539030706
+            ],
+            [
+              83368.0,
+              0.2838281539030706
+            ],
+            [
+              83395.0,
+              0.2838281539030706
+            ],
+            [
+              83569.0,
+              0.2838281539030706
+            ],
+            [
+              83581.0,
+              0.2835102201257861
+            ],
+            [
+              83605.0,
+              0.28430505456899735
+            ],
+            [
+              83747.0,
+              0.2804898492415834
+            ],
+            [
+              83748.0,
+              0.28430505456899735
+            ],
+            [
+              83897.0,
+              0.28398712079171284
+            ],
+            [
+              83898.0,
+              0.28430505456899735
+            ],
+            [
+              83943.0,
+              0.28430505456899735
+            ],
+            [
+              84037.0,
+              0.2839076373473917
+            ],
+            [
+              84069.0,
+              0.2839076373473917
+            ],
+            [
+              84223.0,
+              0.2839076373473917
+            ],
+            [
+              84228.0,
+              0.2839076373473917
+            ],
+            [
+              84276.0,
+              0.2839076373473917
+            ],
+            [
+              84389.0,
+              0.2839076373473917
+            ],
+            [
+              84404.0,
+              0.28009243201997774
+            ],
+            [
+              84405.0,
+              0.2839076373473917
+            ],
+            [
+              84445.0,
+              0.29408151822049566
+            ],
+            [
+              84449.0,
+              0.2935251341102478
+            ],
+            [
+              84588.0,
+              0.2897099287828338
+            ],
+            [
+              84695.0,
+              0.2935251341102478
+            ],
+            [
+              84774.0,
+              0.2935251341102478
+            ],
+            [
+              84871.0,
+              0.2935251341102478
+            ],
+            [
+              85163.0,
+              0.2935251341102478
+            ],
+            [
+              85340.0,
+              0.2936046175545689
+            ],
+            [
+              85475.0,
+              0.2936046175545689
+            ],
+            [
+              85557.0,
+              0.2936046175545689
+            ],
+            [
+              85691.0,
+              0.2932866837772844
+            ],
+            [
+              85696.0,
+              0.2894714784498704
+            ],
+            [
+              85697.0,
+              0.2932866837772844
+            ],
+            [
+              85739.0,
+              0.2932866837772844
+            ],
+            [
+              85773.0,
+              0.2932866837772844
+            ],
+            [
+              85833.0,
+              0.2936046175545689
+            ],
+            [
+              85939.0,
+              0.2939225513318534
+            ],
+            [
+              85947.0,
+              0.2939225513318534
+            ],
+            [
+              86019.0,
+              0.2939225513318534
+            ],
+            [
+              86144.0,
+              0.2939225513318534
+            ],
+            [
+              86249.0,
+              0.2939225513318534
+            ],
+            [
+              86351.0,
+              0.2939225513318534
+            ],
+            [
+              86400.0,
+              0.0
+            ]
+          ],
+          "of_trip_hz": null,
+          "of_warning_hz": null,
+          "operating_cost_inputs": {
+            "bess_degradation_usd_per_mwh": null,
+            "bess_degradation_usd_per_mwh_provenance": "No cited degradation-cost source; intentionally left null.",
+            "currency_year": "mixed: 2023 USD O&M; 2026 USD fuel prices",
+            "currency_year_provenance": "CITED: EIA AEO2025 O&M proxy is 2023 dollars; fuel prices are US public prices observed in 2026. Values are not inflation-normalized.",
+            "diesel_price_usd_per_gal": 6.276,
+            "diesel_price_usd_per_gal_provenance": "CITED: EIA U.S. on-highway No. 2 diesel retail, week of 2026-10-19, $6.276/gal, including taxes (https://www.eia.gov/petroleum/gasdiesel/). Off-road generator fuel may exclude road taxes. S11: US price retained from S10; a BC off-road diesel price has not been sourced (PROPOSED_HERE).",
+            "gas_price_basis": "HHV",
+            "gas_price_basis_provenance": "CITED: EIA heat-content conversion above; price is recorded on an HHV basis.",
+            "gas_price_usd_per_mmbtu": 5.140790742526519,
+            "gas_price_usd_per_mmbtu_provenance": "CITED: EIA U.S. Natural Gas Industrial Price, Aug 2025\u2013Jul 2026 12-month mean $5.331/Mcf (https://www.eia.gov/dnav/ng/hist/n3035us3m.htm), divided by EIA 2025 average heat content 1,037 Btu/cf = 1.037 MMBtu/Mcf (https://www.eia.gov/tools/faqs/faq.php?id=45&t=5).",
+            "turbine_fixed_om_usd_per_kw_yr": 9.56,
+            "turbine_fixed_om_usd_per_kw_yr_provenance": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $9.56/kW-year, 2023 dollars; proxy for larger aeroderivative units.",
+            "turbine_start_cost_usd_per_start": null,
+            "turbine_start_cost_usd_per_start_provenance": "No cited non-fuel start-cost source; intentionally left null.",
+            "turbine_variable_om_usd_per_mwh": 5.7,
+            "turbine_variable_om_usd_per_mwh_provenance": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $5.70/MWh, 2023 dollars (https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf).",
+            "unserved_energy_value_usd_per_mwh": null,
+            "unserved_energy_value_usd_per_mwh_provenance": "No cited unserved-energy value; intentionally left null."
+          },
+          "operating_tier": null,
+          "operator_response_profile": null,
+          "param_sampling_config": null,
+          "phase2b_reference_base_scenario": null,
+          "phase2b_reference_days": null,
+          "phase2b_reference_family": null,
+          "plant_alpha_max": null,
+          "plant_dt_thermal_seconds": null,
+          "plant_tau_seconds": null,
+          "pms_config": null,
+          "power_factor": 0.85,
+          "pre_staging_config": null,
+          "procurement_config": {
+            "firm_available_mw": 80.0,
+            "non_firm_available_mw": 0.0,
+            "price_curve_seed": 42,
+            "reserved_available_mw": 0.0
+          },
+          "pue_base": 1.03,
+          "ramp_relaxation_config": null,
+          "relay_81u_delay_s": null,
+          "relay_81u_threshold_hz": null,
+          "seed_derivation_version": "d4-sha256-v1",
+          "site_latitude": 37.3541,
+          "site_longitude": -121.9552,
+          "site_name": "Generic BC Hydro transmission-connected site (location PROPOSED_HERE)",
+          "site_utc_offset_h": -8.130346666666666,
+          "solar_origin_utc_hour": 20,
+          "solar_rated_mw": 0.0,
+          "stressor_gen_config": null,
+          "study_class": "supercloud_replay",
+          "study_identity_version": 4,
+          "tau_seconds": 20.0,
+          "telemetry_corruption_config": null,
+          "tenant_budgets": null,
+          "tenant_events": [],
+          "turbine_commitment_floor": 1,
+          "turbine_commitment_mode": "baseline",
+          "turbine_commitment_sensitivity_mw": 2.0,
+          "turbine_forecast_lead_seconds": 600.0,
+          "turbine_units": [],
+          "uf_warning_hz": null,
+          "ufls_stage1_hz": null,
+          "ufls_stages": null,
+          "ui_bess_rated_mw": 50.0,
+          "ui_bess_usable_mwh": 50.0,
+          "workload_events_sha256": "a911252a0d5868355ec34c7dc3dd5463cbc6181840a1d732a52a3a4b461b90ce",
+          "workload_floor_fraction": null
+        },
+        "scenario_id": "S11_mit_supercloud_2021-08-11_bchydro",
+        "seed": 1729,
+        "tick_seconds": 5.0
+      },
+      "record_path": "records/0058f275101d45e1d065c8009b336d6b57b24299ef353bd46f9310f6bc94b1e6.json",
+      "record_size_bytes": 41656
+    },
     "2371244b01b6bb564b5b3a3c434899374d89bfdc7afe79479fa5f8ed0fe8e7ea": {
       "identity": {
         "duration_seconds": 7200.0,
@@ -102,6 +1571,1475 @@
       },
       "record_path": "records/2371244b01b6bb564b5b3a3c434899374d89bfdc7afe79479fa5f8ed0fe8e7ea.json",
       "record_size_bytes": 14184
+    },
+    "66f08d61fe2875a152e22961126b394e86568c0c47b66ed2750d41c35cf830b7": {
+      "identity": {
+        "duration_seconds": 86400.0,
+        "engine_commit": "cdadfef0d42cf3e115227c9ca8a61b94b5c695eb",
+        "harness_commit": "cdadfef0d42cf3e115227c9ca8a61b94b5c695eb",
+        "mode": "baseline",
+        "parameter_set": {
+          "alpha_max": 0.2,
+          "ambient_steps": [],
+          "anchor_reserve_pct": 0.0,
+          "assertions": [],
+          "band_enabled": false,
+          "band_mult_uncalibrated": 2.0,
+          "band_mult_unmapped_hw": 1.5,
+          "band_pct_calibrated": 0.0,
+          "base_load_mw": null,
+          "bess_bridging_floor_anchor_multiple": 2.0,
+          "bess_bridging_floor_fraction": 0.15,
+          "bess_catchup_bridge_margin": 0.8,
+          "bess_catchup_slope_window_s": 15.0,
+          "bess_catchup_sustain_s": 30.0,
+          "bess_charge_price_override_per_mwh": null,
+          "bess_material_discharge_fraction": 0.05,
+          "bess_material_discharge_min_mw": 1.0,
+          "bess_normal_dispatch_depth_fraction": 0.25,
+          "bess_units": [
+            {
+              "asset_id": "bess-0",
+              "authority_tier": "autonomous",
+              "grid_forming": true,
+              "initial_soc_fraction": 0.95,
+              "p_anchor_reserve_mw": 1.0,
+              "rated_mw": 18.0,
+              "usable_mwh": 14.0
+            }
+          ],
+          "calibrated": false,
+          "cascade_commit_fraction": null,
+          "cluster_gen_config": null,
+          "default_playback_speed": 1.0,
+          "demo_description": "",
+          "description": "Constraint-test variant of S11_mit_supercloud_2021-08-11_bchydro, identical except the BC Hydro grid import is deliberately capped at 60 MW (below the 61.8 MW observed facility peak) to exercise import-limit behaviour; expect ~1.8 MW unserved during the largest bursts. Same MIT SuperCloud 2021-08-11 workload, no turbines, 18 MW / 14 MWh grid-forming BESS, diesel block configured but disabled (IMPL-S11-03). Cap value PROPOSED_HERE.",
+          "design_peak_load_mw": 50.0,
+          "diesel_power_block": {
+            "authority_tier": "advisory_only",
+            "cooldown_s": 300.0,
+            "debounce_s": 1.0,
+            "delta_t_start_s": 10.0,
+            "enabled": false,
+            "f_block": 1.0,
+            "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+            "fuel_type": "diesel",
+            "min_down_s": 300.0,
+            "min_fuel_runtime_hours": 48.0,
+            "min_run_s": 900.0,
+            "min_stable_load_mw_fraction": 0.3,
+            "p_start": 1.0,
+            "residual_ramp_s": 8.0,
+            "restore_hold_s": 300.0,
+            "start_stagger_interval_s": 2.0,
+            "target_capacity_mw": 60.0,
+            "target_reliability": 1.0,
+            "unit_rating_mw": 10.0
+          },
+          "diesel_units": [],
+          "dispatch_curtailment_response_delay_s": 0.5,
+          "dq_inject_events": [],
+          "dt_lead_seconds": 45.0,
+          "dt_thermal_seconds": 90.0,
+          "edl_calendar_month": null,
+          "end_sim_time": 86400.0,
+          "fabric_scenario_id": null,
+          "frequency_nominal_hz": 60.0,
+          "frequency_reporting_metrics_version": 2,
+          "fuel_cell_baseload_target_mw": null,
+          "fuel_cell_enabled": false,
+          "fuel_cell_initial_state": null,
+          "fuel_cell_load_following": false,
+          "fuel_cell_min_stable_fraction": 0.5,
+          "fuel_cell_ramp_down_rate_mw_per_s": null,
+          "fuel_cell_ramp_rate_mw_per_s": 0.02,
+          "fuel_cell_rated_mw": 0.0,
+          "fuel_cell_stack_count": 1,
+          "fuel_cell_state": null,
+          "fuel_cell_turbine_commit_fraction": null,
+          "fuel_cell_units": [],
+          "generation_baseload_mw": null,
+          "generation_block": null,
+          "generation_peak_following": true,
+          "generator_config": null,
+          "gpu_load_profile": [],
+          "grid_authority_tier": "autonomous",
+          "grid_import_limit_mw": 60.0,
+          "grid_import_price_per_mwh": 53.74,
+          "hardware_profile_id": "hopper_8gpu_air",
+          "initial_spinning_count": null,
+          "irradiance_steps": [
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "island_collapse_hz": null,
+          "island_mode": false,
+          "kube_config": null,
+          "load_config": null,
+          "maintenance_config": null,
+          "n_plus_one_required": false,
+          "name": "S11b_mit_supercloud_2021-08-11_bchydro_60mw",
+          "non_gpu_load_profile_mw": [
+            [
+              0.0,
+              7.948344432112468e-05
+            ],
+            [
+              527.0,
+              0.0
+            ],
+            [
+              1492.0,
+              7.948344432112468e-05
+            ],
+            [
+              2092.0,
+              0.0
+            ],
+            [
+              3302.0,
+              7.948344432112468e-05
+            ],
+            [
+              3902.0,
+              0.0
+            ],
+            [
+              4688.0,
+              7.948344432112468e-05
+            ],
+            [
+              5288.0,
+              0.0
+            ],
+            [
+              6267.0,
+              7.948344432112468e-05
+            ],
+            [
+              6867.0,
+              0.0
+            ],
+            [
+              8136.0,
+              7.948344432112468e-05
+            ],
+            [
+              8736.0,
+              0.0
+            ],
+            [
+              13078.0,
+              7.948344432112468e-05
+            ],
+            [
+              13678.0,
+              0.0
+            ],
+            [
+              16171.0,
+              7.948344432112468e-05
+            ],
+            [
+              16771.0,
+              0.0
+            ],
+            [
+              19984.0,
+              7.948344432112468e-05
+            ],
+            [
+              20584.0,
+              0.0
+            ],
+            [
+              25747.0,
+              7.948344432112468e-05
+            ],
+            [
+              26347.0,
+              0.0
+            ],
+            [
+              32703.0,
+              7.948344432112468e-05
+            ],
+            [
+              33303.0,
+              0.0
+            ],
+            [
+              35947.0,
+              7.948344432112468e-05
+            ],
+            [
+              36548.0,
+              0.0
+            ],
+            [
+              39296.0,
+              7.948344432112468e-05
+            ],
+            [
+              39897.0,
+              0.0
+            ],
+            [
+              42586.0,
+              7.948344432112468e-05
+            ],
+            [
+              43186.0,
+              0.0
+            ],
+            [
+              46338.0,
+              7.948344432112468e-05
+            ],
+            [
+              46908.0,
+              0.00016619265630780613
+            ],
+            [
+              46938.0,
+              8.670921198668145e-05
+            ],
+            [
+              50025.0,
+              0.0
+            ],
+            [
+              52389.0,
+              7.948344432112466e-05
+            ],
+            [
+              52989.0,
+              0.0
+            ],
+            [
+              56177.0,
+              7.948344432112466e-05
+            ],
+            [
+              56777.0,
+              0.0
+            ],
+            [
+              59318.0,
+              7.948344432112466e-05
+            ],
+            [
+              59918.0,
+              0.0
+            ],
+            [
+              62516.0,
+              7.948344432112466e-05
+            ],
+            [
+              63116.0,
+              0.0
+            ],
+            [
+              68637.0,
+              0.0003179337772844987
+            ],
+            [
+              69574.0,
+              0.00040464298927118014
+            ],
+            [
+              70368.0,
+              0.0005636098779134295
+            ],
+            [
+              73202.0,
+              0.0008815436551979283
+            ],
+            [
+              73553.0,
+              0.0314031862745098
+            ],
+            [
+              73705.0,
+              0.046664007584165744
+            ],
+            [
+              74054.0,
+              0.046981941361450244
+            ],
+            [
+              74187.0,
+              0.04706142480577137
+            ],
+            [
+              74245.0,
+              0.048651093692193864
+            ],
+            [
+              74255.0,
+              0.05151249768775435
+            ],
+            [
+              74260.0,
+              0.053102166574176844
+            ],
+            [
+              74265.0,
+              0.05469183546059934
+            ],
+            [
+              74269.0,
+              0.05596357056973733
+            ],
+            [
+              74275.0,
+              0.057871173233444324
+            ],
+            [
+              74276.0,
+              0.06168637856085831
+            ],
+            [
+              74279.0,
+              0.0629581136699963
+            ],
+            [
+              74285.0,
+              0.06486571633370329
+            ],
+            [
+              74295.0,
+              0.06518365011098778
+            ],
+            [
+              74313.0,
+              0.0655810673325934
+            ],
+            [
+              74320.0,
+              0.0658990011098779
+            ],
+            [
+              74402.0,
+              0.09642064372918976
+            ],
+            [
+              74410.0,
+              0.09769237883832776
+            ],
+            [
+              74412.0,
+              0.09832824639289676
+            ],
+            [
+              74415.0,
+              0.09928204772475026
+            ],
+            [
+              74425.0,
+              0.10246138549759524
+            ],
+            [
+              74435.0,
+              0.10564072327044023
+            ],
+            [
+              74440.0,
+              0.10723039215686272
+            ],
+            [
+              74445.0,
+              0.10882006104328522
+            ],
+            [
+              74455.0,
+              0.11040972992970771
+            ],
+            [
+              74581.0,
+              0.1126352663706992
+            ],
+            [
+              74620.0,
+              0.1129532001479837
+            ],
+            [
+              74737.0,
+              0.11327113392526819
+            ],
+            [
+              74775.0,
+              0.12757815390307065
+            ],
+            [
+              74799.0,
+              0.12789608768035515
+            ],
+            [
+              74811.0,
+              0.13067078246392896
+            ],
+            [
+              74847.0,
+              0.13067078246392896
+            ],
+            [
+              74854.0,
+              0.13067078246392896
+            ],
+            [
+              74861.0,
+              0.13098871624121347
+            ],
+            [
+              74879.0,
+              0.13130665001849798
+            ],
+            [
+              74898.0,
+              0.13130665001849798
+            ],
+            [
+              74905.0,
+              0.13130665001849798
+            ],
+            [
+              74927.0,
+              0.13098871624121347
+            ],
+            [
+              74929.0,
+              0.13130665001849798
+            ],
+            [
+              74942.0,
+              0.13162458379578248
+            ],
+            [
+              74992.0,
+              0.131942517573067
+            ],
+            [
+              75066.0,
+              0.1548337495375509
+            ],
+            [
+              75069.0,
+              0.1548337495375509
+            ],
+            [
+              75072.0,
+              0.17000786163522016
+            ],
+            [
+              75100.0,
+              0.1695309609692934
+            ],
+            [
+              75123.0,
+              0.16905406030336664
+            ],
+            [
+              75141.0,
+              0.16905406030336664
+            ],
+            [
+              75157.0,
+              0.1696104444136145
+            ],
+            [
+              75178.0,
+              0.1696104444136145
+            ],
+            [
+              75193.0,
+              0.171200113300037
+            ],
+            [
+              75200.0,
+              0.171200113300037
+            ],
+            [
+              75220.0,
+              0.171200113300037
+            ],
+            [
+              75291.0,
+              0.171200113300037
+            ],
+            [
+              75325.0,
+              0.1684254185164632
+            ],
+            [
+              75358.0,
+              0.16794851785053644
+            ],
+            [
+              75364.0,
+              0.16802800129485757
+            ],
+            [
+              75368.0,
+              0.16802800129485757
+            ],
+            [
+              75389.0,
+              0.1675511006289308
+            ],
+            [
+              75465.0,
+              0.1675511006289308
+            ],
+            [
+              75473.0,
+              0.1675511006289308
+            ],
+            [
+              75493.0,
+              0.17136630595634478
+            ],
+            [
+              75523.0,
+              0.17104837217906027
+            ],
+            [
+              75524.0,
+              0.17136630595634478
+            ],
+            [
+              75597.0,
+              0.17104837217906027
+            ],
+            [
+              75606.0,
+              0.17104837217906027
+            ],
+            [
+              75646.0,
+              0.17104837217906027
+            ],
+            [
+              75691.0,
+              0.1705714715131335
+            ],
+            [
+              75750.0,
+              0.1737508092859785
+            ],
+            [
+              75830.0,
+              0.14322916666666663
+            ],
+            [
+              75858.0,
+              0.14322916666666663
+            ],
+            [
+              75882.0,
+              0.14354710044395114
+            ],
+            [
+              75936.0,
+              0.14307019977802438
+            ],
+            [
+              75946.0,
+              0.14688540510543835
+            ],
+            [
+              75971.0,
+              0.1464085044395116
+            ],
+            [
+              75978.0,
+              0.14481883555308908
+            ],
+            [
+              76001.0,
+              0.14481883555308908
+            ],
+            [
+              76003.0,
+              0.14497780244173133
+            ],
+            [
+              76054.0,
+              0.14179846466888635
+            ],
+            [
+              76057.0,
+              0.14338813355530886
+            ],
+            [
+              76078.0,
+              0.13241941823899364
+            ],
+            [
+              76098.0,
+              0.1629410608583055
+            ],
+            [
+              76099.0,
+              0.1629410608583055
+            ],
+            [
+              76158.0,
+              0.16302054430262664
+            ],
+            [
+              76162.0,
+              0.16341796152423227
+            ],
+            [
+              76220.0,
+              0.16310002774694776
+            ],
+            [
+              76222.0,
+              0.16341796152423227
+            ],
+            [
+              76250.0,
+              0.16341796152423227
+            ],
+            [
+              76317.0,
+              0.16333847807991114
+            ],
+            [
+              76320.0,
+              0.16492814696633365
+            ],
+            [
+              76332.0,
+              0.16484866352201252
+            ],
+            [
+              76340.0,
+              0.16492814696633365
+            ],
+            [
+              76379.0,
+              0.16492814696633365
+            ],
+            [
+              76381.0,
+              0.16524608074361816
+            ],
+            [
+              76393.0,
+              0.16492814696633365
+            ],
+            [
+              76395.0,
+              0.16524608074361816
+            ],
+            [
+              76420.0,
+              0.16683574963004066
+            ],
+            [
+              76448.0,
+              0.16683574963004066
+            ],
+            [
+              76492.0,
+              0.17065095495745464
+            ],
+            [
+              76494.0,
+              0.17033302118017013
+            ],
+            [
+              76495.0,
+              0.17065095495745464
+            ],
+            [
+              76570.0,
+              0.17065095495745464
+            ],
+            [
+              76586.0,
+              0.17065095495745464
+            ],
+            [
+              76599.0,
+              0.17065095495745464
+            ],
+            [
+              76619.0,
+              0.17065095495745464
+            ],
+            [
+              76730.0,
+              0.14012931233814277
+            ],
+            [
+              76743.0,
+              0.15539013364779872
+            ],
+            [
+              76746.0,
+              0.1550721998705142
+            ],
+            [
+              76793.0,
+              0.18559384248982608
+            ],
+            [
+              76902.0,
+              0.18559384248982608
+            ],
+            [
+              76923.0,
+              0.18940904781724005
+            ],
+            [
+              76931.0,
+              0.19703945847206802
+            ],
+            [
+              76989.0,
+              0.19672152469478352
+            ],
+            [
+              76990.0,
+              0.19703945847206802
+            ],
+            [
+              77019.0,
+              0.19672152469478352
+            ],
+            [
+              77020.0,
+              0.19703945847206802
+            ],
+            [
+              77054.0,
+              0.19656255780614126
+            ],
+            [
+              77081.0,
+              0.1960856571402145
+            ],
+            [
+              77192.0,
+              0.1960856571402145
+            ],
+            [
+              77205.0,
+              0.19616514058453563
+            ],
+            [
+              77254.0,
+              0.18185812060673318
+            ],
+            [
+              77259.0,
+              0.18154018682944867
+            ],
+            [
+              77260.0,
+              0.18185812060673318
+            ],
+            [
+              77293.0,
+              0.19330373658897512
+            ],
+            [
+              77398.0,
+              0.19298580281169062
+            ],
+            [
+              77493.0,
+              0.1968010081391046
+            ],
+            [
+              77583.0,
+              0.2006956969108397
+            ],
+            [
+              77605.0,
+              0.2006956969108397
+            ],
+            [
+              77607.0,
+              0.2006956969108397
+            ],
+            [
+              77635.0,
+              0.2006956969108397
+            ],
+            [
+              77650.0,
+              0.2006956969108397
+            ],
+            [
+              77703.0,
+              0.2006956969108397
+            ],
+            [
+              77755.0,
+              0.2006956969108397
+            ],
+            [
+              77760.0,
+              0.2006956969108397
+            ],
+            [
+              78062.0,
+              0.2006956969108397
+            ],
+            [
+              78069.0,
+              0.20149053135405093
+            ],
+            [
+              78141.0,
+              0.20149053135405093
+            ],
+            [
+              78318.0,
+              0.19767532602663695
+            ],
+            [
+              78336.0,
+              0.19926499491305946
+            ],
+            [
+              78379.0,
+              0.19847016046984822
+            ],
+            [
+              78402.0,
+              0.19815222669256372
+            ],
+            [
+              78405.0,
+              0.19847016046984822
+            ],
+            [
+              78524.0,
+              0.19847016046984822
+            ],
+            [
+              78596.0,
+              0.2022853657972622
+            ],
+            [
+              78722.0,
+              0.2289918030891601
+            ],
+            [
+              78753.0,
+              0.2289918030891601
+            ],
+            [
+              78862.0,
+              0.2289918030891601
+            ],
+            [
+              78902.0,
+              0.2289918030891601
+            ],
+            [
+              78924.0,
+              0.2289918030891601
+            ],
+            [
+              78994.0,
+              0.2289918030891601
+            ],
+            [
+              79032.0,
+              0.22859438586755446
+            ],
+            [
+              79044.0,
+              0.22859438586755446
+            ],
+            [
+              79056.0,
+              0.23113785608583046
+            ],
+            [
+              79058.0,
+              0.23113785608583046
+            ],
+            [
+              79117.0,
+              0.23113785608583046
+            ],
+            [
+              79208.0,
+              0.23113785608583046
+            ],
+            [
+              79384.0,
+              0.23113785608583046
+            ],
+            [
+              79406.0,
+              0.23113785608583046
+            ],
+            [
+              79430.0,
+              0.23113785608583046
+            ],
+            [
+              79469.0,
+              0.23113785608583046
+            ],
+            [
+              79546.0,
+              0.23113785608583046
+            ],
+            [
+              79547.0,
+              0.22732265075841648
+            ],
+            [
+              79549.0,
+              0.23113785608583046
+            ],
+            [
+              79670.0,
+              0.23113785608583046
+            ],
+            [
+              79691.0,
+              0.23113785608583046
+            ],
+            [
+              79705.0,
+              0.23145578986311496
+            ],
+            [
+              79732.0,
+              0.23145578986311496
+            ],
+            [
+              79906.0,
+              0.2313690806511283
+            ],
+            [
+              79972.0,
+              0.23121011376248604
+            ],
+            [
+              79981.0,
+              0.23089217998520153
+            ],
+            [
+              79982.0,
+              0.23121011376248604
+            ],
+            [
+              80082.0,
+              0.23121011376248604
+            ],
+            [
+              80094.0,
+              0.23121011376248604
+            ],
+            [
+              80133.0,
+              0.23121011376248604
+            ],
+            [
+              80141.0,
+              0.23121011376248604
+            ],
+            [
+              80149.0,
+              0.22739490843507207
+            ],
+            [
+              80150.0,
+              0.23121011376248604
+            ],
+            [
+              80289.0,
+              0.23121011376248604
+            ],
+            [
+              80372.0,
+              0.23121011376248604
+            ],
+            [
+              80488.0,
+              0.23121011376248604
+            ],
+            [
+              80521.0,
+              0.23121011376248604
+            ],
+            [
+              80611.0,
+              0.23121011376248604
+            ],
+            [
+              80732.0,
+              0.23121011376248604
+            ],
+            [
+              80737.0,
+              0.23121011376248604
+            ],
+            [
+              80793.0,
+              0.23160753098409168
+            ],
+            [
+              80798.0,
+              0.2277923256566777
+            ],
+            [
+              80799.0,
+              0.23160753098409168
+            ],
+            [
+              80845.0,
+              0.26181123982611904
+            ],
+            [
+              80857.0,
+              0.26149330604883453
+            ],
+            [
+              80858.0,
+              0.26181123982611904
+            ],
+            [
+              80955.0,
+              0.26149330604883453
+            ],
+            [
+              80957.0,
+              0.26181123982611904
+            ],
+            [
+              81221.0,
+              0.28724594200887893
+            ],
+            [
+              81247.0,
+              0.28724594200887893
+            ],
+            [
+              81327.0,
+              0.28724594200887893
+            ],
+            [
+              81339.0,
+              0.28764335923048456
+            ],
+            [
+              81355.0,
+              0.28764335923048456
+            ],
+            [
+              81376.0,
+              0.2838281539030706
+            ],
+            [
+              81378.0,
+              0.28764335923048456
+            ],
+            [
+              81414.0,
+              0.28764335923048456
+            ],
+            [
+              81469.0,
+              0.2574396503884572
+            ],
+            [
+              81485.0,
+              0.2536244450610432
+            ],
+            [
+              81486.0,
+              0.2574396503884572
+            ],
+            [
+              81539.0,
+              0.2574396503884572
+            ],
+            [
+              81571.0,
+              0.2574396503884572
+            ],
+            [
+              81603.0,
+              0.2536244450610432
+            ],
+            [
+              81604.0,
+              0.2574396503884572
+            ],
+            [
+              81799.0,
+              0.2574396503884572
+            ],
+            [
+              81854.0,
+              0.2574396503884572
+            ],
+            [
+              81952.0,
+              0.2574396503884572
+            ],
+            [
+              81964.0,
+              0.2574396503884572
+            ],
+            [
+              81999.0,
+              0.2574396503884572
+            ],
+            [
+              82041.0,
+              0.2574396503884572
+            ],
+            [
+              82045.0,
+              0.28764335923048456
+            ],
+            [
+              82164.0,
+              0.28764335923048456
+            ],
+            [
+              82224.0,
+              0.28764335923048456
+            ],
+            [
+              82277.0,
+              0.28732542545320006
+            ],
+            [
+              82278.0,
+              0.28764335923048456
+            ],
+            [
+              82436.0,
+              0.28764335923048456
+            ],
+            [
+              82461.0,
+              0.28764335923048456
+            ],
+            [
+              82549.0,
+              0.28764335923048456
+            ],
+            [
+              82584.0,
+              0.28764335923048456
+            ],
+            [
+              82629.0,
+              0.2838281539030706
+            ],
+            [
+              82631.0,
+              0.2835102201257861
+            ],
+            [
+              82632.0,
+              0.2838281539030706
+            ],
+            [
+              82684.0,
+              0.2838281539030706
+            ],
+            [
+              82772.0,
+              0.2838281539030706
+            ],
+            [
+              82839.0,
+              0.2838281539030706
+            ],
+            [
+              82843.0,
+              0.2838281539030706
+            ],
+            [
+              82979.0,
+              0.2838281539030706
+            ],
+            [
+              83010.0,
+              0.2838281539030706
+            ],
+            [
+              83082.0,
+              0.2838281539030706
+            ],
+            [
+              83107.0,
+              0.2838281539030706
+            ],
+            [
+              83217.0,
+              0.2838281539030706
+            ],
+            [
+              83251.0,
+              0.2838281539030706
+            ],
+            [
+              83295.0,
+              0.2838281539030706
+            ],
+            [
+              83368.0,
+              0.2838281539030706
+            ],
+            [
+              83395.0,
+              0.2838281539030706
+            ],
+            [
+              83569.0,
+              0.2838281539030706
+            ],
+            [
+              83581.0,
+              0.2835102201257861
+            ],
+            [
+              83605.0,
+              0.28430505456899735
+            ],
+            [
+              83747.0,
+              0.2804898492415834
+            ],
+            [
+              83748.0,
+              0.28430505456899735
+            ],
+            [
+              83897.0,
+              0.28398712079171284
+            ],
+            [
+              83898.0,
+              0.28430505456899735
+            ],
+            [
+              83943.0,
+              0.28430505456899735
+            ],
+            [
+              84037.0,
+              0.2839076373473917
+            ],
+            [
+              84069.0,
+              0.2839076373473917
+            ],
+            [
+              84223.0,
+              0.2839076373473917
+            ],
+            [
+              84228.0,
+              0.2839076373473917
+            ],
+            [
+              84276.0,
+              0.2839076373473917
+            ],
+            [
+              84389.0,
+              0.2839076373473917
+            ],
+            [
+              84404.0,
+              0.28009243201997774
+            ],
+            [
+              84405.0,
+              0.2839076373473917
+            ],
+            [
+              84445.0,
+              0.29408151822049566
+            ],
+            [
+              84449.0,
+              0.2935251341102478
+            ],
+            [
+              84588.0,
+              0.2897099287828338
+            ],
+            [
+              84695.0,
+              0.2935251341102478
+            ],
+            [
+              84774.0,
+              0.2935251341102478
+            ],
+            [
+              84871.0,
+              0.2935251341102478
+            ],
+            [
+              85163.0,
+              0.2935251341102478
+            ],
+            [
+              85340.0,
+              0.2936046175545689
+            ],
+            [
+              85475.0,
+              0.2936046175545689
+            ],
+            [
+              85557.0,
+              0.2936046175545689
+            ],
+            [
+              85691.0,
+              0.2932866837772844
+            ],
+            [
+              85696.0,
+              0.2894714784498704
+            ],
+            [
+              85697.0,
+              0.2932866837772844
+            ],
+            [
+              85739.0,
+              0.2932866837772844
+            ],
+            [
+              85773.0,
+              0.2932866837772844
+            ],
+            [
+              85833.0,
+              0.2936046175545689
+            ],
+            [
+              85939.0,
+              0.2939225513318534
+            ],
+            [
+              85947.0,
+              0.2939225513318534
+            ],
+            [
+              86019.0,
+              0.2939225513318534
+            ],
+            [
+              86144.0,
+              0.2939225513318534
+            ],
+            [
+              86249.0,
+              0.2939225513318534
+            ],
+            [
+              86351.0,
+              0.2939225513318534
+            ],
+            [
+              86400.0,
+              0.0
+            ]
+          ],
+          "of_trip_hz": null,
+          "of_warning_hz": null,
+          "operating_cost_inputs": {
+            "bess_degradation_usd_per_mwh": null,
+            "bess_degradation_usd_per_mwh_provenance": "No cited degradation-cost source; intentionally left null.",
+            "currency_year": "mixed: 2023 USD O&M; 2026 USD fuel prices",
+            "currency_year_provenance": "CITED: EIA AEO2025 O&M proxy is 2023 dollars; fuel prices are US public prices observed in 2026. Values are not inflation-normalized.",
+            "diesel_price_usd_per_gal": 6.276,
+            "diesel_price_usd_per_gal_provenance": "CITED: EIA U.S. on-highway No. 2 diesel retail, week of 2026-10-19, $6.276/gal, including taxes (https://www.eia.gov/petroleum/gasdiesel/). Off-road generator fuel may exclude road taxes. S11: US price retained from S10; a BC off-road diesel price has not been sourced (PROPOSED_HERE).",
+            "gas_price_basis": "HHV",
+            "gas_price_basis_provenance": "CITED: EIA heat-content conversion above; price is recorded on an HHV basis.",
+            "gas_price_usd_per_mmbtu": 5.140790742526519,
+            "gas_price_usd_per_mmbtu_provenance": "CITED: EIA U.S. Natural Gas Industrial Price, Aug 2025\u2013Jul 2026 12-month mean $5.331/Mcf (https://www.eia.gov/dnav/ng/hist/n3035us3m.htm), divided by EIA 2025 average heat content 1,037 Btu/cf = 1.037 MMBtu/Mcf (https://www.eia.gov/tools/faqs/faq.php?id=45&t=5).",
+            "turbine_fixed_om_usd_per_kw_yr": 9.56,
+            "turbine_fixed_om_usd_per_kw_yr_provenance": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $9.56/kW-year, 2023 dollars; proxy for larger aeroderivative units.",
+            "turbine_start_cost_usd_per_start": null,
+            "turbine_start_cost_usd_per_start_provenance": "No cited non-fuel start-cost source; intentionally left null.",
+            "turbine_variable_om_usd_per_mwh": 5.7,
+            "turbine_variable_om_usd_per_mwh_provenance": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $5.70/MWh, 2023 dollars (https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf).",
+            "unserved_energy_value_usd_per_mwh": null,
+            "unserved_energy_value_usd_per_mwh_provenance": "No cited unserved-energy value; intentionally left null."
+          },
+          "operating_tier": null,
+          "operator_response_profile": null,
+          "param_sampling_config": null,
+          "phase2b_reference_base_scenario": null,
+          "phase2b_reference_days": null,
+          "phase2b_reference_family": null,
+          "plant_alpha_max": null,
+          "plant_dt_thermal_seconds": null,
+          "plant_tau_seconds": null,
+          "pms_config": null,
+          "power_factor": 0.85,
+          "pre_staging_config": null,
+          "procurement_config": {
+            "firm_available_mw": 60.0,
+            "non_firm_available_mw": 0.0,
+            "price_curve_seed": 42,
+            "reserved_available_mw": 0.0
+          },
+          "pue_base": 1.03,
+          "ramp_relaxation_config": null,
+          "relay_81u_delay_s": null,
+          "relay_81u_threshold_hz": null,
+          "seed_derivation_version": "d4-sha256-v1",
+          "site_latitude": 37.3541,
+          "site_longitude": -121.9552,
+          "site_name": "Generic BC Hydro transmission-connected site (location PROPOSED_HERE)",
+          "site_utc_offset_h": -8.130346666666666,
+          "solar_origin_utc_hour": 20,
+          "solar_rated_mw": 0.0,
+          "stressor_gen_config": null,
+          "study_class": "supercloud_replay",
+          "study_identity_version": 4,
+          "tau_seconds": 20.0,
+          "telemetry_corruption_config": null,
+          "tenant_budgets": null,
+          "tenant_events": [],
+          "turbine_commitment_floor": 1,
+          "turbine_commitment_mode": "baseline",
+          "turbine_commitment_sensitivity_mw": 2.0,
+          "turbine_forecast_lead_seconds": 600.0,
+          "turbine_units": [],
+          "uf_warning_hz": null,
+          "ufls_stage1_hz": null,
+          "ufls_stages": null,
+          "ui_bess_rated_mw": 50.0,
+          "ui_bess_usable_mwh": 50.0,
+          "workload_events_sha256": "a911252a0d5868355ec34c7dc3dd5463cbc6181840a1d732a52a3a4b461b90ce",
+          "workload_floor_fraction": null
+        },
+        "scenario_id": "S11b_mit_supercloud_2021-08-11_bchydro_60mw",
+        "seed": 1729,
+        "tick_seconds": 5.0
+      },
+      "record_path": "records/66f08d61fe2875a152e22961126b394e86568c0c47b66ed2750d41c35cf830b7.json",
+      "record_size_bytes": 41097
     },
     "8b6a71123e6c7ea24452f96e63da5bade985a26e05a6b013f4cd03f0feec9097": {
       "identity": {
