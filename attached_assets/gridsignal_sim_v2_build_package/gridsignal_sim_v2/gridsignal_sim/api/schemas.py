@@ -3125,6 +3125,59 @@ class TimeseriesResponse(BaseModel):
     rows: list[TimeseriesRowResponse]
 
 
+StrandedReservePolicy = Literal["none", "fixed_3mw", "pct10", "derate80"]
+
+
+class StrandedMinuteResponse(BaseModel):
+    minute: int
+    t_start_s: int
+    demand_mean_mw: float
+    demand_max_mw: float
+    consumed_mw: float
+    reserve_held_mw: float
+    recoverable_mw: float
+    above_cap_bess_mw: float
+    above_cap_unserved_mw: float
+    scarce: bool
+
+
+class StrandedEpisodeResponse(BaseModel):
+    start_minute: int
+    end_minute: int
+    length_minutes: int
+
+
+class StrandedAvailableResponse(BaseModel):
+    available: Literal[True] = True
+    p_avail_mw: float
+    reserve_policy: StrandedReservePolicy
+    p_res_mw: float
+    reserve_label: str
+    energy_consumed_mwh: float
+    energy_available_mwh: float
+    avg_demand_mw: float
+    peak_demand_mw: float
+    utilisation_of_cap_pct: float
+    minutes_above_cap: int
+    above_cap_mwh: float
+    above_cap_bess_mwh: float
+    above_cap_unserved_mwh: float
+    avg_stranded_mw: float
+    avg_recoverable_mw: float
+    recoverable_mwh: float
+    recoverable_pct_of_cap: float
+    scarce_minutes: int
+    scarce_episodes: list[StrandedEpisodeResponse]
+    resample: str
+    basis: str
+    series: list[StrandedMinuteResponse]
+
+
+class StrandedUnavailableResponse(BaseModel):
+    available: Literal[False] = False
+    reason: str
+
+
 # ---------------------------------------------------------------------------
 # Operator unit command (Task #203)
 # ---------------------------------------------------------------------------
