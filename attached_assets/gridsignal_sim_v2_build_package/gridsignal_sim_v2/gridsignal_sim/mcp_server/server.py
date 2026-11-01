@@ -46,6 +46,7 @@ from study_harness.executor import (
     seed_cache_bypass_reason,
     study_class_for_scenario,
 )
+from study_harness.stranded import RESERVE_POLICIES, compute_stranded
 from runtime.scenario_factory import prepare_workload_timeline
 
 
@@ -631,6 +632,7 @@ class StudyService:
         section: str | None,
         page: int,
         page_size: int,
+        reserve_policy: str = "fixed_3mw",
     ) -> dict[str, Any]:
         state, record = self._record(run_id)
         reconciliation = self._reconciliation(record)
@@ -685,6 +687,17 @@ class StudyService:
                 )
             },
         }
+        if section == "stranded":
+            stranded = self._stranded_result(
+                state,
+                record,
+                reserve_policy=reserve_policy,
+            )
+            sections["stranded"] = (
+                {key: value for key, value in stranded.items() if key != "series"}
+                if "series" in stranded
+                else stranded
+            )
         if section is not None and section not in sections:
             raise InvalidArgumentError(
                 "unknown metric section",
@@ -707,6 +720,90 @@ class StudyService:
         # These guards are included even when a caller asks for another section.
         payload["reconciliation"] = _json(reconciliation)
         return payload
+
+    @staticmethod
+    def _stranded_result(
+        state: RunState,
+        record: Mapping[str, Any],
+        *,
+        reserve_policy: str,
+    ) -> dict[str, Any]:
+        if reserve_policy not in RESERVE_POLICIES:
+            raise InvalidArgumentError(
+                "unknown reserve policy",
+                reserve_policy=reserve_policy,
+                allowed_policies=list(RESERVE_POLICIES),
+            )
+        if state.ticks_path is None or not state.ticks_path.is_file():
+            raise NotFoundIdentifierError(
+                "tick artifact was not found",
+                identifier=state.run_id,
+                kind="ticks",
+            )
+        identity = record.get("identity")
+        parameter_set = (
+            identity.get("parameter_set", {})
+            if isinstance(identity, Mapping)
+            else {}
+        )
+        p_avail_mw = (
+            parameter_set.get("grid_import_limit_mw")
+            if isinstance(parameter_set, Mapping)
+            else None
+        )
+        tick_rows = list(_iter_tick_rows(state.ticks_path))
+        return compute_stranded(
+            tick_rows,
+            p_avail_mw=p_avail_mw,
+            reserve_policy=reserve_policy,
+            tick_seconds=float(
+                identity.get("tick_seconds", 5.0)
+                if isinstance(identity, Mapping)
+                else 5.0
+            ),
+        )
+
+    def stranded_series(
+        self,
+        run_id: str,
+        *,
+        reserve_policy: str,
+        page: int,
+        page_size: int,
+    ) -> dict[str, Any]:
+        state, record = self._record(run_id)
+        if page < 1 or page_size < 1 or page_size > MAX_TICK_ROWS:
+            raise InvalidArgumentError(
+                "page must be at least 1 and page_size must be between 1 and 1000",
+                page=page,
+                page_size=page_size,
+            )
+        result = self._stranded_result(
+            state,
+            record,
+            reserve_policy=reserve_policy,
+        )
+        rows = result.get("series", [])
+        start = (page - 1) * page_size
+        selected = rows[start : start + page_size]
+        return {
+            "run_id": run_id,
+            "available": result.get("available", True),
+            "reason": result.get("reason"),
+            "p_avail_mw": result.get("p_avail_mw"),
+            "p_res_mw": result.get("p_res_mw"),
+            "reserve_policy": reserve_policy,
+            "series": {
+                "items": _json(selected),
+                "total": len(rows),
+                "returned": len(selected),
+                "page": page,
+                "page_size": page_size,
+                "has_more": start + len(selected) < len(rows),
+                "source_truncated": False,
+                "omitted_source_count": 0,
+            },
+        }
 
     @staticmethod
     def _reconciliation(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -1144,6 +1241,7 @@ READ_TOOLS = {
     "compare_runs",
     "get_commitment_log",
     "get_ticks",
+    "get_stranded_series",
 }
 
 
@@ -1190,7 +1288,19 @@ def _tool_definitions() -> list[dict[str, Any]]:
                     "run_id": {"type": "string"},
                     "section": {
                         "type": "string",
-                        "enum": ["fuel", "commitment", "forecast", "energy", "daily"],
+                        "enum": [
+                            "fuel",
+                            "commitment",
+                            "forecast",
+                            "energy",
+                            "daily",
+                            "stranded",
+                        ],
+                    },
+                    "reserve_policy": {
+                        "type": "string",
+                        "enum": list(RESERVE_POLICIES),
+                        "default": "fixed_3mw",
                     },
                     "page": {"type": "integer", "minimum": 1},
                     "page_size": {"type": "integer", "minimum": 1, "maximum": 200},
@@ -1244,6 +1354,28 @@ def _tool_definitions() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "get_stranded_series",
+            "description": "Return paginated one-minute stranded-capacity series.",
+            "inputSchema": {
+                "type": "object",
+                "required": ["run_id"],
+                "properties": {
+                    "run_id": {"type": "string"},
+                    "reserve_policy": {
+                        "type": "string",
+                        "enum": list(RESERVE_POLICIES),
+                        "default": "fixed_3mw",
+                    },
+                    "page": {"type": "integer", "minimum": 1},
+                    "page_size": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": MAX_TICK_ROWS,
+                    },
+                },
+            },
+        },
+        {
             "name": "start_run",
             "description": "Start one asynchronous baseline or informed study-harness run.",
             "inputSchema": {
@@ -1292,6 +1424,7 @@ def _call_tool(name: str, arguments: dict[str, Any], request: Request) -> dict[s
             section=arguments.get("section"),
             page=page,
             page_size=page_size,
+            reserve_policy=str(arguments.get("reserve_policy", "fixed_3mw")),
         )
     if name == "compare_runs":
         return service.compare(
@@ -1317,6 +1450,15 @@ def _call_tool(name: str, arguments: dict[str, Any], request: Request) -> dict[s
             stride=int(arguments.get("stride", 1)),
             page=page,
             page_size=min(int(arguments.get("page_size", DEFAULT_PAGE_SIZE)), MAX_TICK_ROWS),
+        )
+    if name == "get_stranded_series":
+        return service.stranded_series(
+            str(arguments["run_id"]),
+            reserve_policy=str(
+                arguments.get("reserve_policy", "fixed_3mw")
+            ),
+            page=page,
+            page_size=int(arguments.get("page_size", DEFAULT_PAGE_SIZE)),
         )
     if name == "start_run":
         return service.start(
