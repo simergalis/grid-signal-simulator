@@ -51,7 +51,6 @@ N = {
     "EDL_MONTH": 7,  # PROPOSED_HERE: July selects the existing summer TOU periods.
     "PUE_BASE": 1.3,  # PROPOSED_HERE: assumed air-cooled office GPU-room fit-out.
     "MODEL_NODE_RATED_KW": 10.2,  # PROPOSED_HERE audit tag: catalog hopper_8gpu_air chassis value from scenario_factory.py.
-    "MODEL_NODE_RATED_KW": 10.2,  # PROPOSED_HERE audit tag: catalog hopper_8gpu_air chassis value from scenario_factory.py.
     "ALPHA_MAX": 0.20,  # PROPOSED_HERE estimator reference: current engine default; not written into the scenario.
     "COOLING_DELAY_SECONDS": 90,  # PROPOSED_HERE estimator reference: current engine default; not written into the scenario.
     "COOLING_TAU_SECONDS": 20,  # PROPOSED_HERE estimator reference: current engine default; not written into the scenario.
@@ -88,7 +87,7 @@ N = {
     "BESS_MWH": 2.0,  # PROPOSED_HERE: requested BESS energy rating.
     "BESS_INITIAL_SOC": 0.95,  # PROPOSED_HERE: requested initial state of charge.
     "BESS_ANCHOR_MW": 0.1,  # PROPOSED_HERE: small grid-forming anchor share of the 1 MW rating.
-    "BESS_DISPATCH_DEPTH": 0.95,  # PROPOSED_HERE: allows dispatch through the initial stored energy; grid recharge remains enabled.
+    "BESS_DISPATCH_DEPTH": 0.0,  # PROPOSED_HERE: no normal-operation reserve floor; grid recharging is available.
     "DIESEL_MW": 1.0,  # PROPOSED_HERE: disabled small-site backup placeholder rating.
     "SLURM_COUNT": 10,  # PROPOSED_HERE: requested training-job count.
     "SLURM_MIN_NODES": 8,  # PROPOSED_HERE: requested minimum training allocation.
@@ -330,7 +329,7 @@ def _make_events() -> list[dict[str, object]]:
             job_id=job_id,
             scheduler_type="RAY",
             cluster_id="proxim8-ray",
-            workload_class="inference",
+            workload_class="other",
             start_s=start_s,
             duration_s=N["RAY_CALL_SECONDS"],
             nodes=N["ONE"],
@@ -349,7 +348,7 @@ def _make_events() -> list[dict[str, object]]:
 def _estimate_nameplate_demand(
     profile: list[list[float]],
     events: list[dict[str, object]],
-) -> tuple[float, int, int]:
+) -> tuple[float, int, int, dict[str, float], dict[str, float]]:
     """Estimate full-nameplate workload demand plus per-job cooling envelopes."""
     starts: dict[int, list[dict[str, object]]] = defaultdict(list)
     ends: dict[int, list[dict[str, object]]] = defaultdict(list)
@@ -367,6 +366,16 @@ def _estimate_nameplate_demand(
     peak_mw = float("-inf")
     peak_time_s = N["ZERO"]
     above_cap_ticks = N["ZERO"]
+    sample_times = {
+        _hour(N["HOUR_02"]): "overnight_02",
+        _hour(N["HOUR_07"]): "morning_07",
+        _hour(N["HOUR_15"]): "afternoon_15",
+    }
+    sampled_demand: dict[str, float] = {}
+    afternoon_total = N["ZERO_FLOAT"]
+    afternoon_ticks = N["ZERO"]
+    afternoon_min = float("inf")
+    afternoon_max = float("-inf")
     for time_s in range(N["ZERO"], N["DAY_SECONDS"], N["TICK_SECONDS"]):
         for event in ends.get(time_s, []):
             active.pop(str(event["job_id"]), None)
@@ -414,10 +423,28 @@ def _estimate_nameplate_demand(
             peak_time_s = time_s
         if demand > N["GRID_CAP_MW"]:
             above_cap_ticks += N["ONE"]
+        if time_s in sample_times:
+            sampled_demand[sample_times[time_s]] = demand
+        if _hour(N["HOUR_13"]) <= time_s < _hour(N["HOUR_17"]):
+            afternoon_total += demand
+            afternoon_ticks += N["ONE"]
+            afternoon_min = min(afternoon_min, demand)
+            afternoon_max = max(afternoon_max, demand)
 
     seconds_above = above_cap_ticks * N["TICK_SECONDS"]
     minutes_above = seconds_above / N["SECONDS_PER_MINUTE"]
-    return peak_mw, peak_time_s, int(round(minutes_above * N["SECONDS_PER_MINUTE"]))
+    afternoon_summary = {
+        "mean_mw": afternoon_total / afternoon_ticks,
+        "min_mw": afternoon_min,
+        "max_mw": afternoon_max,
+    }
+    return (
+        peak_mw,
+        peak_time_s,
+        int(round(minutes_above * N["SECONDS_PER_MINUTE"])),
+        sampled_demand,
+        afternoon_summary,
+    )
 
 
 def _cooling_report_points(profile: list[list[float]]) -> list[dict[str, float | int]]:
@@ -475,7 +502,8 @@ def _description() -> str:
         f"{int(N['HOUR_13'])}:00–{int(N['HOUR_17'])}:00, and "
         f"{N['BUILDING_EVENING_MW']} MW by {int(N['HOUR_21'])}:00. A "
         f"{N['BESS_MW']} MW / {N['BESS_MWH']} MWh grid-forming BESS starts at "
-        f"{N['BESS_INITIAL_SOC']:.0%} SoC and can recharge from grid headroom. "
+        f"{N['BESS_INITIAL_SOC']:.0%} SoC and can recharge from grid "
+        "headroom; no SoC-floor workaround is needed. "
         "No turbines, solar or fuel cells are configured; the diesel block is "
         "disabled. The built-in PG&E Schedule B-20 TOU rates are selected with "
         f"the July calendar month; {N['GRID_PRICE_FALLBACK_MWH']} USD/MWh is "
@@ -520,9 +548,6 @@ def build_scenario() -> dict[str, object]:
         "turbine_units": [],
         "solar_rated_mw": N["ZERO_FLOAT"],
         "pue_base": N["PUE_BASE"],
-        "alpha_max": N["ALPHA_MAX"],
-        "dt_thermal_seconds": N["COOLING_DELAY_SECONDS"],
-        "tau_seconds": N["COOLING_TAU_SECONDS"],
         "non_gpu_load_profile_mw": profile,
         "diesel_power_block": {
             "enabled": False,
@@ -596,7 +621,13 @@ def main() -> None:
         if event["event_type"] == "starting"
     ]
     counts = Counter(event["scheduler_type"] for event in starts)
-    peak_mw, peak_time_s, above_cap_seconds = _estimate_nameplate_demand(
+    (
+        peak_mw,
+        peak_time_s,
+        above_cap_seconds,
+        sampled_demand,
+        afternoon_summary,
+    ) = _estimate_nameplate_demand(
         scenario["non_gpu_load_profile_mw"],
         scenario["workload_events"],
     )
@@ -624,6 +655,18 @@ def main() -> None:
                     "5-second nameplate estimate with PUE-inclusive job power "
                     "and per-job delayed alpha cooling; not a simulation result"
                 ),
+            },
+            sort_keys=True,
+        )
+    )
+    print(
+        "combined_demand_samples="
+        + json.dumps(
+            {
+                "at_02_00_mw": sampled_demand["overnight_02"],
+                "at_07_00_mw": sampled_demand["morning_07"],
+                "at_15_00_mw": sampled_demand["afternoon_15"],
+                "afternoon_13_00_to_17_00_mw": afternoon_summary,
             },
             sort_keys=True,
         )
