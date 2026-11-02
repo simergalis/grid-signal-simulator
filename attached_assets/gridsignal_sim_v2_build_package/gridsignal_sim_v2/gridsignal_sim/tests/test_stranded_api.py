@@ -66,6 +66,60 @@ def test_tc_str_09_rest_endpoint_matches_shared_compute_stranded_on_short_run(cl
     assert actual["reserve_policy"] == "fixed_3mw"
 
 
+class _ActiveTickSink:
+    def __init__(self, rows):
+        self.rows = rows
+
+    async def get_tick_dicts(self, run_id):
+        return self.rows
+
+
+class _ActiveRunManager:
+    def __init__(self, context):
+        self.context = context
+
+    def get_context(self, run_id):
+        return self.context
+
+    def get_completed(self, run_id):
+        return None
+
+
+def test_active_stranded_endpoint_returns_live_snapshot_from_run_sink(client):
+    """Active snapshots use the run's configured cap and shared helper."""
+    rows = [
+        {
+            "sim_time_seconds": 5.0 * tick,
+            "p_total_mw": 10.0 + tick,
+            "bess_output_mw": 0.0,
+            "p_unserved_mw": 0.0,
+        }
+        for tick in range(12)
+    ]
+    context = SimpleNamespace(
+        sink=_ActiveTickSink(rows),
+        sim_state=SimpleNamespace(
+            site=SimpleNamespace(grid_import_limit_mw=60.0),
+        ),
+    )
+    client.app.state.run_manager = _ActiveRunManager(context)
+
+    response = client.get(
+        "/runs/active-run/stranded?reserve_policy=fixed_3mw"
+    )
+
+    assert response.status_code == 200, response.text
+    expected = compute_stranded(
+        rows,
+        p_avail_mw=60.0,
+        reserve_policy="fixed_3mw",
+        tick_seconds=5.0,
+    )
+    expected["available"] = True
+    assert response.json() == expected
+    assert response.json()["series"]
+
+
 class _CompletedOnlyManager:
     def __init__(self, completed=None):
         self.completed = completed

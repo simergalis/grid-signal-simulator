@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { StrandedPowerPanel } from '../components/StrandedPowerPanel'
 
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 const availableResponse = {
@@ -59,7 +60,7 @@ describe('StrandedPowerPanel', () => {
       <StrandedPowerPanel runId="run-no-cap" scenario="uncapped-demo" />,
     )
 
-    expect(await screen.findByText('Stranded power')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Stranded power')).toBeInTheDocument())
     expect(screen.getByText(
       'No available-capacity basis defined for this scenario (no grid import cap). Stranded power is not computed.',
     )).toBeInTheDocument()
@@ -89,5 +90,41 @@ describe('StrandedPowerPanel', () => {
     })
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     expect(fetchMock.mock.calls[1][0]).toContain('reserve_policy=derate80')
+  })
+
+  it('polls the active run endpoint and replaces visible cumulative data', async () => {
+    vi.useFakeTimers()
+    let requestCount = 0
+    const fetchMock = vi.fn().mockImplementation(() => {
+      requestCount += 1
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          ...availableResponse,
+          energy_consumed_mwh: requestCount === 1 ? 1.2 : 2.4,
+          series: requestCount === 1
+            ? availableResponse.series
+            : [...availableResponse.series, { ...availableResponse.series[0], minute: 1, t_start_s: 60 }],
+        }),
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<StrandedPowerPanel runId="run-live-7" scenario="S11b" live />)
+
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(screen.getByText('1.2 MWh')).toBeInTheDocument()
+    expect(screen.getByTestId('live-power-status')).toHaveTextContent('LIVE · UPDATING')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0][0]).toBe('/runs/run-live-7/stranded?reserve_policy=fixed_3mw')
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000)
+      await Promise.resolve()
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(screen.getByText('2.4 MWh')).toBeInTheDocument()
+    expect(screen.getByTestId('panel-stranded-power')).toBeInTheDocument()
   })
 })

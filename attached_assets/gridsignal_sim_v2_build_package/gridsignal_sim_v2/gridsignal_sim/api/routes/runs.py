@@ -969,10 +969,9 @@ async def get_run_timeseries(
 @router.get(
     "/{run_id}/stranded",
     response_model=StrandedAvailableResponse | StrandedUnavailableResponse,
-    summary="Summarize available, reserve, recoverable and above-cap power",
+    summary="Summarize live or completed available, reserve, recoverable and above-cap power",
     responses={
-        404: {"description": "Run not found or not yet started"},
-        409: {"description": "Run is still active — tick replay data is not sealed"},
+        404: {"description": "Run not found or no longer available"},
         410: {"description": "Tick replay data unavailable after server restart"},
         422: {"description": "Unsupported reserve policy"},
     },
@@ -983,45 +982,47 @@ async def get_run_stranded(
     reserve_policy: Literal["none", "fixed_3mw", "pct10", "derate80"] = "fixed_3mw",
     manager: RunManager = Depends(_run_manager),
 ) -> StrandedAvailableResponse | StrandedUnavailableResponse:
-    """Compute the shared stranded summary and minute series for a completed run."""
-    if manager.get_context(run_id) is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Run {run_id!r} is still active; timeseries is not yet sealed",
-        )
-
-    completed = manager.get_completed(run_id)
-    if completed is None:
-        _db_completed = await _load_completed_from_db(run_id)
-        if _db_completed is not None:
+    """Compute the shared stranded summary from active or completed run ticks."""
+    active = manager.get_context(run_id)
+    if active is not None:
+        # Read from the run's configured sink so the live panel uses the same
+        # serialized tick rows and compute_stranded implementation as results.
+        tick_dicts = await active.sink.get_tick_dicts(run_id)
+        raw_cap = active.sim_state.site.grid_import_limit_mw
+        p_avail_mw = float(raw_cap) if raw_cap is not None else None
+    else:
+        completed = manager.get_completed(run_id)
+        if completed is None:
+            _db_completed = await _load_completed_from_db(run_id)
+            if _db_completed is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_410_GONE,
+                    detail=(
+                        f"Run {run_id!r} completed before the current server process started. "
+                        "The verdict is available via GET /runs/{run_id}/result, but "
+                        "tick-by-tick replay data is held in memory only and is not "
+                        "available after a server restart."
+                    ),
+                )
             raise HTTPException(
-                status_code=status.HTTP_410_GONE,
-                detail=(
-                    f"Run {run_id!r} completed before the current server process started. "
-                    "The verdict is available via GET /runs/{run_id}/result, but "
-                    "tick-by-tick replay data is held in memory only and is not "
-                    "available after a server restart."
-                ),
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id!r} not found",
             )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Run {run_id!r} not found",
-        )
 
-    # CompletedRun retains the scenario identity, while the ScenarioStore holds
-    # the validated spec used by the interactive run path. Direct job-id runs
-    # or deleted scenario records have no configured cap basis.
-    p_avail_mw = None
-    if completed.scenario_id:
-        scenario_store = request.app.state.scenario_store
-        scenario_record = scenario_store.get(completed.scenario_id)
-        if scenario_record is not None:
-            scenario_data = json.loads(scenario_record.spec_json)
-            raw_cap = scenario_data.get("grid_import_limit_mw")
-            p_avail_mw = float(raw_cap) if raw_cap is not None else None
+        tick_dicts = completed.tick_dicts
+        # CompletedRun retains the scenario identity, while the ScenarioStore
+        # holds the validated spec used by the interactive run path.
+        p_avail_mw = None
+        if completed.scenario_id:
+            scenario_store = request.app.state.scenario_store
+            scenario_record = scenario_store.get(completed.scenario_id)
+            if scenario_record is not None:
+                scenario_data = json.loads(scenario_record.spec_json)
+                raw_cap = scenario_data.get("grid_import_limit_mw")
+                p_avail_mw = float(raw_cap) if raw_cap is not None else None
 
     result = compute_stranded(
-        completed.tick_dicts,
+        tick_dicts,
         p_avail_mw=p_avail_mw,
         reserve_policy=reserve_policy,
         tick_seconds=TICK_INTERVAL_SIM_SECONDS,

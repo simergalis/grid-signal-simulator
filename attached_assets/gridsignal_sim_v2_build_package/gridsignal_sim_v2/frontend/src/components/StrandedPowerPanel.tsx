@@ -68,6 +68,8 @@ type StrandedResponse = StrandedAvailable | StrandedUnavailable
 interface Props {
   runId: string
   scenario: string
+  live?: boolean
+  paused?: boolean
 }
 
 const POLICY_OPTIONS: { value: ReservePolicy; label: string }[] = [
@@ -96,7 +98,7 @@ function clock(seconds: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
 }
 
-function SummaryTable({ data }: { data: StrandedAvailable }) {
+function SummaryTable({ data, live }: { data: StrandedAvailable; live: boolean }) {
   const rows: [string, string][] = [
     ['Energy consumed', `${fmt(data.energy_consumed_mwh)} MWh`],
     ['Energy available at the cap', `${fmt(data.energy_available_mwh)} MWh`],
@@ -113,7 +115,7 @@ function SummaryTable({ data }: { data: StrandedAvailable }) {
   return (
     <div className="min-w-[260px] rounded border border-border bg-surface px-3 py-2">
       <h3 className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">
-        Run summary
+        {live ? 'Live-to-date summary' : 'Run summary'}
       </h3>
       <dl className="space-y-1">
         {rows.map(([label, value]) => (
@@ -131,10 +133,12 @@ function AvailablePanel({
   data,
   runId,
   scenario,
+  live,
 }: {
   data: StrandedAvailable
   runId: string
   scenario: string
+  live: boolean
 }) {
   const { series, p_avail_mw: cap, p_res_mw: reserve } = data
   const bounds = useMemo(() => {
@@ -291,25 +295,29 @@ function AvailablePanel({
           Source: {scenario} run {runId}. Reserve {fmt(reserve)} MW is illustrative.
           {' '}Recoverable = stranded − reserve. Basis: facility demand, not grid import.
         </p>
-        <SummaryTable data={data} />
+        <SummaryTable data={data} live={live} />
       </div>
     </section>
   )
 }
 
-export function StrandedPowerPanel({ runId, scenario }: Props) {
+export function StrandedPowerPanel({ runId, scenario, live = false, paused = false }: Props) {
   const [reservePolicy, setReservePolicy] = useState<ReservePolicy>('fixed_3mw')
   const [state, setState] = useState<'loading' | 'error' | 'ready'>('loading')
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<StrandedResponse | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | null = null
+    let receivedData = false
+    let hasRequested = false
 
     async function load() {
-      setState('loading')
-      setError(null)
+      if (!hasRequested && !receivedData && !data) setState('loading')
+      hasRequested = true
       try {
         const response = await fetch(
           `/runs/${encodeURIComponent(runId)}/stranded?reserve_policy=${reservePolicy}`,
@@ -320,14 +328,18 @@ export function StrandedPowerPanel({ runId, scenario }: Props) {
         }
         const body = await response.json() as StrandedResponse
         if (!cancelled) {
+          receivedData = true
           setData(body)
           setState('ready')
+          setError(null)
         }
       } catch (cause) {
         if (!cancelled && !(cause instanceof DOMException && cause.name === 'AbortError')) {
           setError(String(cause))
-          setState('error')
+          if (!receivedData && !data) setState('error')
         }
+      } finally {
+        if (live && !paused && !cancelled) timer = setTimeout(load, 2000)
       }
     }
 
@@ -335,14 +347,26 @@ export function StrandedPowerPanel({ runId, scenario }: Props) {
     return () => {
       cancelled = true
       controller.abort()
+      if (timer) clearTimeout(timer)
     }
-  }, [reservePolicy, runId])
+  }, [reservePolicy, runId, live, paused, retryKey])
 
   if (state === 'loading') {
     return (
       <section className="rounded border border-border bg-background p-3" data-testid="panel-stranded-power">
-        <h2 className="font-mono text-sm font-semibold text-foreground">Stranded power</h2>
-        <p className="mt-2 font-mono text-xs text-muted">Loading stranded power…</p>
+        <div className="flex items-center gap-2">
+          <h2 className="font-mono text-sm font-semibold text-foreground">Stranded power</h2>
+          {live && (
+            <span data-testid="live-power-status" className="font-mono text-[9px] font-bold tracking-wider text-emerald-300">
+              {paused ? 'PAUSED' : 'LIVE · UPDATING'}
+            </span>
+          )}
+        </div>
+        <p className="mt-2 font-mono text-xs text-muted">
+          {live
+            ? paused ? 'Run paused · waiting for the first minute sample.' : 'Waiting for the first minute sample…'
+            : 'Loading stranded power…'}
+        </p>
       </section>
     )
   }
@@ -353,6 +377,15 @@ export function StrandedPowerPanel({ runId, scenario }: Props) {
         <h2 className="font-mono text-sm font-semibold text-foreground">Stranded power</h2>
         <p className="mt-2 font-mono text-xs text-red-400">Unable to load stranded power.</p>
         {error && <p className="mt-1 break-all font-mono text-[10px] text-muted">{error}</p>}
+        {live && <p className="mt-1 font-mono text-[10px] text-muted">Live updates retry every 2 seconds.</p>}
+        <button
+          type="button"
+          className="mt-2 rounded border border-border px-2 py-1 font-mono text-[10px] text-foreground hover:border-accent"
+          onClick={() => { setState('loading'); setRetryKey(value => value + 1) }}
+          data-testid="button-retry-stranded"
+        >
+          Retry
+        </button>
       </section>
     )
   }
@@ -373,7 +406,19 @@ export function StrandedPowerPanel({ runId, scenario }: Props) {
   return (
     <div className="space-y-2">
       <section className="flex items-center justify-between gap-3 rounded border border-border bg-background px-3 py-2">
-        <h2 className="font-mono text-sm font-semibold text-foreground">Stranded power</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="font-mono text-sm font-semibold text-foreground">Stranded power</h2>
+          {live && (
+            <span
+              data-testid="live-power-status"
+              className={`rounded border px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider ${
+                paused ? 'border-amber-500/40 text-amber-300' : 'border-emerald-500/40 text-emerald-300'
+              }`}
+            >
+              {paused ? 'PAUSED' : 'LIVE · UPDATING'}
+            </span>
+          )}
+        </div>
         <label className="flex items-center gap-2 font-mono text-[11px] text-muted">
           Reserve policy
           <select
@@ -389,7 +434,16 @@ export function StrandedPowerPanel({ runId, scenario }: Props) {
           </select>
         </label>
       </section>
-      <AvailablePanel data={data} runId={runId} scenario={scenario} />
+      {live && (
+        <p className="px-1 font-mono text-[10px] text-muted" data-testid="live-power-update-note">
+          {paused
+            ? 'Run paused · last received minute retained; polling resumes when the run resumes.'
+            : error
+              ? 'Update delayed · retaining the last received data and retrying.'
+              : 'Cumulative run-to-date statistics · refreshes every 2 seconds while active.'}
+        </p>
+      )}
+      <AvailablePanel data={data} runId={runId} scenario={scenario} live={live} />
     </div>
   )
 }
