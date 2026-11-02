@@ -58,7 +58,9 @@ STUDY_CLASS_BASE_DEMO = "base_demo"
 SUPER_CLOUD_REPLAY_SCENARIO_ID = "S10_mit_supercloud_2021-08-11"
 S11_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11_mit_supercloud_2021-08-11_bchydro"
 S11B_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11b_mit_supercloud_2021-08-11_bchydro_60mw"
+PROXIM8_SCENARIO_ID = "proxim8-5mw-24h"
 STUDY_CLASS_SUPERCLOUD_REPLAY = "supercloud_replay"
+STUDY_CLASS_SCENARIO_JSON = "scenario_json"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
 # PROPOSED_HERE: bump the identity contract because synthetic submit times,
 # the queue rule, empirical CDF, cap, and resolved seed now determine the
@@ -93,6 +95,8 @@ def study_class_for_scenario(scenario_id: str) -> str:
         S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
     ):
         return STUDY_CLASS_SUPERCLOUD_REPLAY
+    if scenario_id == PROXIM8_SCENARIO_ID:
+        return STUDY_CLASS_SCENARIO_JSON
     raise UnsupportedScenarioError(
         scenario_id=scenario_id,
         supported_ids=[
@@ -101,6 +105,7 @@ def study_class_for_scenario(scenario_id: str) -> str:
             SUPER_CLOUD_REPLAY_SCENARIO_ID,
             S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
             S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
+            PROXIM8_SCENARIO_ID,
         ],
     )
 
@@ -375,6 +380,15 @@ class StudyRunExecutor:
             )
             # IMPL-ISL-25 / IMPL-S11-06: load this scenario's own tracked
             # inputs; authored fuel and operating-cost blocks are not overlays.
+            spec = _canonical_scenario_spec(scenario_path)
+        elif study_class == STUDY_CLASS_SCENARIO_JSON:
+            scenario_path = (
+                Path(__file__).resolve().parents[1]
+                / "config"
+                / "scenarios"
+                / f"{scenario_id}.json"
+            )
+            # Proxim8 is a tracked scenario JSON with no class-specific overlay.
             spec = _canonical_scenario_spec(scenario_path)
         else:
             base_path = (

@@ -61,9 +61,9 @@ def test_mcp_tools_are_reachable_over_streamable_http(
         assert initialized.json()["result"]["capabilities"]["tools"] == {}
 
         scenarios = _call(client, "list_scenarios", {}, READ_TOKEN)
-        # IMPL-S11-002 adds S11b after S11 in the study scenarios.
-        assert scenarios["scenarios"]["total"] == 8
-        assert scenarios["scenarios"]["returned"] == 8
+        # Proxim8 is an additive JSON-backed MCP scenario.
+        assert scenarios["scenarios"]["total"] == 9
+        assert scenarios["scenarios"]["returned"] == 9
         assert scenarios["scenarios"]["has_more"] is False
 
         metrics = _call(
@@ -172,8 +172,8 @@ def test_run_token_can_discover_read_tools_for_one_connector(
         assert {"get_scenario", "start_run"} <= tool_names
 
         scenarios = _call(client, "list_scenarios", {}, RUN_TOKEN)
-        # IMPL-S11-002 adds S11b as the eighth additive MCP study-list entry.
-        assert scenarios["scenarios"]["total"] == 8
+        # Proxim8 is the ninth additive MCP study-list entry.
+        assert scenarios["scenarios"]["total"] == 9
 
 
 def test_mcp_cache_hit_and_build_parity_error(
@@ -422,7 +422,7 @@ def _wait_for_run(client: TestClient, run_id: str) -> dict:
     pytest.fail(f"run {run_id} did not finish within 90 seconds")
 
 
-def test_tc160_list_scenarios_marks_all_eight_study_scenarios(
+def test_tc160_list_scenarios_marks_all_nine_study_scenarios(
     monkeypatch,
 ) -> None:
     monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
@@ -430,8 +430,8 @@ def test_tc160_list_scenarios_marks_all_eight_study_scenarios(
     with TestClient(app) as client:
         result = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
 
-        # IMPL-S11-002: the existing entries keep their positions; S11b follows S11.
-        assert result["total"] == result["returned"] == 8
+        # Existing entries keep their positions; Proxim8 follows S11b.
+        assert result["total"] == result["returned"] == 9
         by_id = {item["scenario_id"]: item for item in result["items"]}
         assert set(by_id) == set(server_module.STUDY_SCENARIOS)
         assert all(item["study_supported"] is True for item in by_id.values())
