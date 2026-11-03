@@ -85,6 +85,9 @@ describe('StrandedPowerPanel', () => {
     expect(screen.getByText('Recoverable (stranded above reserve)')).toBeInTheDocument()
     expect(screen.getByText('Above cap, BESS-covered')).toBeInTheDocument()
     expect(screen.getByText('Above cap, unserved')).toBeInTheDocument()
+    const legend = screen.getByTestId('stranded-chart-legend')
+    expect(legend).toHaveAttribute('data-order', 'bottom-to-top')
+    expect(legend).toHaveClass('flex-col-reverse')
     fireEvent.change(screen.getByLabelText('Reserve policy'), {
       target: { value: 'derate80' },
     })

@@ -192,102 +192,109 @@ function AvailablePanel({
         </div>
       </div>
 
-      <div className="h-[300px] min-w-0">
-        {series.length === 0 ? (
-          <div className="flex h-full items-center justify-center font-mono text-xs text-muted">
-            No minute samples available.
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={series} margin={{ top: 20, right: 28, bottom: 18, left: 8 }}>
-              <CartesianGrid stroke="#30363d" strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey="t_start_s"
-                type="number"
-                domain={[bounds.start, bounds.end]}
-                ticks={bounds.xTicks}
-                tickFormatter={clock}
-                tick={{ fill: '#8b949e', fontSize: 10, fontFamily: 'monospace' }}
-                label={{
-                  value: 'Replay clock (hh:mm)',
-                  position: 'insideBottom',
-                  offset: -10,
-                  fill: '#8b949e',
-                  fontSize: 10,
-                }}
-              />
-              <YAxis
-                domain={[0, bounds.yMax]}
-                ticks={bounds.yTicks}
-                tickFormatter={fmt}
-                tick={{ fill: '#8b949e', fontSize: 10, fontFamily: 'monospace' }}
-                label={{ value: 'MW', angle: -90, position: 'insideLeft', fill: '#8b949e', fontSize: 10 }}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: '#161b22',
-                  border: '1px solid #30363d',
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                }}
-                labelFormatter={value => typeof value === 'number' ? clock(value) : ''}
-                formatter={(value: number, name: string) => [`${fmt(value)} MW`, name]}
-              />
-              <ReferenceLine
-                y={cap}
-                stroke="#000000"
-                strokeWidth={2}
-                label={{ value: `Import cap ${fmt(cap)} MW`, position: 'insideTopRight', fill: '#111827', fontSize: 10 }}
-              />
-              <ReferenceLine
-                y={cap - reserve}
-                stroke="#d2d8de"
-                strokeDasharray="5 4"
-                strokeWidth={1.5}
-                label={{
-                  value: `Safe limit ${fmt(cap - reserve)} MW (${fmt(reserve)} MW reserve, illustrative)`,
-                  position: 'insideTopLeft',
-                  fill: '#d2d8de',
-                  fontSize: 10,
-                }}
-              />
-              {LAYERS.map(layer => (
-                <Area
-                  key={layer.key}
-                  type="stepAfter"
-                  dataKey={layer.key}
-                  stackId="power"
-                  stroke={layer.color}
-                  fill={layer.color}
-                  fillOpacity={layer.key === 'above_cap_bess_mw' ? 0.45 : 0.9}
-                  isAnimationActive={false}
-                  name={layer.label}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="h-[300px] min-w-0">
+          {series.length === 0 ? (
+            <div className="flex h-full items-center justify-center font-mono text-xs text-muted">
+              No minute samples available.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={series} margin={{ top: 20, right: 28, bottom: 18, left: 8 }}>
+                <CartesianGrid stroke="#30363d" strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="t_start_s"
+                  type="number"
+                  domain={[bounds.start, bounds.end]}
+                  ticks={bounds.xTicks}
+                  tickFormatter={clock}
+                  tick={{ fill: '#8b949e', fontSize: 10, fontFamily: 'monospace' }}
+                  label={{
+                    value: 'Replay clock (hh:mm)',
+                    position: 'insideBottom',
+                    offset: -10,
+                    fill: '#8b949e',
+                    fontSize: 10,
+                  }}
                 />
-              ))}
-              <Line
-                type="monotone"
-                dataKey="demand_max_mw"
-                stroke="#f0f3f6"
-                strokeWidth={1.4}
-                dot={false}
-                isAnimationActive={false}
-                name="Demand peak"
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+                <YAxis
+                  domain={[0, bounds.yMax]}
+                  ticks={bounds.yTicks}
+                  tickFormatter={fmt}
+                  tick={{ fill: '#8b949e', fontSize: 10, fontFamily: 'monospace' }}
+                  label={{ value: 'MW', angle: -90, position: 'insideLeft', fill: '#8b949e', fontSize: 10 }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: '#161b22',
+                    border: '1px solid #30363d',
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                  }}
+                  labelFormatter={value => typeof value === 'number' ? clock(value) : ''}
+                  formatter={(value: number, name: string) => [`${fmt(value)} MW`, name]}
+                />
+                <ReferenceLine
+                  y={cap}
+                  stroke="#000000"
+                  strokeWidth={2}
+                  label={{ value: `Import cap ${fmt(cap)} MW`, position: 'insideTopRight', fill: '#111827', fontSize: 10 }}
+                />
+                <ReferenceLine
+                  y={cap - reserve}
+                  stroke="#d2d8de"
+                  strokeDasharray="5 4"
+                  strokeWidth={1.5}
+                  label={{
+                    value: `Safe limit ${fmt(cap - reserve)} MW (${fmt(reserve)} MW reserve, illustrative)`,
+                    position: 'insideTopLeft',
+                    fill: '#d2d8de',
+                    fontSize: 10,
+                  }}
+                />
+                {LAYERS.map(layer => (
+                  <Area
+                    key={layer.key}
+                    type="stepAfter"
+                    dataKey={layer.key}
+                    stackId="power"
+                    stroke={layer.color}
+                    fill={layer.color}
+                    fillOpacity={layer.key === 'above_cap_bess_mw' ? 0.45 : 0.9}
+                    isAnimationActive={false}
+                    name={layer.label}
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey="demand_max_mw"
+                  stroke="#f0f3f6"
+                  strokeWidth={1.4}
+                  dot={false}
+                  isAnimationActive={false}
+                  name="Demand peak"
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+        </div>
 
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted" aria-label="Chart legend">
-        {LAYERS.map(layer => (
-          <span key={layer.key} className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: layer.color }} />
-            {layer.label}
+        <div
+          className="flex flex-col-reverse justify-between gap-2 py-3 text-[10px] text-muted"
+          aria-label="Chart legend"
+          data-testid="stranded-chart-legend"
+          data-order="bottom-to-top"
+        >
+          {LAYERS.map(layer => (
+            <span key={layer.key} className="inline-flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: layer.color }} />
+              {layer.label}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-px w-4 shrink-0 bg-white" /> Demand peak
           </span>
-        ))}
-        <span className="inline-flex items-center gap-1.5">
-          <span className="h-px w-4 bg-white" /> Demand peak
-        </span>
+        </div>
       </div>
 
       <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
