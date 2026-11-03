@@ -1,0 +1,247 @@
+{
+  "bess_soc_final": 0.95,
+  "bess_soc_max": 0.95,
+  "bess_soc_min": 0.95,
+  "commitment": {
+    "distinct_event_count": 0,
+    "log_complete": true,
+    "omitted_record_count": 0,
+    "reserve_floor_distinct_event_count": 0,
+    "reserve_floor_log_complete": true,
+    "reserve_floor_omitted_record_count": 0,
+    "reserve_floor_refusal_count": 0,
+    "reserve_floor_suppressed_repeat_count": 0,
+    "reserve_floor_visible_distinct_event_count": 0,
+    "same_unit_restart_within_min_down_window_count": 0,
+    "suppressed_repeat_count": 0,
+    "visible_distinct_event_count": 0
+  },
+  "compute_trace_count": 17280,
+  "compute_trace_sha256": "50d172984ee162e50ed8444e22111225e5cebd97db1f67a87a86e626a6026008",
+  "constraints_valid": true,
+  "daily_breakdown": [
+    {
+      "bess_soc_end": 0.95,
+      "curtailed_mwh": 0.0,
+      "day": 1,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 0.0,
+        "no_load_fuel_mmbtu": 0.0,
+        "start_fuel_mmbtu": 0.0
+      },
+      "fuel_mmbtu": 0.0,
+      "kind": "weekday",
+      "unserved_mwh": 0.0
+    }
+  ],
+  "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {},
+  "dispatch_curtailment_attributable_fuel_mmbtu": 0,
+  "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {},
+  "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {},
+  "dispatch_curtailment_interval_exposure_fuel_mmbtu": 0,
+  "dispatch_curtailment_mwh": 0.0,
+  "energy_balance": {
+    "closure_status": true,
+    "max_abs_physical_ledger_defect_mw": 0.0,
+    "served_demand_mwh": 53.688917382,
+    "unserved_demand_mwh": 0.0
+  },
+  "forecast": {
+    "miss_count": 0,
+    "miss_peak_mw": 0.0
+  },
+  "frequency_feedback_configured": false,
+  "fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 0,
+    "load_fuel_mmbtu": 0,
+    "no_load_fuel_mmbtu": 0,
+    "start_fuel_mmbtu": 0
+  },
+  "fuel_reconciled": true,
+  "hard_violations": [],
+  "interval_seconds": 5.0,
+  "invalid_frequency_fraction": 0.0,
+  "invalid_frequency_tick_count": 0,
+  "operating_cost": {
+    "cost_per_mwh_it_load_usd": null,
+    "cost_per_mwh_served_usd": null,
+    "currency": "USD",
+    "currency_year": "2026 USD",
+    "currency_year_provenance": "PROPOSED_HERE: PG&E B-20 rates are in USD; the flat grid price is the operating-cost fallback.",
+    "denominators": {
+      "it_load_mwh": 44.842887222,
+      "served_mwh": 53.688902917
+    },
+    "lines": [
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "turbine_gas_fuel",
+        "label": "Turbine gas fuel",
+        "provenance": {
+          "price": "Not configured; no value is priced.",
+          "quantity": "Quantity unavailable: all turbine fuel quantities and heat-rate bases are required."
+        },
+        "quantity": null,
+        "quantity_unit": "MMBtu (basis unknown)",
+        "unit_price": null,
+        "unit_price_unit": "USD/MMBtu (basis unknown)"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "diesel_fuel",
+        "label": "Diesel fuel",
+        "provenance": {
+          "price": "Not configured because the diesel block is disabled.",
+          "quantity": "Diesel fleet fuel-tank consumption delta; null when no diesel fleet is configured."
+        },
+        "quantity": 0.0,
+        "quantity_unit": "gal",
+        "unit_price": null,
+        "unit_price_unit": "USD/gal"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "turbine_variable_om",
+        "label": "Turbine variable O&M",
+        "provenance": {
+          "price": "Not configured; no value is priced.",
+          "quantity": "Integrated measured turbine output."
+        },
+        "quantity": 0.0,
+        "quantity_unit": "MWh",
+        "unit_price": null,
+        "unit_price_unit": "USD/MWh"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "turbine_fixed_om",
+        "label": "Turbine fixed O&M allocation",
+        "provenance": {
+          "price": "Not configured; no value is priced.",
+          "quantity": "Rated turbine kW \u00d7 run hours / 8,760 hours/year."
+        },
+        "quantity": 0.0,
+        "quantity_unit": "kW-year",
+        "unit_price": null,
+        "unit_price_unit": "USD/kW-year"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "turbine_nonfuel_start",
+        "label": "Turbine non-fuel start charge",
+        "provenance": {
+          "price": "Not configured; no value is priced.",
+          "quantity": "Completed-run turbine start counter; excludes start fuel, priced in the gas line."
+        },
+        "quantity": 0.0,
+        "quantity_unit": "starts",
+        "unit_price": null,
+        "unit_price_unit": "USD/start"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "bess_degradation",
+        "label": "BESS degradation",
+        "provenance": {
+          "price": "Not configured; no value is priced.",
+          "quantity": "PROPOSED_HERE: sum of absolute signed BESS AC output over ticks."
+        },
+        "quantity": 0.0,
+        "quantity_unit": "MWh AC throughput",
+        "unit_price": null,
+        "unit_price_unit": "USD/MWh"
+      },
+      {
+        "amount_usd": null,
+        "conversion_factor": null,
+        "conversion_note": null,
+        "key": "unserved_energy",
+        "label": "Unserved-energy value",
+        "provenance": {
+          "price": "Not configured; no value is priced.",
+          "quantity": "Integrated D7 unserved-load telemetry."
+        },
+        "quantity": 0.0,
+        "quantity_unit": "MWh",
+        "unit_price": null,
+        "unit_price_unit": "USD/MWh"
+      }
+    ],
+    "total_excludes": [
+      {
+        "key": "turbine_gas_fuel",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "diesel_fuel",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "turbine_variable_om",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "turbine_fixed_om",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "turbine_nonfuel_start",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "bess_degradation",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "unserved_energy",
+        "reason": "quantity or unit price is null"
+      },
+      {
+        "key": "grid_import",
+        "reason": "no operating-cost tariff input is configured"
+      },
+      {
+        "key": "fuel_cell_fuel",
+        "reason": "the requested gas line prices turbine fuel only"
+      },
+      {
+        "key": "solar_or_ppa",
+        "reason": "no source-specific contract input is configured"
+      },
+      {
+        "key": "cooling_labor_and_other_site_om",
+        "reason": "outside this energy-only input block"
+      }
+    ],
+    "total_includes": [],
+    "total_usd": null
+  },
+  "peak_unserved_mw": 0.0,
+  "protection_configured": true,
+  "served_mwh": 53.688917382,
+  "start_fuel_reconciliation": {
+    "measured_event_count": 0,
+    "measured_start_fuel_mmbtu": 0,
+    "passed": true,
+    "recorded_event_count": 0,
+    "release_charged": true,
+    "tier_sum_mmbtu": null
+  },
+  "tick_count": 17280,
+  "turbine_fuel_mmbtu": 0,
+  "unserved_intervals": [],
+  "unserved_mwh": 0.0
+}
