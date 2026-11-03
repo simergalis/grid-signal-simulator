@@ -39,6 +39,12 @@ def test_proxim8_scenario_loads_with_requested_scheduler_counts() -> None:
     assert spec.end_sim_time == 86400
     assert spec.grid_import_limit_mw == 5.0
     assert counts == {"SLURM": 10, "K8S": 1000, "RAY": 10000}
+    assert any(
+        event.scheduler_type == "K8S"
+        and event.event_type == "starting"
+        and event.timestamp == 0.0
+        for event in spec.workload_events
+    )
     assert all(
         event.cluster_id and event.workload_class
         for event in spec.workload_events

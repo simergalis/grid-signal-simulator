@@ -96,6 +96,7 @@ N = {
     "SLURM_MAX_HOURS": 8,  # PROPOSED_HERE: requested maximum training duration.
     "SLURM_OVERNIGHT_COUNT": 3,  # PROPOSED_HERE: three overnight and seven evening starts.
     "K8S_COUNT": 1000,  # PROPOSED_HERE: requested inference-session count.
+    "K8S_MIDNIGHT_CARRYOVER_COUNT": 5,  # PROPOSED_HERE: five K8S sessions model 24/7 inference carry-over from the previous day.
     "K8S_DOUBLE_SHARE": 0.10,  # PROPOSED_HERE: requested approximate ten-percent two-node share.
     "K8S_MIN_MINUTES": 5,  # PROPOSED_HERE: requested shortest inference session.
     "K8S_MAX_MINUTES": 60,  # PROPOSED_HERE: requested longest inference session.
@@ -265,7 +266,16 @@ def _make_events() -> list[dict[str, object]]:
         first_s = _hour(first_hour)
         last_s = _hour(last_hour)
         for _ in range(group_count):
-            start_s = rng.randrange(first_s, last_s, N["TICK_SECONDS"])
+            sampled_start_s = rng.randrange(first_s, last_s, N["TICK_SECONDS"])
+            if (
+                window_name == "overnight"
+                and k8s_index < N["K8S_MIDNIGHT_CARRYOVER_COUNT"]
+            ):
+                # Keep the seeded draw above so all other generated fields
+                # remain reproducible; move only selected overnight starts.
+                start_s = N["ZERO"]
+            else:
+                start_s = sampled_start_s
             min_duration = (
                 N["K8S_PEAK_MIN_MINUTES"]
                 if window_name == "afternoon"
@@ -486,7 +496,10 @@ def _description() -> str:
         f"{N['K8S_COUNT']:,} Kubernetes inference sessions serving Mistral and "
         f"Cohere LLMs, and {N['RAY_COUNT']:,} short Ray agentic API calls; all use "
         "hopper_8gpu_air. The seeded workload generator uses seed "
-        f"{N['SEED']}. Physical sizing, workload timing, BESS sizing, office PUE, "
+        f"{N['SEED']}. DR-2026-11-02-PROXIM8-MIDNIGHT (PROPOSED_HERE): "
+        f"{N['K8S_MIDNIGHT_CARRYOVER_COUNT']} overnight Kubernetes sessions start "
+        "at midnight as 24/7 inference carry-over from the previous day. "
+        "Physical sizing, workload timing, BESS sizing, office PUE, "
         "building curve and diesel placeholder are PROPOSED_HERE, illustrative "
         "assumptions rather than measured Proxim8 data. "
         "DR-2026-11-02-PROXIM8-COOLING (PROPOSED_HERE): "

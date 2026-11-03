@@ -1,8 +1,85 @@
 {
   "name": "Proxim8",
-  "description": "Proxim8 is an illustrative 24-hour distributed-inference site in an existing Campbell, California office building sharing a PG&E service with t=0 at local midnight on a business weekday, capped at 5.0 MW. It has 10 Slurm training jobs, 1,000 Kubernetes inference sessions serving Mistral and Cohere LLMs, and 10,000 short Ray agentic API calls; all use hopper_8gpu_air. The seeded workload generator uses seed 20261102. Physical sizing, workload timing, BESS sizing, office PUE, building curve and diesel placeholder are PROPOSED_HERE, illustrative assumptions rather than measured Proxim8 data. DR-2026-11-02-PROXIM8-COOLING (PROPOSED_HERE): non_gpu_load_profile_mw is building non-HVAC electricity (lighting, elevators and tenant plug loads); the existing engine cooling envelope adds modelled HVAC on top without changing alpha_max or other cooling parameters. The curve is scaled using the actual steady-state relation input + alpha_max × lagged input, so at alpha_max=0.2 its input is target/(1+alpha_max): about 0.7 MW total overnight, ramping 6:00–9:00, about 1.6 MW 13:00–17:00, and 0.8 MW by 21:00. A 1.0 MW / 2.0 MWh grid-forming BESS starts at 95% SoC and can recharge from grid headroom; no SoC-floor workaround is needed. No turbines, solar or fuel cells are configured; the diesel block is disabled. The built-in PG&E Schedule B-20 TOU rates are selected with the July calendar month; 114.82 USD/MWh is the flat operating-cost fallback.",
+  "description": "Proxim8 is an illustrative 24-hour distributed-inference site in an existing Campbell, California office building sharing a PG&E service with t=0 at local midnight on a business weekday, capped at 5.0 MW. It has 10 Slurm training jobs, 1,000 Kubernetes inference sessions serving Mistral and Cohere LLMs, and 10,000 short Ray agentic API calls; all use hopper_8gpu_air. The seeded workload generator uses seed 20261102. DR-2026-11-02-PROXIM8-MIDNIGHT (PROPOSED_HERE): 5 overnight Kubernetes sessions start at midnight as 24/7 inference carry-over from the previous day. Physical sizing, workload timing, BESS sizing, office PUE, building curve and diesel placeholder are PROPOSED_HERE, illustrative assumptions rather than measured Proxim8 data. DR-2026-11-02-PROXIM8-COOLING (PROPOSED_HERE): non_gpu_load_profile_mw is building non-HVAC electricity (lighting, elevators and tenant plug loads); the existing engine cooling envelope adds modelled HVAC on top without changing alpha_max or other cooling parameters. The curve is scaled using the actual steady-state relation input + alpha_max × lagged input, so at alpha_max=0.2 its input is target/(1+alpha_max): about 0.7 MW total overnight, ramping 6:00–9:00, about 1.6 MW 13:00–17:00, and 0.8 MW by 21:00. A 1.0 MW / 2.0 MWh grid-forming BESS starts at 95% SoC and can recharge from grid headroom; no SoC-floor workaround is needed. No turbines, solar or fuel cells are configured; the diesel block is disabled. The built-in PG&E Schedule B-20 TOU rates are selected with the July calendar month; 114.82 USD/MWh is the flat operating-cost fallback.",
   "site_name": "Proxim8 distributed-inference site, Campbell, CA",
   "workload_events": [
+    {
+      "job_id": "k8s-inf-cohere-command-r-0005",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-cohere-command-r-0005-start",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1
+    },
+    {
+      "job_id": "k8s-inf-mistral-large-2-0001",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-mistral-large-2-0001-start",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1
+    },
+    {
+      "job_id": "k8s-inf-mixtral-8x22b-0002",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-mixtral-8x22b-0002-start",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1
+    },
+    {
+      "job_id": "k8s-inf-mixtral-8x22b-0003",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-mixtral-8x22b-0003-start",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1
+    },
+    {
+      "job_id": "k8s-inf-mixtral-8x22b-0004",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-mixtral-8x22b-0004-start",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 2
+    },
+    {
+      "job_id": "k8s-inf-mixtral-8x22b-0002",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-mixtral-8x22b-0002-end",
+      "event_type": "job_end",
+      "timestamp": 660.0,
+      "node_count": 0
+    },
+    {
+      "job_id": "k8s-inf-mixtral-8x22b-0003",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-mixtral-8x22b-0003-end",
+      "event_type": "job_end",
+      "timestamp": 960.0,
+      "node_count": 0
+    },
     {
       "job_id": "k8s-inf-mistral-large-2-0036",
       "scheduler_type": "K8S",
@@ -48,6 +125,28 @@
       "node_count": 0
     },
     {
+      "job_id": "k8s-inf-mistral-large-2-0001",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-mistral-large-2-0001-end",
+      "event_type": "job_end",
+      "timestamp": 2160.0,
+      "node_count": 0
+    },
+    {
+      "job_id": "k8s-inf-cohere-command-r-0005",
+      "scheduler_type": "K8S",
+      "cluster_id": "proxim8-k8s",
+      "workload_class": "inference",
+      "hardware_profile_id": "hopper_8gpu_air",
+      "event_id": "k8s-inf-cohere-command-r-0005-end",
+      "event_type": "job_end",
+      "timestamp": 3060.0,
+      "node_count": 0
+    },
+    {
       "job_id": "k8s-inf-mistral-large-2-0014",
       "scheduler_type": "K8S",
       "cluster_id": "proxim8-k8s",
@@ -59,25 +158,14 @@
       "node_count": 1
     },
     {
-      "job_id": "k8s-inf-mixtral-8x22b-0002",
+      "job_id": "k8s-inf-mixtral-8x22b-0004",
       "scheduler_type": "K8S",
       "cluster_id": "proxim8-k8s",
       "workload_class": "inference",
       "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mixtral-8x22b-0002-start",
-      "event_type": "starting",
-      "timestamp": 3760.0,
-      "node_count": 1
-    },
-    {
-      "job_id": "k8s-inf-mixtral-8x22b-0002",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mixtral-8x22b-0002-end",
+      "event_id": "k8s-inf-mixtral-8x22b-0004-end",
       "event_type": "job_end",
-      "timestamp": 4420.0,
+      "timestamp": 3300.0,
       "node_count": 0
     },
     {
@@ -167,17 +255,6 @@
       "event_type": "job_end",
       "timestamp": 6290.0,
       "node_count": 0
-    },
-    {
-      "job_id": "k8s-inf-cohere-command-r-0005",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-cohere-command-r-0005-start",
-      "event_type": "starting",
-      "timestamp": 6565.0,
-      "node_count": 1
     },
     {
       "job_id": "k8s-inf-cohere-command-r-0017",
@@ -312,17 +389,6 @@
       "node_count": 0
     },
     {
-      "job_id": "k8s-inf-mixtral-8x22b-0003",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mixtral-8x22b-0003-start",
-      "event_type": "starting",
-      "timestamp": 9160.0,
-      "node_count": 1
-    },
-    {
       "job_id": "k8s-inf-mistral-large-2-0018",
       "scheduler_type": "K8S",
       "cluster_id": "proxim8-k8s",
@@ -356,17 +422,6 @@
       "node_count": 0
     },
     {
-      "job_id": "k8s-inf-cohere-command-r-0005",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-cohere-command-r-0005-end",
-      "event_type": "job_end",
-      "timestamp": 9625.0,
-      "node_count": 0
-    },
-    {
       "job_id": "k8s-inf-mistral-large-2-0045",
       "scheduler_type": "K8S",
       "cluster_id": "proxim8-k8s",
@@ -375,17 +430,6 @@
       "event_id": "k8s-inf-mistral-large-2-0045-end",
       "event_type": "job_end",
       "timestamp": 9795.0,
-      "node_count": 0
-    },
-    {
-      "job_id": "k8s-inf-mixtral-8x22b-0003",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mixtral-8x22b-0003-end",
-      "event_type": "job_end",
-      "timestamp": 10120.0,
       "node_count": 0
     },
     {
@@ -552,17 +596,6 @@
       "event_type": "starting",
       "timestamp": 13600.0,
       "node_count": 1
-    },
-    {
-      "job_id": "k8s-inf-mixtral-8x22b-0004",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mixtral-8x22b-0004-start",
-      "event_type": "starting",
-      "timestamp": 13705.0,
-      "node_count": 2
     },
     {
       "job_id": "k8s-inf-cohere-command-r-0009",
@@ -807,17 +840,6 @@
       "node_count": 1
     },
     {
-      "job_id": "k8s-inf-mixtral-8x22b-0004",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mixtral-8x22b-0004-end",
-      "event_type": "job_end",
-      "timestamp": 17005.0,
-      "node_count": 0
-    },
-    {
       "job_id": "k8s-inf-mixtral-8x22b-0030",
       "scheduler_type": "K8S",
       "cluster_id": "proxim8-k8s",
@@ -1014,17 +1036,6 @@
       "event_type": "job_end",
       "timestamp": 20530.0,
       "node_count": 0
-    },
-    {
-      "job_id": "k8s-inf-mistral-large-2-0001",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mistral-large-2-0001-start",
-      "event_type": "starting",
-      "timestamp": 20580.0,
-      "node_count": 1
     },
     {
       "job_id": "k8s-inf-cohere-command-r-0046",
@@ -3390,17 +3401,6 @@
       "event_type": "starting",
       "timestamp": 22620.0,
       "node_count": 1
-    },
-    {
-      "job_id": "k8s-inf-mistral-large-2-0001",
-      "scheduler_type": "K8S",
-      "cluster_id": "proxim8-k8s",
-      "workload_class": "inference",
-      "hardware_profile_id": "hopper_8gpu_air",
-      "event_id": "k8s-inf-mistral-large-2-0001-end",
-      "event_type": "job_end",
-      "timestamp": 22740.0,
-      "node_count": 0
     },
     {
       "job_id": "k8s-inf-cohere-command-r-0060",
