@@ -4487,6 +4487,1350 @@
       },
       "record_path": "records/8b6a71123e6c7ea24452f96e63da5bade985a26e05a6b013f4cd03f0feec9097.json",
       "record_size_bytes": 36876
+    },
+    "9636a16a86dc983f6430fc2bee01af0cc1cabf572a3795918b109027b08b6cc8": {
+      "identity": {
+        "duration_seconds": 86400.0,
+        "engine_commit": "70dcc601d3b3d82a5a964909204d381c9d22c934",
+        "harness_commit": "70dcc601d3b3d82a5a964909204d381c9d22c934",
+        "mode": "baseline",
+        "parameter_set": {
+          "alpha_max": 0.2,
+          "ambient_steps": [],
+          "anchor_reserve_pct": 0.0,
+          "assertions": [],
+          "band_enabled": false,
+          "band_mult_uncalibrated": 2.0,
+          "band_mult_unmapped_hw": 1.5,
+          "band_pct_calibrated": 0.0,
+          "base_load_mw": null,
+          "bess_bridging_floor_anchor_multiple": 2.0,
+          "bess_bridging_floor_fraction": 0.15,
+          "bess_catchup_bridge_margin": 0.8,
+          "bess_catchup_slope_window_s": 15.0,
+          "bess_catchup_sustain_s": 30.0,
+          "bess_charge_price_override_per_mwh": null,
+          "bess_material_discharge_fraction": 0.05,
+          "bess_material_discharge_min_mw": 1.0,
+          "bess_normal_dispatch_depth_fraction": 0.0,
+          "bess_units": [
+            {
+              "asset_id": "bess-proxim8",
+              "authority_tier": "autonomous",
+              "grid_forming": true,
+              "initial_soc_fraction": 0.95,
+              "p_anchor_reserve_mw": 0.1,
+              "rated_mw": 1.0,
+              "usable_mwh": 2.0
+            }
+          ],
+          "calibrated": false,
+          "cascade_commit_fraction": null,
+          "cluster_gen_config": null,
+          "default_playback_speed": 1.0,
+          "demo_description": "",
+          "description": "Proxim8 is an illustrative 24-hour distributed-inference site in an existing Campbell, California office building sharing a PG&E service with t=0 at local midnight on a business weekday, capped at 5.0 MW. It has 10 Slurm training jobs, 1,000 Kubernetes inference sessions serving Mistral and Cohere LLMs, and 10,000 short Ray agentic API calls; all use hopper_8gpu_air. The seeded workload generator uses seed 20261102. DR-2026-11-02-PROXIM8-MIDNIGHT (PROPOSED_HERE): 5 overnight Kubernetes sessions start at midnight as 24/7 inference carry-over from the previous day. Physical sizing, workload timing, BESS sizing, office PUE, building curve and diesel placeholder are PROPOSED_HERE, illustrative assumptions rather than measured Proxim8 data. DR-2026-11-02-PROXIM8-COOLING (PROPOSED_HERE): non_gpu_load_profile_mw is building non-HVAC electricity (lighting, elevators and tenant plug loads); the existing engine cooling envelope adds modelled HVAC on top without changing alpha_max or other cooling parameters. The curve is scaled using the actual steady-state relation input + alpha_max \u00d7 lagged input, so at alpha_max=0.2 its input is target/(1+alpha_max): about 0.7 MW total overnight, ramping 6:00\u20139:00, about 1.6 MW 13:00\u201317:00, and 0.8 MW by 21:00. A 1.0 MW / 2.0 MWh grid-forming BESS starts at 95% SoC and can recharge from grid headroom; no SoC-floor workaround is needed. No turbines, solar or fuel cells are configured; the diesel block is disabled. The built-in PG&E Schedule B-20 TOU rates are selected with the July calendar month; 114.82 USD/MWh is the flat operating-cost fallback.",
+          "design_peak_load_mw": null,
+          "diesel_power_block": {
+            "authority_tier": "advisory_only",
+            "cooldown_s": 300.0,
+            "debounce_s": 1.0,
+            "delta_t_start_s": 10.0,
+            "enabled": false,
+            "f_block": 0.8,
+            "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+            "fuel_type": "diesel",
+            "min_down_s": 300.0,
+            "min_fuel_runtime_hours": 48.0,
+            "min_run_s": 900.0,
+            "min_stable_load_mw_fraction": 0.3,
+            "p_start": 0.985,
+            "residual_ramp_s": 8.0,
+            "restore_hold_s": 300.0,
+            "start_stagger_interval_s": 2.0,
+            "target_capacity_mw": 1.0,
+            "target_reliability": 0.999,
+            "unit_rating_mw": 1.0
+          },
+          "diesel_units": [],
+          "dispatch_curtailment_response_delay_s": 0.5,
+          "dq_inject_events": [],
+          "dt_lead_seconds": 30.0,
+          "dt_thermal_seconds": 90.0,
+          "edl_calendar_month": 7,
+          "end_sim_time": 86400.0,
+          "fabric_scenario_id": null,
+          "frequency_nominal_hz": 60.0,
+          "frequency_reporting_metrics_version": 2,
+          "fuel_cell_baseload_target_mw": null,
+          "fuel_cell_enabled": false,
+          "fuel_cell_initial_state": null,
+          "fuel_cell_load_following": false,
+          "fuel_cell_min_stable_fraction": 0.5,
+          "fuel_cell_ramp_down_rate_mw_per_s": null,
+          "fuel_cell_ramp_rate_mw_per_s": 0.02,
+          "fuel_cell_rated_mw": 0.0,
+          "fuel_cell_stack_count": 1,
+          "fuel_cell_state": null,
+          "fuel_cell_turbine_commit_fraction": null,
+          "fuel_cell_units": [],
+          "generation_baseload_mw": null,
+          "generation_block": null,
+          "generation_peak_following": true,
+          "generator_config": null,
+          "gpu_load_profile": [],
+          "grid_authority_tier": "autonomous",
+          "grid_import_limit_mw": 5.0,
+          "grid_import_price_per_mwh": 114.82,
+          "hardware_profile_id": "hopper_8gpu_air",
+          "initial_spinning_count": null,
+          "irradiance_steps": [
+            [
+              0.0,
+              1.0
+            ]
+          ],
+          "island_collapse_hz": null,
+          "island_mode": false,
+          "kube_config": null,
+          "load_config": null,
+          "maintenance_config": null,
+          "n_plus_one_required": false,
+          "name": "Proxim8",
+          "non_gpu_load_profile_mw": [
+            [
+              0.0,
+              0.5833333333333334
+            ],
+            [
+              300.0,
+              0.5833333333333334
+            ],
+            [
+              600.0,
+              0.5833333333333334
+            ],
+            [
+              900.0,
+              0.5833333333333334
+            ],
+            [
+              1200.0,
+              0.5833333333333334
+            ],
+            [
+              1500.0,
+              0.5833333333333334
+            ],
+            [
+              1800.0,
+              0.5833333333333334
+            ],
+            [
+              2100.0,
+              0.5833333333333334
+            ],
+            [
+              2400.0,
+              0.5833333333333334
+            ],
+            [
+              2700.0,
+              0.5833333333333334
+            ],
+            [
+              3000.0,
+              0.5833333333333334
+            ],
+            [
+              3300.0,
+              0.5833333333333334
+            ],
+            [
+              3600.0,
+              0.5833333333333334
+            ],
+            [
+              3900.0,
+              0.5833333333333334
+            ],
+            [
+              4200.0,
+              0.5833333333333334
+            ],
+            [
+              4500.0,
+              0.5833333333333334
+            ],
+            [
+              4800.0,
+              0.5833333333333334
+            ],
+            [
+              5100.0,
+              0.5833333333333334
+            ],
+            [
+              5400.0,
+              0.5833333333333334
+            ],
+            [
+              5700.0,
+              0.5833333333333334
+            ],
+            [
+              6000.0,
+              0.5833333333333334
+            ],
+            [
+              6300.0,
+              0.5833333333333334
+            ],
+            [
+              6600.0,
+              0.5833333333333334
+            ],
+            [
+              6900.0,
+              0.5833333333333334
+            ],
+            [
+              7200.0,
+              0.5833333333333334
+            ],
+            [
+              7500.0,
+              0.5833333333333334
+            ],
+            [
+              7800.0,
+              0.5833333333333334
+            ],
+            [
+              8100.0,
+              0.5833333333333334
+            ],
+            [
+              8400.0,
+              0.5833333333333334
+            ],
+            [
+              8700.0,
+              0.5833333333333334
+            ],
+            [
+              9000.0,
+              0.5833333333333334
+            ],
+            [
+              9300.0,
+              0.5833333333333334
+            ],
+            [
+              9600.0,
+              0.5833333333333334
+            ],
+            [
+              9900.0,
+              0.5833333333333334
+            ],
+            [
+              10200.0,
+              0.5833333333333334
+            ],
+            [
+              10500.0,
+              0.5833333333333334
+            ],
+            [
+              10800.0,
+              0.5833333333333334
+            ],
+            [
+              11100.0,
+              0.5833333333333334
+            ],
+            [
+              11400.0,
+              0.5833333333333334
+            ],
+            [
+              11700.0,
+              0.5833333333333334
+            ],
+            [
+              12000.0,
+              0.5833333333333334
+            ],
+            [
+              12300.0,
+              0.5833333333333334
+            ],
+            [
+              12600.0,
+              0.5833333333333334
+            ],
+            [
+              12900.0,
+              0.5833333333333334
+            ],
+            [
+              13200.0,
+              0.5833333333333334
+            ],
+            [
+              13500.0,
+              0.5833333333333334
+            ],
+            [
+              13800.0,
+              0.5833333333333334
+            ],
+            [
+              14100.0,
+              0.5833333333333334
+            ],
+            [
+              14400.0,
+              0.5833333333333334
+            ],
+            [
+              14700.0,
+              0.5833333333333334
+            ],
+            [
+              15000.0,
+              0.5833333333333334
+            ],
+            [
+              15300.0,
+              0.5833333333333334
+            ],
+            [
+              15600.0,
+              0.5833333333333334
+            ],
+            [
+              15900.0,
+              0.5833333333333334
+            ],
+            [
+              16200.0,
+              0.5833333333333334
+            ],
+            [
+              16500.0,
+              0.5833333333333334
+            ],
+            [
+              16800.0,
+              0.5833333333333334
+            ],
+            [
+              17100.0,
+              0.5833333333333334
+            ],
+            [
+              17400.0,
+              0.5833333333333334
+            ],
+            [
+              17700.0,
+              0.5833333333333334
+            ],
+            [
+              18000.0,
+              0.5833333333333334
+            ],
+            [
+              18300.0,
+              0.5833333333333334
+            ],
+            [
+              18600.0,
+              0.5833333333333334
+            ],
+            [
+              18900.0,
+              0.5833333333333334
+            ],
+            [
+              19200.0,
+              0.5833333333333334
+            ],
+            [
+              19500.0,
+              0.5833333333333334
+            ],
+            [
+              19800.0,
+              0.5833333333333334
+            ],
+            [
+              20100.0,
+              0.5833333333333334
+            ],
+            [
+              20400.0,
+              0.5833333333333334
+            ],
+            [
+              20700.0,
+              0.5833333333333334
+            ],
+            [
+              21000.0,
+              0.5833333333333334
+            ],
+            [
+              21300.0,
+              0.5833333333333334
+            ],
+            [
+              21600.0,
+              0.5833333333333334
+            ],
+            [
+              21900.0,
+              0.5949074074074073
+            ],
+            [
+              22200.0,
+              0.6064814814814815
+            ],
+            [
+              22500.0,
+              0.6180555555555555
+            ],
+            [
+              22800.0,
+              0.6296296296296295
+            ],
+            [
+              23100.0,
+              0.6412037037037037
+            ],
+            [
+              23400.0,
+              0.6527777777777778
+            ],
+            [
+              23700.0,
+              0.6643518518518519
+            ],
+            [
+              24000.0,
+              0.6759259259259259
+            ],
+            [
+              24300.0,
+              0.6875
+            ],
+            [
+              24600.0,
+              0.6990740740740741
+            ],
+            [
+              24900.0,
+              0.7106481481481481
+            ],
+            [
+              25200.0,
+              0.7222222222222222
+            ],
+            [
+              25500.0,
+              0.7337962962962962
+            ],
+            [
+              25800.0,
+              0.7453703703703705
+            ],
+            [
+              26100.0,
+              0.7569444444444444
+            ],
+            [
+              26400.0,
+              0.7685185185185185
+            ],
+            [
+              26700.0,
+              0.7800925925925927
+            ],
+            [
+              27000.0,
+              0.7916666666666666
+            ],
+            [
+              27300.0,
+              0.8032407407407407
+            ],
+            [
+              27600.0,
+              0.8148148148148149
+            ],
+            [
+              27900.0,
+              0.826388888888889
+            ],
+            [
+              28200.0,
+              0.837962962962963
+            ],
+            [
+              28500.0,
+              0.849537037037037
+            ],
+            [
+              28800.0,
+              0.861111111111111
+            ],
+            [
+              29100.0,
+              0.8726851851851852
+            ],
+            [
+              29400.0,
+              0.8842592592592591
+            ],
+            [
+              29700.0,
+              0.8958333333333334
+            ],
+            [
+              30000.0,
+              0.9074074074074076
+            ],
+            [
+              30300.0,
+              0.9189814814814814
+            ],
+            [
+              30600.0,
+              0.9305555555555556
+            ],
+            [
+              30900.0,
+              0.9421296296296297
+            ],
+            [
+              31200.0,
+              0.9537037037037037
+            ],
+            [
+              31500.0,
+              0.9652777777777777
+            ],
+            [
+              31800.0,
+              0.976851851851852
+            ],
+            [
+              32100.0,
+              0.9884259259259258
+            ],
+            [
+              32400.0,
+              1.0
+            ],
+            [
+              32700.0,
+              1.0069444444444444
+            ],
+            [
+              33000.0,
+              1.0138888888888888
+            ],
+            [
+              33300.0,
+              1.0208333333333333
+            ],
+            [
+              33600.0,
+              1.027777777777778
+            ],
+            [
+              33900.0,
+              1.034722222222222
+            ],
+            [
+              34200.0,
+              1.0416666666666667
+            ],
+            [
+              34500.0,
+              1.0486111111111112
+            ],
+            [
+              34800.0,
+              1.0555555555555556
+            ],
+            [
+              35100.0,
+              1.0625
+            ],
+            [
+              35400.0,
+              1.0694444444444446
+            ],
+            [
+              35700.0,
+              1.0763888888888888
+            ],
+            [
+              36000.0,
+              1.0833333333333335
+            ],
+            [
+              36300.0,
+              1.090277777777778
+            ],
+            [
+              36600.0,
+              1.0972222222222223
+            ],
+            [
+              36900.0,
+              1.1041666666666667
+            ],
+            [
+              37200.0,
+              1.1111111111111114
+            ],
+            [
+              37500.0,
+              1.1180555555555556
+            ],
+            [
+              37800.0,
+              1.1250000000000002
+            ],
+            [
+              38100.0,
+              1.1319444444444446
+            ],
+            [
+              38400.0,
+              1.138888888888889
+            ],
+            [
+              38700.0,
+              1.1458333333333335
+            ],
+            [
+              39000.0,
+              1.152777777777778
+            ],
+            [
+              39300.0,
+              1.1597222222222223
+            ],
+            [
+              39600.0,
+              1.1666666666666667
+            ],
+            [
+              39900.0,
+              1.1736111111111112
+            ],
+            [
+              40200.0,
+              1.1805555555555556
+            ],
+            [
+              40500.0,
+              1.1875
+            ],
+            [
+              40800.0,
+              1.1944444444444444
+            ],
+            [
+              41100.0,
+              1.2013888888888888
+            ],
+            [
+              41400.0,
+              1.2083333333333335
+            ],
+            [
+              41700.0,
+              1.215277777777778
+            ],
+            [
+              42000.0,
+              1.2222222222222223
+            ],
+            [
+              42300.0,
+              1.2291666666666667
+            ],
+            [
+              42600.0,
+              1.2361111111111112
+            ],
+            [
+              42900.0,
+              1.2430555555555556
+            ],
+            [
+              43200.0,
+              1.25
+            ],
+            [
+              43500.0,
+              1.2569444444444446
+            ],
+            [
+              43800.0,
+              1.2638888888888888
+            ],
+            [
+              44100.0,
+              1.2708333333333335
+            ],
+            [
+              44400.0,
+              1.277777777777778
+            ],
+            [
+              44700.0,
+              1.2847222222222223
+            ],
+            [
+              45000.0,
+              1.2916666666666667
+            ],
+            [
+              45300.0,
+              1.2986111111111114
+            ],
+            [
+              45600.0,
+              1.3055555555555556
+            ],
+            [
+              45900.0,
+              1.3125000000000002
+            ],
+            [
+              46200.0,
+              1.3194444444444446
+            ],
+            [
+              46500.0,
+              1.326388888888889
+            ],
+            [
+              46800.0,
+              1.3333333333333335
+            ],
+            [
+              47100.0,
+              1.3333333333333335
+            ],
+            [
+              47400.0,
+              1.3333333333333335
+            ],
+            [
+              47700.0,
+              1.3333333333333335
+            ],
+            [
+              48000.0,
+              1.3333333333333335
+            ],
+            [
+              48300.0,
+              1.3333333333333335
+            ],
+            [
+              48600.0,
+              1.3333333333333335
+            ],
+            [
+              48900.0,
+              1.3333333333333335
+            ],
+            [
+              49200.0,
+              1.3333333333333335
+            ],
+            [
+              49500.0,
+              1.3333333333333335
+            ],
+            [
+              49800.0,
+              1.3333333333333335
+            ],
+            [
+              50100.0,
+              1.3333333333333335
+            ],
+            [
+              50400.0,
+              1.3333333333333335
+            ],
+            [
+              50700.0,
+              1.3333333333333335
+            ],
+            [
+              51000.0,
+              1.3333333333333335
+            ],
+            [
+              51300.0,
+              1.3333333333333335
+            ],
+            [
+              51600.0,
+              1.3333333333333335
+            ],
+            [
+              51900.0,
+              1.3333333333333335
+            ],
+            [
+              52200.0,
+              1.3333333333333335
+            ],
+            [
+              52500.0,
+              1.3333333333333335
+            ],
+            [
+              52800.0,
+              1.3333333333333335
+            ],
+            [
+              53100.0,
+              1.3333333333333335
+            ],
+            [
+              53400.0,
+              1.3333333333333335
+            ],
+            [
+              53700.0,
+              1.3333333333333335
+            ],
+            [
+              54000.0,
+              1.3333333333333335
+            ],
+            [
+              54300.0,
+              1.3333333333333335
+            ],
+            [
+              54600.0,
+              1.3333333333333335
+            ],
+            [
+              54900.0,
+              1.3333333333333335
+            ],
+            [
+              55200.0,
+              1.3333333333333335
+            ],
+            [
+              55500.0,
+              1.3333333333333335
+            ],
+            [
+              55800.0,
+              1.3333333333333335
+            ],
+            [
+              56100.0,
+              1.3333333333333335
+            ],
+            [
+              56400.0,
+              1.3333333333333335
+            ],
+            [
+              56700.0,
+              1.3333333333333335
+            ],
+            [
+              57000.0,
+              1.3333333333333335
+            ],
+            [
+              57300.0,
+              1.3333333333333335
+            ],
+            [
+              57600.0,
+              1.3333333333333335
+            ],
+            [
+              57900.0,
+              1.3333333333333335
+            ],
+            [
+              58200.0,
+              1.3333333333333335
+            ],
+            [
+              58500.0,
+              1.3333333333333335
+            ],
+            [
+              58800.0,
+              1.3333333333333335
+            ],
+            [
+              59100.0,
+              1.3333333333333335
+            ],
+            [
+              59400.0,
+              1.3333333333333335
+            ],
+            [
+              59700.0,
+              1.3333333333333335
+            ],
+            [
+              60000.0,
+              1.3333333333333335
+            ],
+            [
+              60300.0,
+              1.3333333333333335
+            ],
+            [
+              60600.0,
+              1.3333333333333335
+            ],
+            [
+              60900.0,
+              1.3333333333333335
+            ],
+            [
+              61200.0,
+              1.3333333333333335
+            ],
+            [
+              61500.0,
+              1.3194444444444449
+            ],
+            [
+              61800.0,
+              1.3055555555555554
+            ],
+            [
+              62100.0,
+              1.2916666666666667
+            ],
+            [
+              62400.0,
+              1.2777777777777781
+            ],
+            [
+              62700.0,
+              1.2638888888888888
+            ],
+            [
+              63000.0,
+              1.25
+            ],
+            [
+              63300.0,
+              1.2361111111111114
+            ],
+            [
+              63600.0,
+              1.222222222222222
+            ],
+            [
+              63900.0,
+              1.2083333333333335
+            ],
+            [
+              64200.0,
+              1.1944444444444446
+            ],
+            [
+              64500.0,
+              1.1805555555555556
+            ],
+            [
+              64800.0,
+              1.1666666666666667
+            ],
+            [
+              65100.0,
+              1.1527777777777781
+            ],
+            [
+              65400.0,
+              1.1388888888888888
+            ],
+            [
+              65700.0,
+              1.1250000000000002
+            ],
+            [
+              66000.0,
+              1.1111111111111114
+            ],
+            [
+              66300.0,
+              1.097222222222222
+            ],
+            [
+              66600.0,
+              1.0833333333333335
+            ],
+            [
+              66900.0,
+              1.0694444444444449
+            ],
+            [
+              67200.0,
+              1.0555555555555556
+            ],
+            [
+              67500.0,
+              1.0416666666666667
+            ],
+            [
+              67800.0,
+              1.0277777777777781
+            ],
+            [
+              68100.0,
+              1.0138888888888888
+            ],
+            [
+              68400.0,
+              1.0000000000000002
+            ],
+            [
+              68700.0,
+              0.9861111111111114
+            ],
+            [
+              69000.0,
+              0.9722222222222221
+            ],
+            [
+              69300.0,
+              0.9583333333333335
+            ],
+            [
+              69600.0,
+              0.9444444444444449
+            ],
+            [
+              69900.0,
+              0.9305555555555555
+            ],
+            [
+              70200.0,
+              0.9166666666666667
+            ],
+            [
+              70500.0,
+              0.9027777777777779
+            ],
+            [
+              70800.0,
+              0.8888888888888887
+            ],
+            [
+              71100.0,
+              0.8750000000000001
+            ],
+            [
+              71400.0,
+              0.8611111111111114
+            ],
+            [
+              71700.0,
+              0.8472222222222222
+            ],
+            [
+              72000.0,
+              0.8333333333333334
+            ],
+            [
+              72300.0,
+              0.8194444444444448
+            ],
+            [
+              72600.0,
+              0.8055555555555554
+            ],
+            [
+              72900.0,
+              0.7916666666666667
+            ],
+            [
+              73200.0,
+              0.777777777777778
+            ],
+            [
+              73500.0,
+              0.7638888888888888
+            ],
+            [
+              73800.0,
+              0.75
+            ],
+            [
+              74100.0,
+              0.7361111111111114
+            ],
+            [
+              74400.0,
+              0.7222222222222221
+            ],
+            [
+              74700.0,
+              0.7083333333333335
+            ],
+            [
+              75000.0,
+              0.6944444444444446
+            ],
+            [
+              75300.0,
+              0.6805555555555554
+            ],
+            [
+              75600.0,
+              0.6666666666666667
+            ],
+            [
+              75900.0,
+              0.664351851851852
+            ],
+            [
+              76200.0,
+              0.662037037037037
+            ],
+            [
+              76500.0,
+              0.6597222222222223
+            ],
+            [
+              76800.0,
+              0.6574074074074076
+            ],
+            [
+              77100.0,
+              0.6550925925925926
+            ],
+            [
+              77400.0,
+              0.6527777777777778
+            ],
+            [
+              77700.0,
+              0.6504629629629631
+            ],
+            [
+              78000.0,
+              0.6481481481481481
+            ],
+            [
+              78300.0,
+              0.6458333333333334
+            ],
+            [
+              78600.0,
+              0.6435185185185186
+            ],
+            [
+              78900.0,
+              0.6412037037037037
+            ],
+            [
+              79200.0,
+              0.638888888888889
+            ],
+            [
+              79500.0,
+              0.6365740740740742
+            ],
+            [
+              79800.0,
+              0.6342592592592593
+            ],
+            [
+              80100.0,
+              0.6319444444444444
+            ],
+            [
+              80400.0,
+              0.6296296296296298
+            ],
+            [
+              80700.0,
+              0.6273148148148149
+            ],
+            [
+              81000.0,
+              0.625
+            ],
+            [
+              81300.0,
+              0.6226851851851852
+            ],
+            [
+              81600.0,
+              0.6203703703703703
+            ],
+            [
+              81900.0,
+              0.6180555555555556
+            ],
+            [
+              82200.0,
+              0.6157407407407408
+            ],
+            [
+              82500.0,
+              0.6134259259259259
+            ],
+            [
+              82800.0,
+              0.611111111111111
+            ],
+            [
+              83100.0,
+              0.6087962962962964
+            ],
+            [
+              83400.0,
+              0.6064814814814815
+            ],
+            [
+              83700.0,
+              0.6041666666666666
+            ],
+            [
+              84000.0,
+              0.6018518518518519
+            ],
+            [
+              84300.0,
+              0.599537037037037
+            ],
+            [
+              84600.0,
+              0.5972222222222222
+            ],
+            [
+              84900.0,
+              0.5949074074074074
+            ],
+            [
+              85200.0,
+              0.5925925925925926
+            ],
+            [
+              85500.0,
+              0.5902777777777778
+            ],
+            [
+              85800.0,
+              0.5879629629629629
+            ],
+            [
+              86100.0,
+              0.5856481481481481
+            ],
+            [
+              86400.0,
+              0.5833333333333334
+            ]
+          ],
+          "of_trip_hz": null,
+          "of_warning_hz": null,
+          "operating_cost_inputs": {
+            "bess_degradation_usd_per_mwh": null,
+            "bess_degradation_usd_per_mwh_provenance": "Not configured; no value is priced.",
+            "currency_year": "2026 USD",
+            "currency_year_provenance": "PROPOSED_HERE: PG&E B-20 rates are in USD; the flat grid price is the operating-cost fallback.",
+            "diesel_price_usd_per_gal": null,
+            "diesel_price_usd_per_gal_provenance": "Not configured because the diesel block is disabled.",
+            "gas_price_basis": null,
+            "gas_price_basis_provenance": "Not configured; no value is priced.",
+            "gas_price_usd_per_mmbtu": null,
+            "gas_price_usd_per_mmbtu_provenance": "Not configured; no value is priced.",
+            "turbine_fixed_om_usd_per_kw_yr": null,
+            "turbine_fixed_om_usd_per_kw_yr_provenance": "Not configured; no value is priced.",
+            "turbine_start_cost_usd_per_start": null,
+            "turbine_start_cost_usd_per_start_provenance": "Not configured; no value is priced.",
+            "turbine_variable_om_usd_per_mwh": null,
+            "turbine_variable_om_usd_per_mwh_provenance": "Not configured; no value is priced.",
+            "unserved_energy_value_usd_per_mwh": null,
+            "unserved_energy_value_usd_per_mwh_provenance": "Not configured; no value is priced."
+          },
+          "operating_tier": null,
+          "operator_response_profile": null,
+          "param_sampling_config": null,
+          "phase2b_reference_base_scenario": null,
+          "phase2b_reference_days": null,
+          "phase2b_reference_family": null,
+          "plant_alpha_max": null,
+          "plant_dt_thermal_seconds": null,
+          "plant_tau_seconds": null,
+          "pms_config": null,
+          "power_factor": 0.85,
+          "pre_staging_config": null,
+          "procurement_config": {
+            "firm_available_mw": 5.0,
+            "non_firm_available_mw": 0.0,
+            "price_curve_seed": 20261102,
+            "reserved_available_mw": 0.0
+          },
+          "pue_base": 1.3,
+          "ramp_relaxation_config": null,
+          "relay_81u_delay_s": null,
+          "relay_81u_threshold_hz": null,
+          "seed_derivation_version": "d4-sha256-v1",
+          "site_latitude": 37.3541,
+          "site_longitude": -121.9552,
+          "site_name": "Proxim8 distributed-inference site, Campbell, CA",
+          "site_utc_offset_h": -8.130346666666666,
+          "solar_origin_utc_hour": null,
+          "solar_rated_mw": 0.0,
+          "stressor_gen_config": null,
+          "study_class": "scenario_json",
+          "study_identity_version": 4,
+          "tau_seconds": 20.0,
+          "telemetry_corruption_config": null,
+          "tenant_budgets": null,
+          "tenant_events": [],
+          "turbine_commitment_floor": 1,
+          "turbine_commitment_mode": "baseline",
+          "turbine_commitment_sensitivity_mw": 2.0,
+          "turbine_forecast_lead_seconds": 600.0,
+          "turbine_units": [],
+          "uf_warning_hz": null,
+          "ufls_stage1_hz": null,
+          "ufls_stages": null,
+          "ui_bess_rated_mw": 1.0,
+          "ui_bess_usable_mwh": 2.0,
+          "workload_floor_fraction": null
+        },
+        "scenario_id": "proxim8-5mw-24h",
+        "seed": 20261102,
+        "tick_seconds": 5.0
+      },
+      "record_path": "records/9636a16a86dc983f6430fc2bee01af0cc1cabf572a3795918b109027b08b6cc8.json",
+      "record_size_bytes": 38011
     }
   },
   "version": 1
