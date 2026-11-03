@@ -1346,6 +1346,9 @@ class TickResult:
     # None means the additive measured non-GPU profile was not configured;
     # numeric values are included in physical identity when the profile exists.
     p_non_gpu_demand_mw: Optional[float] = None
+    # Observation-only estimate of current facility demand plus projected power
+    # from jobs held by the opt-in facility-cap admission gate.
+    requested_demand_mw: Optional[float] = None
     insufficient_reserve_alert: bool = False
     insufficient_reserve_proposal_id: Optional[str] = None
     contingency_release_alert: bool = False

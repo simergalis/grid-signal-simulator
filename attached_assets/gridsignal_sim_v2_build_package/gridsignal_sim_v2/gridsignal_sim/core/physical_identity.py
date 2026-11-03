@@ -18,6 +18,7 @@ PHYSICAL_TICK_HASH_EXCLUSIONS = frozenset(
         "fabric_modal",
         "wall_stamp_utc",
         "insufficient_reserve_proposal_id",
+        "requested_demand_mw",
     }
 )
 

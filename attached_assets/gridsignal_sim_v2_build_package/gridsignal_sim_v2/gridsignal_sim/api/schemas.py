@@ -3186,6 +3186,7 @@ class StrandedMinuteResponse(BaseModel):
     t_start_s: int
     demand_mean_mw: float
     demand_max_mw: float
+    requested_demand_max_mw: float | None = None
     consumed_mw: float
     reserve_held_mw: float
     recoverable_mw: float

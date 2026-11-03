@@ -468,6 +468,17 @@ class KubeDemandAgent:
             / 1000.0
         )
 
+    @property
+    def facility_cap_held_increment_mw(self) -> float:
+        """Projected MW represented by jobs currently held by the facility cap."""
+        if not self.config.grid_cap_admission_enabled:
+            return 0.0
+        return sum(
+            self._facility_admission_increment_mw(admission)
+            for admission in self._reorder_buffer
+            if "-gridcap-retry-" in admission.event_id
+        )
+
     def _facility_cap_blocks(
         self,
         admission: _PendingAdmission,

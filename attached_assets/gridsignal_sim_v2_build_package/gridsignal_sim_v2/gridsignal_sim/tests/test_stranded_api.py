@@ -91,6 +91,7 @@ def test_active_stranded_endpoint_returns_live_snapshot_from_run_sink(client):
         {
             "sim_time_seconds": 5.0 * tick,
             "p_total_mw": 10.0 + tick,
+            "requested_demand_mw": 20.0 + tick,
             "bess_output_mw": 0.0,
             "p_unserved_mw": 0.0,
         }
@@ -116,6 +117,7 @@ def test_active_stranded_endpoint_returns_live_snapshot_from_run_sink(client):
         tick_seconds=5.0,
     )
     expected["available"] = True
+    expected["series"][0]["requested_demand_max_mw"] = 31.0
     assert response.json() == expected
     assert response.json()["series"]
 

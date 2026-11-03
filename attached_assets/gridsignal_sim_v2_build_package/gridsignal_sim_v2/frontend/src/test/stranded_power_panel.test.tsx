@@ -36,6 +36,7 @@ const availableResponse = {
     t_start_s: 0,
     demand_mean_mw: 10,
     demand_max_mw: 12,
+    requested_demand_max_mw: 13,
     consumed_mw: 10,
     reserve_held_mw: 3,
     recoverable_mw: 47,
@@ -85,6 +86,12 @@ describe('StrandedPowerPanel', () => {
     expect(screen.getByText('Recoverable (stranded above reserve)')).toBeInTheDocument()
     expect(screen.getByText('Above cap, BESS-covered')).toBeInTheDocument()
     expect(screen.getByText('Above cap, unserved')).toBeInTheDocument()
+    expect(screen.getByTestId('legend-requested-demand')).toHaveTextContent(
+      'Requested demand (incl. queued jobs)',
+    )
+    expect(screen.getByText('Minutes requested demand exceeded the cap')).toBeInTheDocument()
+    expect(screen.getByText('Peak requested demand')).toBeInTheDocument()
+    expect(screen.getByText('13.0 MW')).toBeInTheDocument()
     const legend = screen.getByTestId('stranded-chart-legend')
     expect(legend).toHaveAttribute('data-order', 'bottom-to-top')
     expect(legend).toHaveClass('flex-col-reverse')
@@ -93,6 +100,27 @@ describe('StrandedPowerPanel', () => {
     })
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     expect(fetchMock.mock.calls[1][0]).toContain('reserve_policy=derate80')
+  })
+
+  it('hides requested-demand display when the telemetry field is absent', async () => {
+    const { requested_demand_max_mw: _ignored, ...minuteWithoutRequested } =
+      availableResponse.series[0]
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...availableResponse,
+        series: [minuteWithoutRequested],
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<StrandedPowerPanel runId="run-no-requested" scenario="S11" />)
+
+    await screen.findByText(
+      'Facility demand vs the 60.0 MW import cap (1-minute samples)',
+    )
+    expect(screen.queryByTestId('legend-requested-demand')).toBeNull()
+    expect(screen.queryByText('Peak requested demand')).toBeNull()
   })
 
   it('polls the active run endpoint and replaces visible cumulative data', async () => {

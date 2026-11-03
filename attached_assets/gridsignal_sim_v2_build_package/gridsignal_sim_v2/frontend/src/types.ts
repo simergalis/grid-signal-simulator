@@ -30,6 +30,7 @@ export interface TickPayload {
   p_cooling_unserved_mw: number | null
   p_demand_mw:          number         // = p_total_mw, producer: simulation_core
   p_non_gpu_demand_mw?: number         // D6a-X: separate measured non-GPU IT load; absent if unused
+  requested_demand_mw?: number         // facility demand plus cap-held projected job demand; opt-in only
   p_served_mw:          number | null  // demand less explicit shed
   p_unserved_mw:        number | null  // explicit UFLS/curtailment shed
   p_generation_mw:      number          // GS-CHG-2026-08-08 successor Phase 1 — wired to simulation_core producer

@@ -18,6 +18,7 @@ interface StrandedMinute {
   t_start_s: number
   demand_mean_mw: number
   demand_max_mw: number
+  requested_demand_max_mw?: number | null
   consumed_mw: number
   reserve_held_mw: number
   recoverable_mw: number
@@ -99,6 +100,10 @@ function clock(seconds: number): string {
 }
 
 function SummaryTable({ data, live }: { data: StrandedAvailable; live: boolean }) {
+  const requestedValues = data.series
+    .map(row => row.requested_demand_max_mw)
+    .filter((value): value is number => value != null)
+  const hasRequestedDemand = requestedValues.length > 0
   const rows: [string, string][] = [
     ['Energy consumed', `${fmt(data.energy_consumed_mwh)} MWh`],
     ['Energy available at the cap', `${fmt(data.energy_available_mwh)} MWh`],
@@ -111,6 +116,15 @@ function SummaryTable({ data, live }: { data: StrandedAvailable; live: boolean }
     ['Recoverable energy', `${fmt(data.recoverable_mwh)} MWh · ${fmt(data.recoverable_pct_of_cap)}% of cap`],
     ['Scarce minutes', `${data.scarce_minutes} / ${data.scarce_episodes.length} episodes`],
   ]
+  if (hasRequestedDemand) {
+    rows.push(
+      [
+        'Minutes requested demand exceeded the cap',
+        String(requestedValues.filter(value => value > data.p_avail_mw).length),
+      ],
+      ['Peak requested demand', `${fmt(Math.max(...requestedValues))} MW`],
+    )
+  }
 
   return (
     <div className="min-w-[260px] rounded border border-border bg-surface px-3 py-2">
@@ -141,6 +155,10 @@ function AvailablePanel({
   live: boolean
 }) {
   const { series, p_avail_mw: cap, p_res_mw: reserve } = data
+  const requestedValues = series
+    .map(row => row.requested_demand_max_mw)
+    .filter((value): value is number => value != null)
+  const hasRequestedDemand = requestedValues.length > 0
   const bounds = useMemo(() => {
     const firstMinute = series[0]?.minute ?? 0
     const lastMinute = series[series.length - 1]?.minute ?? firstMinute
@@ -148,7 +166,11 @@ function AvailablePanel({
     const end = (lastMinute + 1) * 60
     const duration = Math.max(60, end - start)
     const maxDemand = Math.max(0, ...series.map(row => row.demand_max_mw))
-    const yMax = Math.max(cap, maxDemand) * 1.05 || cap
+    const maxRequested = Math.max(
+      0,
+      ...series.map(row => row.requested_demand_max_mw ?? 0),
+    )
+    const yMax = Math.max(cap, maxDemand, maxRequested) * 1.05 || cap
     const step = duration >= 12 * 3600 ? 3 * 3600 : Math.max(3600, Math.ceil(duration / 6 / 3600) * 3600)
     const firstTick = Math.ceil(start / step) * step
     const ticks: number[] = [start]
@@ -274,6 +296,18 @@ function AvailablePanel({
                   isAnimationActive={false}
                   name="Demand peak"
                 />
+                {hasRequestedDemand && (
+                  <Line
+                    type="monotone"
+                    dataKey="requested_demand_max_mw"
+                    stroke="#f2cc60"
+                    strokeWidth={1.8}
+                    strokeDasharray="6 4"
+                    dot={false}
+                    isAnimationActive={false}
+                    name="Requested demand (incl. queued jobs)"
+                  />
+                )}
               </ComposedChart>
             </ResponsiveContainer>
           )}
@@ -294,6 +328,17 @@ function AvailablePanel({
           <span className="inline-flex items-center gap-1.5">
             <span className="h-px w-4 shrink-0 bg-white" /> Demand peak
           </span>
+          {hasRequestedDemand && (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="h-px w-4 shrink-0 border-t-2 border-dashed"
+                style={{ borderColor: '#f2cc60' }}
+              />
+              <span data-testid="legend-requested-demand">
+                Requested demand (incl. queued jobs)
+              </span>
+            </span>
+          )}
         </div>
       </div>
 

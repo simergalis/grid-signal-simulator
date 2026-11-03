@@ -1381,6 +1381,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     p_demand_mw = (
         p_compute_demand_mw + _non_gpu_it_mw + p_cooling_demand_mw
     )
+    _requested_demand_mw = None
+    if any(
+        agent.config.grid_cap_admission_enabled
+        for agent in state.kube_agents
+    ):
+        _held_admission_increment_mw = sum(
+            agent.facility_cap_held_increment_mw
+            for agent in state.kube_agents
+        )
+        _requested_demand_mw = p_demand_mw + _held_admission_increment_mw
 
     # _islanded: hoisted here (before section 3) so the §INV-CURT inverter
     # curtailment block can reference it before the Phase 13.3 droop block.
@@ -3949,6 +3959,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_cooling_demand_mw=p_cooling_demand_mw,
         p_demand_mw=p_demand_mw,
         p_non_gpu_demand_mw=p_non_gpu_demand_mw,
+        requested_demand_mw=_requested_demand_mw,
         net_demand_mw=net_demand_mw,
         turbine_output_mw=turbine_output_mw,
         bess_output_mw=bess_output_mw,

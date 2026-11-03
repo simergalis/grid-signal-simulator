@@ -539,6 +539,12 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             {"p_non_gpu_demand_mw": round(tick.p_non_gpu_demand_mw, 4)}
             if tick.p_non_gpu_demand_mw is not None else {}
         ),
+        # Observation-only queue projection; omitted for scenarios without the
+        # opt-in facility-cap admission gate.
+        **(
+            {"requested_demand_mw": round(tick.requested_demand_mw, 4)}
+            if tick.requested_demand_mw is not None else {}
+        ),
         # Phase 6: p_unserved_mw is explicit UFLS/curtailment shed. p_served_mw
         # is demand less that shed; p_imbalance_mw carries the supply shortfall.
         "p_served_mw":           round(tick.p_served_mw, 4) if tick.p_served_mw is not None else None,
