@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
+import { getScenarioDisplayName } from '../lib/scenarioDisplayName'
 import { useBessConfigStore } from '../store/bessConfigStore'
 import { useGpuGeneratorStore } from '../store/gpuGeneratorStore'
 
@@ -356,9 +357,7 @@ export function RunControlBar({ runId, lastRunId, isPaused, onRunStarted, onRunS
         )}
         {scenarios.map(s => (
           <option key={s.scenario_id} value={s.scenario_id}>
-            {s.scenario_id === 'proxim8-5mw-24h-queue'
-              ? 'Proxim8 with queue-stress'
-              : s.name}
+            {getScenarioDisplayName(s.scenario_id, s.name)}
           </option>
         ))}
       </select>
