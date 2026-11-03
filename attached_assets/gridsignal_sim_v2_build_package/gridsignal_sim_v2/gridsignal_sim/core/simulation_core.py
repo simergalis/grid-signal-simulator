@@ -3247,6 +3247,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _k_bess_rated    = sum(
             b.config.rated_mw for b in state.bess_units if not b.tripped
         )
+        _grid_cap_admission_enabled = any(
+            agent.config.grid_cap_admission_enabled
+            for agent in state.kube_agents
+        )
         state._kube_grid_state = KubeGridState(
             p_dispatch_required_mw=net_demand_mw,
             bess_soc_fraction=(
@@ -3260,6 +3264,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             # fuel_cell_rated_mw is 0.0 when no FC is configured — safe unconditionally.
             fuel_cell_headroom_mw=max(
                 0.0, state.fuel_cell_rated_mw - fuel_cell_output_mw
+            ),
+            # PROPOSED_HERE — queue-stress admission uses signed facility
+            # headroom from the previous tick; BESS and other supply are excluded.
+            facility_admission_headroom_mw=(
+                state.site.grid_import_limit_mw - p_demand_mw
+                if (
+                    _grid_cap_admission_enabled
+                    and state.site.grid_import_limit_mw is not None
+                )
+                else None
             ),
         )
 

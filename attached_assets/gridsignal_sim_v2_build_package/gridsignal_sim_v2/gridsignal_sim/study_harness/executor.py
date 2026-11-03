@@ -59,6 +59,7 @@ SUPER_CLOUD_REPLAY_SCENARIO_ID = "S10_mit_supercloud_2021-08-11"
 S11_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11_mit_supercloud_2021-08-11_bchydro"
 S11B_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11b_mit_supercloud_2021-08-11_bchydro_60mw"
 PROXIM8_SCENARIO_ID = "proxim8-5mw-24h"
+PROXIM8_QUEUE_SCENARIO_ID = "proxim8-5mw-24h-queue"
 STUDY_CLASS_SUPERCLOUD_REPLAY = "supercloud_replay"
 STUDY_CLASS_SCENARIO_JSON = "scenario_json"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
@@ -95,7 +96,7 @@ def study_class_for_scenario(scenario_id: str) -> str:
         S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
     ):
         return STUDY_CLASS_SUPERCLOUD_REPLAY
-    if scenario_id == PROXIM8_SCENARIO_ID:
+    if scenario_id in (PROXIM8_SCENARIO_ID, PROXIM8_QUEUE_SCENARIO_ID):
         return STUDY_CLASS_SCENARIO_JSON
     raise UnsupportedScenarioError(
         scenario_id=scenario_id,
@@ -106,6 +107,7 @@ def study_class_for_scenario(scenario_id: str) -> str:
             S11_SUPERCLOUD_REPLAY_SCENARIO_ID,
             S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
             PROXIM8_SCENARIO_ID,
+            PROXIM8_QUEUE_SCENARIO_ID,
         ],
     )
 
@@ -121,6 +123,17 @@ def _canonical_workload_events_sha256(spec: Mapping[str, Any]) -> str:
     """Hash normalized source events before the executor replaces them by replay."""
     encoded = json.dumps(
         spec.get("workload_events"),
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _canonical_kube_schedule_sha256(spec: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        spec.get("kube_clusters"),
         sort_keys=True,
         separators=(",", ":"),
         ensure_ascii=False,
@@ -152,6 +165,15 @@ def make_study_run_identity(
         # though the common study executor replaces it with a replay trace.
         identity_parameters["workload_events_sha256"] = (
             _canonical_workload_events_sha256(spec)
+        )
+    elif scenario_id == PROXIM8_QUEUE_SCENARIO_ID:
+        # The scheduled queue timeline and gate contract define admissions,
+        # so they participate in cache identity before any run/probe lookup.
+        identity_parameters["kube_schedule_sha256"] = (
+            _canonical_kube_schedule_sha256(spec)
+        )
+        identity_parameters["grid_cap_admission_rule_version"] = (
+            "previous-tick-facility-demand-v1"
         )
     elif scenario_id == BASE_DEMO_SCENARIO_ID or scenario_id in REFERENCE_IDS:
         # PROPOSED_HERE: timeline and derivation inputs must participate in

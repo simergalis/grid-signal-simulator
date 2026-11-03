@@ -1534,6 +1534,9 @@ def build_run_context_from_spec(
             # Phase A uses the hardware catalogue as the source of truth for
             # node GPU capacity; callers may still override CPU/memory shape.
             _cfg["node_gpu_count"] = _profile.gpus_per_unit
+            if _cfg.get("grid_cap_admission_enabled"):
+                _cfg["admission_pue_base"] = float(site.pue_base)
+                _cfg["admission_alpha_max"] = float(site.alpha_max)
             if _kube_cluster_raws:
                 _cfg["event_id_prefix"] = str(_cfg["cluster_id"])
                 # The old MW gate is node-based and cannot safely combine mixed

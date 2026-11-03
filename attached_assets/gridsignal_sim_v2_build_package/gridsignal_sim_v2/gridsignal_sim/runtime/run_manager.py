@@ -377,6 +377,24 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         ]
         if _km is not None else []
     )
+    _facility_cap_held_jobs_list = (
+        [
+            {
+                "job_id": j.event_id.split("-gridcap-retry-")[0],
+                "retry_event_id": j.event_id,
+                "scheduler_type": j.scheduler_type,
+                "cluster_id": j.cluster_id,
+                "node_count": j.node_count,
+                "queued_since_s": round(j.queued_since_s, 2),
+                "wait_seconds": round(
+                    max(0.0, tick.sim_time_seconds - j.queued_since_s), 2
+                ),
+            }
+            for j in _km.pending_jobs
+            if "-gridcap-retry-" in j.event_id
+        ]
+        if _km is not None else []
+    )
     _active_jobs_detail_list = (
         [
             {
@@ -459,6 +477,38 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         }
         for row in tick.turbine_fuel_telemetry
     ]
+
+    _kube_metrics_payload = None
+    if _km is not None:
+        _kube_metrics_payload = {
+            "utilization":        round(_km.utilization, 4),
+            "node_count":         _km.node_count,
+            "power_cap_active":   _km.power_cap_active,
+            "headroom_mw":        round(_km.headroom_mw, 3),
+            "active_jobs":        _km.active_jobs,
+            "admitted_nodes":     _km.admitted_nodes,
+            "arrivals_this_tick": _km.arrivals_this_tick,
+            "requeued_this_tick": _km.requeued_this_tick,
+            "queued_jobs":        _km.queued_jobs,
+            "queued_nodes":       _km.queued_nodes,
+            "active_queue_depth":  _km.active_queue_depth,
+            "backoff_queue_depth": _km.backoff_queue_depth,
+            "unschedulable_pods":  _km.unschedulable_pods,
+            "scheduler_events":    _scheduler_events_list,
+            "pending_jobs":       _pending_jobs_list,
+            "active_jobs_detail": _active_jobs_detail_list,
+            "cluster_metrics":    _cluster_metrics_list,
+            "total_gpu_capacity": _km.total_gpu_capacity,
+            "total_capacity_mw":  round(_km.total_capacity_mw, 4),
+        }
+        # Only opt-in facility-cap runs emit this additional queue detail.
+        # Existing scenarios keep their serialized tick payload unchanged.
+        if _facility_cap_held_jobs_list:
+            _kube_metrics_payload.update({
+                "facility_cap_held_count": len(_facility_cap_held_jobs_list),
+                "facility_cap_holds_this_tick": len(_facility_cap_held_jobs_list),
+                "facility_cap_held_jobs": _facility_cap_held_jobs_list,
+            })
 
     return {
         "run_id": tick.run_id,
@@ -752,31 +802,7 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         ),
         # Kubernetes demand agent metrics — null when kube_config is not active.
         # non-null only on runs with kube_config set in the ScenarioSpec.
-        "kube_metrics": (
-            {
-                "utilization":        round(_km.utilization, 4),
-                "node_count":         _km.node_count,
-                "power_cap_active":   _km.power_cap_active,
-                "headroom_mw":        round(_km.headroom_mw, 3),
-                "active_jobs":        _km.active_jobs,
-                "admitted_nodes":     _km.admitted_nodes,
-                "arrivals_this_tick": _km.arrivals_this_tick,
-                "requeued_this_tick": _km.requeued_this_tick,
-                "queued_jobs":        _km.queued_jobs,
-                "queued_nodes":       _km.queued_nodes,
-                "active_queue_depth":  _km.active_queue_depth,
-                "backoff_queue_depth": _km.backoff_queue_depth,
-                "unschedulable_pods":  _km.unschedulable_pods,
-                "scheduler_events":    _scheduler_events_list,
-                "pending_jobs":       _pending_jobs_list,
-                "active_jobs_detail": _active_jobs_detail_list,
-                "cluster_metrics":    _cluster_metrics_list,
-                "total_gpu_capacity": _km.total_gpu_capacity,
-                "total_capacity_mw":  round(_km.total_capacity_mw, 4),
-            }
-            if _km is not None
-            else None
-        ),
+        "kube_metrics": _kube_metrics_payload,
         # Internal Slurm queue/allocation state — null when slurm_config is not
         # active.  This is authored by the scheduler engine and only serialized
         # here; the transport layer does not infer queue state.

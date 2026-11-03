@@ -1437,6 +1437,7 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         ("S11_mit_supercloud_2021-08-11_bchydro", "S11_mit_supercloud_2021-08-11_bchydro.json"),
         ("S11b_mit_supercloud_2021-08-11_bchydro_60mw", "S11b_mit_supercloud_2021-08-11_bchydro_60mw.json"),
         ("proxim8-5mw-24h", "proxim8-5mw-24h.json"),
+        ("proxim8-5mw-24h-queue", "proxim8-5mw-24h-queue.json"),
     ]
     _DISPLAY_NAME_OVERRIDES = {
         "scenario-equinix-sj-1": "23 Customer Scenario - scenario-equinix-sj-1",
