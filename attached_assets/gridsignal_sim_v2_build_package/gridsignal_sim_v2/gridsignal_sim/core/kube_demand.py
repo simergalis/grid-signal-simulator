@@ -129,6 +129,13 @@ class KubeConfig:
     # mean_interarrival_s is the average simulated seconds between successive
     # Kueue/Volcano gang admissions.  60 s → ~1 new job per minute on average.
     mean_interarrival_s: float = 60.0
+    arrival_mode: str = "poisson"
+    scheduled_arrivals: tuple[dict, ...] = ()
+    # Opt-in facility-demand cap admission. These values are populated from the
+    # scenario/site only when the gate is enabled.
+    grid_cap_admission_enabled: bool = False
+    admission_pue_base: float = 1.0
+    admission_alpha_max: float = 0.0
 
     # Job size distribution (Gaussian, clipped to [min_job_nodes, max_job_nodes]).
     # None preserves the legacy max_nodes/2 fallback for existing scenarios.
@@ -242,6 +249,20 @@ class KubeGridState:
     turbine_headroom_mw: float      # rated_mw_total (on-bus only) − turbine_output_mw
     bess_headroom_mw: float         # rated_mw_total − bess_output_mw
     fuel_cell_headroom_mw: float = 0.0  # rated_mw − fc_output_mw; 0.0 when no FC configured
+    facility_admission_headroom_mw: Optional[float] = None
+    _facility_admission_reserved_mw: float = 0.0
+
+    def remaining_facility_admission_headroom_mw(self) -> Optional[float]:
+        if self.facility_admission_headroom_mw is None:
+            return None
+        return (
+            self.facility_admission_headroom_mw
+            - self._facility_admission_reserved_mw
+        )
+
+    def reserve_facility_admission_mw(self, amount_mw: float) -> None:
+        if self.facility_admission_headroom_mw is not None:
+            self._facility_admission_reserved_mw += max(0.0, amount_mw)
 
 
 # ---------------------------------------------------------------------------
@@ -370,6 +391,11 @@ class KubeDemandAgent:
         self._job_counter: int = 0
         # Next sim_time at which a new job arrives at the informer
         self._next_arrival_sim_time: float = 0.0
+        self._scheduled_arrivals = tuple(sorted(
+            config.scheduled_arrivals,
+            key=lambda item: (float(item["arrival_time_s"]), str(item["job_id"])),
+        ))
+        self._scheduled_arrival_index: int = 0
 
         # Anti-oscillation: transition-based post-recovery hold.
         # _power_cap_hold_until is set on the raw-cap True→False edge
@@ -397,6 +423,72 @@ class KubeDemandAgent:
                 backoff_duration_s=config.backoff_duration_s,
                 max_backoff_retries=config.max_backoff_retries,
                 container_start_delay_s=config.container_start_delay_s,
+            )
+
+    def _queue_scheduled_arrivals(self, sim_time: float) -> int:
+        """Add due deterministic arrivals to the normal admission queue."""
+        arrivals = 0
+        while (
+            self._scheduled_arrival_index < len(self._scheduled_arrivals)
+            and float(
+                self._scheduled_arrivals[self._scheduled_arrival_index][
+                    "arrival_time_s"
+                ]
+            ) <= sim_time
+        ):
+            item = self._scheduled_arrivals[self._scheduled_arrival_index]
+            self._scheduled_arrival_index += 1
+            arrival_time = float(item["arrival_time_s"])
+            job_id = str(item["job_id"])
+            self._reorder_buffer.append(_PendingAdmission(
+                event_id=job_id,
+                node_count=int(item["node_count"]),
+                hardware_profile_id=str(
+                    item.get("hardware_profile_id")
+                    or self.config.hardware_profile_id
+                ),
+                observed_at=arrival_time,
+                event_timestamp=arrival_time,
+                duration_s=float(item["duration_s"]),
+                tenant_id=self.config.tenant_id,
+                scheduler_type=self.config.scheduler_type,
+                first_queued_at=arrival_time,
+            ))
+            arrivals += 1
+        return arrivals
+
+    def _facility_admission_increment_mw(
+        self, admission: _PendingAdmission
+    ) -> float:
+        return (
+            admission.node_count
+            * self.config.rated_kw_per_node
+            * self.config.admission_pue_base
+            * (1.0 + self.config.admission_alpha_max)
+            / 1000.0
+        )
+
+    def _facility_cap_blocks(
+        self,
+        admission: _PendingAdmission,
+        grid_state: Optional[KubeGridState],
+    ) -> bool:
+        if not self.config.grid_cap_admission_enabled or grid_state is None:
+            return False
+        headroom = grid_state.remaining_facility_admission_headroom_mw()
+        return (
+            headroom is not None
+            and self._facility_admission_increment_mw(admission) > headroom
+        )
+
+    def _reserve_facility_admission(
+        self,
+        admission: _PendingAdmission,
+        grid_state: Optional[KubeGridState],
+    ) -> None:
+        if self.config.grid_cap_admission_enabled and grid_state is not None:
+            grid_state.reserve_facility_admission_mw(
+                self._facility_admission_increment_mw(admission)
             )
 
     # ------------------------------------------------------------------
@@ -469,65 +561,68 @@ class KubeDemandAgent:
 
         # ── Step 1a: OBSERVE — advance Poisson arrivals ───────────────────
         # Generate all jobs whose informer-observation time ≤ sim_time.
-        arrivals_this_tick: int = 0
-        while self._next_arrival_sim_time <= sim_time:
-            self._job_counter += 1
-            _prefix = f"{self.config.event_id_prefix}-" if self.config.event_id_prefix else ""
-            event_id = f"{_prefix}kube-job-{self._job_counter}"
+        if self.config.arrival_mode == "scheduled":
+            arrivals_this_tick = self._queue_scheduled_arrivals(sim_time)
+        else:
+            arrivals_this_tick: int = 0
+            while self._next_arrival_sim_time <= sim_time:
+                self._job_counter += 1
+                _prefix = f"{self.config.event_id_prefix}-" if self.config.event_id_prefix else ""
+                event_id = f"{_prefix}kube-job-{self._job_counter}"
 
-            # Gang size: Gaussian, clipped to the cluster-specific job cap.
-            # A policy cap may exceed a small fleet's total capacity (e.g. the
-            # SJ-1 Ray policy is 42 racks while that cluster has 21 racks);
-            # the fleet capacity check below remains the final hard bound.
-            _job_cap_units = (
-                min(self.config.max_job_nodes, self.config.max_nodes)
-                if self.config.max_job_nodes is not None
-                else self.config.max_nodes // 2
-            )
-            node_count = int(round(max(
-                float(self.config.min_job_nodes),
-                min(
-                    float(_job_cap_units),
-                    self._rng.gauss(
-                        float(self.config.mean_job_nodes),
-                        float(self.config.job_node_std),
+                # Gang size: Gaussian, clipped to the cluster-specific job cap.
+                # A policy cap may exceed a small fleet's total capacity (e.g. the
+                # SJ-1 Ray policy is 42 racks while that cluster has 21 racks);
+                # the fleet capacity check below remains the final hard bound.
+                _job_cap_units = (
+                    min(self.config.max_job_nodes, self.config.max_nodes)
+                    if self.config.max_job_nodes is not None
+                    else self.config.max_nodes // 2
+                )
+                node_count = int(round(max(
+                    float(self.config.min_job_nodes),
+                    min(
+                        float(_job_cap_units),
+                        self._rng.gauss(
+                            float(self.config.mean_job_nodes),
+                            float(self.config.job_node_std),
+                        ),
                     ),
-                ),
-            )))
+                )))
 
-            # Duration: exponential, clipped at floor
-            duration_s = max(
-                self.config.min_job_duration_s,
-                self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
-            ) * self._model_duration_multiplier()
+                # Duration: exponential, clipped at floor
+                duration_s = max(
+                    self.config.min_job_duration_s,
+                    self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
+                ) * self._model_duration_multiplier()
 
-            # NTP jitter on the event timestamp (±ntp_jitter_s)
-            jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
-            event_timestamp = self._next_arrival_sim_time + jitter
+                # NTP jitter on the event timestamp (±ntp_jitter_s)
+                jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
+                event_timestamp = self._next_arrival_sim_time + jitter
 
-            self._reorder_buffer.append(_PendingAdmission(
-                event_id=event_id,
-                node_count=node_count,
-                hardware_profile_id=self.config.hardware_profile_id,
-                observed_at=self._next_arrival_sim_time,
-                event_timestamp=event_timestamp,
-                duration_s=duration_s,
-                tenant_id=self.config.tenant_id,
-                scheduler_type=self.config.scheduler_type,
-                first_queued_at=self._next_arrival_sim_time,  # stamped once; never overwritten on retry
-                requeue_count=0,
-            ))
-            arrivals_this_tick += 1
+                self._reorder_buffer.append(_PendingAdmission(
+                    event_id=event_id,
+                    node_count=node_count,
+                    hardware_profile_id=self.config.hardware_profile_id,
+                    observed_at=self._next_arrival_sim_time,
+                    event_timestamp=event_timestamp,
+                    duration_s=duration_s,
+                    tenant_id=self.config.tenant_id,
+                    scheduler_type=self.config.scheduler_type,
+                    first_queued_at=self._next_arrival_sim_time,  # stamped once; never overwritten on retry
+                    requeue_count=0,
+                ))
+                arrivals_this_tick += 1
 
-            _log.debug(
-                "kube: informer observed %s — %d nodes, duration=%.0f s, "
-                "event_ts=%.2f (jitter=%.2fs)",
-                event_id, node_count, duration_s, event_timestamp, jitter,
-            )
+                _log.debug(
+                    "kube: informer observed %s — %d nodes, duration=%.0f s, "
+                    "event_ts=%.2f (jitter=%.2fs)",
+                    event_id, node_count, duration_s, event_timestamp, jitter,
+                )
 
-            # Sample next Poisson inter-arrival time
-            iat = self._rng.expovariate(1.0 / self.config.mean_interarrival_s)
-            self._next_arrival_sim_time += iat
+                # Sample next Poisson inter-arrival time
+                iat = self._rng.expovariate(1.0 / self.config.mean_interarrival_s)
+                self._next_arrival_sim_time += iat
 
         # ── Step 1b: Retire completed jobs ────────────────────────────────
         before = len(self._active_jobs)
@@ -615,6 +710,30 @@ class KubeDemandAgent:
                     )
                     continue
 
+            # Opt-in facility cap gate. It uses the signed demand headroom
+            # received from the previous tick and reserves same-tick admissions
+            # across agents. Unlike the legacy generation-side gate, BESS and
+            # other supply headroom are not available to this check.
+            if self._facility_cap_blocks(pa, grid_state):
+                base_id = pa.event_id.split("-gridcap-retry-")[0]
+                next_count = pa.requeue_count + 1
+                retry_id = f"{base_id}-gridcap-retry-{next_count}"
+                if retry_id not in self._seen_event_ids:
+                    self._reorder_buffer.append(_PendingAdmission(
+                        event_id=retry_id,
+                        node_count=pa.node_count,
+                        hardware_profile_id=pa.hardware_profile_id,
+                        observed_at=sim_time + dt_seconds,
+                        event_timestamp=sim_time + dt_seconds,
+                        duration_s=pa.duration_s,
+                        tenant_id=pa.tenant_id,
+                        scheduler_type=pa.scheduler_type,
+                        first_queued_at=pa.first_queued_at,
+                        requeue_count=next_count,
+                    ))
+                requeued_this_tick += 1
+                continue
+
             # Power-cap hold: re-queue with one-tick delay; never drops the job.
             # Previously hardcoded to 5.0 s (== TICK_INTERVAL_SIM_SECONDS), which
             # locked re-admission to every tick and caused 0.1 Hz BESS cycling.
@@ -649,6 +768,7 @@ class KubeDemandAgent:
                 )
                 continue
 
+            self._reserve_facility_admission(pa, grid_state)
             job = _ActiveJob(
                 event_id=pa.event_id,
                 node_count=pa.node_count,
@@ -679,7 +799,11 @@ class KubeDemandAgent:
         # ── Derive metrics ────────────────────────────────────────────────
         admitted_nodes = sum(j.node_count for j in self._active_jobs)
         # min_nodes is the idle baseline — cluster is never fully drained
-        total_nodes = max(self.config.min_nodes, admitted_nodes)
+        total_nodes = (
+            admitted_nodes
+            if self.config.arrival_mode == "scheduled"
+            else max(self.config.min_nodes, admitted_nodes)
+        )
         active_jobs = len(self._active_jobs)
         utilization = total_nodes / self.config.max_nodes
 
@@ -843,44 +967,47 @@ class KubeDemandAgent:
             self._prev_raw_cap = raw_cap
             power_cap_active = raw_cap or sim_time < self._power_cap_hold_until
 
-        arrivals_this_tick = 0
-        while self._next_arrival_sim_time <= sim_time:
-            self._job_counter += 1
-            prefix = f"{self.config.event_id_prefix}-" if self.config.event_id_prefix else ""
-            event_id = f"{prefix}kube-job-{self._job_counter}"
-            cap = (
-                min(self.config.max_job_nodes, self.config.max_nodes)
-                if self.config.max_job_nodes is not None
-                else self.config.max_nodes // 2
-            )
-            node_count = int(round(max(
-                float(self.config.min_job_nodes),
-                min(float(cap), self._rng.gauss(
-                    float(self.config.mean_job_nodes),
-                    float(self.config.job_node_std),
-                )),
-            )))
-            duration_s = max(
-                self.config.min_job_duration_s,
-                self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
-            ) * self._model_duration_multiplier()
-            jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
-            observed_at = self._next_arrival_sim_time
-            self._reorder_buffer.append(_PendingAdmission(
-                event_id=event_id,
-                node_count=node_count,
-                hardware_profile_id=self.config.hardware_profile_id,
-                observed_at=observed_at,
-                event_timestamp=observed_at + jitter,
-                duration_s=duration_s,
-                tenant_id=self.config.tenant_id,
-                scheduler_type=self.config.scheduler_type,
-                first_queued_at=observed_at,
-            ))
-            arrivals_this_tick += 1
-            self._next_arrival_sim_time += self._rng.expovariate(
-                1.0 / self.config.mean_interarrival_s
-            )
+        if self.config.arrival_mode == "scheduled":
+            arrivals_this_tick = self._queue_scheduled_arrivals(sim_time)
+        else:
+            arrivals_this_tick = 0
+            while self._next_arrival_sim_time <= sim_time:
+                self._job_counter += 1
+                prefix = f"{self.config.event_id_prefix}-" if self.config.event_id_prefix else ""
+                event_id = f"{prefix}kube-job-{self._job_counter}"
+                cap = (
+                    min(self.config.max_job_nodes, self.config.max_nodes)
+                    if self.config.max_job_nodes is not None
+                    else self.config.max_nodes // 2
+                )
+                node_count = int(round(max(
+                    float(self.config.min_job_nodes),
+                    min(float(cap), self._rng.gauss(
+                        float(self.config.mean_job_nodes),
+                        float(self.config.job_node_std),
+                    )),
+                )))
+                duration_s = max(
+                    self.config.min_job_duration_s,
+                    self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
+                ) * self._model_duration_multiplier()
+                jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
+                observed_at = self._next_arrival_sim_time
+                self._reorder_buffer.append(_PendingAdmission(
+                    event_id=event_id,
+                    node_count=node_count,
+                    hardware_profile_id=self.config.hardware_profile_id,
+                    observed_at=observed_at,
+                    event_timestamp=observed_at + jitter,
+                    duration_s=duration_s,
+                    tenant_id=self.config.tenant_id,
+                    scheduler_type=self.config.scheduler_type,
+                    first_queued_at=observed_at,
+                ))
+                arrivals_this_tick += 1
+                self._next_arrival_sim_time += self._rng.expovariate(
+                    1.0 / self.config.mean_interarrival_s
+                )
 
         ready = sorted(
             (
@@ -928,6 +1055,26 @@ class KubeDemandAgent:
                 ))
                 cap_gate_deferred += 1
                 continue
+            if self._facility_cap_blocks(admission, grid_state):
+                base_id = admission.event_id.split("-gridcap-retry-")[0]
+                retry_id = (
+                    f"{base_id}-gridcap-retry-{admission.requeue_count + 1}"
+                )
+                if retry_id not in self._seen_event_ids:
+                    self._reorder_buffer.append(_PendingAdmission(
+                        event_id=retry_id,
+                        node_count=admission.node_count,
+                        hardware_profile_id=admission.hardware_profile_id,
+                        observed_at=sim_time + dt_seconds,
+                        event_timestamp=sim_time + dt_seconds,
+                        duration_s=admission.duration_s,
+                        tenant_id=admission.tenant_id,
+                        scheduler_type=admission.scheduler_type,
+                        first_queued_at=admission.first_queued_at,
+                        requeue_count=admission.requeue_count + 1,
+                    ))
+                requeued_this_tick += 1
+                continue
             if power_cap_active:
                 retry_id = (
                     f"{admission.event_id.split('-retry')[0]}-retry-"
@@ -947,6 +1094,7 @@ class KubeDemandAgent:
                 ))
                 requeued_this_tick += 1
                 continue
+            self._reserve_facility_admission(admission, grid_state)
             accepted_nodes += admission.node_count
             for pod_index in range(admission.node_count):
                 pod_id = f"{admission.event_id}-pod-{pod_index + 1}"
@@ -973,7 +1121,11 @@ class KubeDemandAgent:
 
         running = tuple(self._kube_scheduler.running_pods.values())
         admitted_nodes = len(running)
-        total_nodes = max(self.config.min_nodes, admitted_nodes)
+        total_nodes = (
+            admitted_nodes
+            if self.config.arrival_mode == "scheduled"
+            else max(self.config.min_nodes, admitted_nodes)
+        )
         active_workloads = len({pod.workload_id for pod in running})
         utilization = total_nodes / self.config.max_nodes
         signals: list[WorkloadSignal] = []

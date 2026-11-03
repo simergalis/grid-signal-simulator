@@ -1156,6 +1156,18 @@ class LoadProfileConfigSpec(BaseModel):
     noise_sigma_fraction: float = Field(default=0.005, ge=0.0, le=0.1, description="Noise sigma as fraction of base draw. CHOSEN.")
 
 
+class ScheduledKubeArrivalSpec(BaseModel):
+    """One deterministic job arrival routed through a scheduler agent."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str = Field(min_length=1)
+    arrival_time_s: float = Field(ge=0.0)
+    duration_s: float = Field(gt=0.0)
+    node_count: int = Field(ge=1)
+    hardware_profile_id: Optional[str] = None
+
+
 class KubeConfigSpec(BaseModel):
     """Kubernetes gang-admission demand simulator configuration.
 
@@ -1188,6 +1200,15 @@ class KubeConfigSpec(BaseModel):
         default=60.0, ge=5.0, le=3600.0,
         description="Mean simulated seconds between successive gang admissions",
     )
+    # Opt-in deterministic schedule. The default keeps the existing Poisson
+    # arrival and admission path unchanged.
+    arrival_mode: Literal["poisson", "scheduled"] = "poisson"
+    scheduled_arrivals: list[ScheduledKubeArrivalSpec] = Field(
+        default_factory=list
+    )
+    # Opt-in facility-demand admission gate. It uses the previous tick's
+    # facility demand and excludes generation-side/BESS headroom.
+    grid_cap_admission_enabled: bool = False
 
     # Job size distribution (Gaussian, clipped)
     mean_job_nodes: int = Field(default=200, ge=1,
@@ -1262,6 +1283,18 @@ class KubeConfigSpec(BaseModel):
             raise ValueError(
                 "max_job_nodes must be greater than or equal to min_job_nodes"
             )
+        if self.arrival_mode == "poisson" and self.scheduled_arrivals:
+            raise ValueError(
+                "scheduled_arrivals require arrival_mode='scheduled'"
+            )
+        job_ids = [arrival.job_id for arrival in self.scheduled_arrivals]
+        if len(job_ids) != len(set(job_ids)):
+            raise ValueError("scheduled_arrivals job_id values must be unique")
+        arrival_times = [
+            arrival.arrival_time_s for arrival in self.scheduled_arrivals
+        ]
+        if arrival_times != sorted(arrival_times):
+            raise ValueError("scheduled_arrivals must be ordered by arrival_time_s")
         return self
 
 
@@ -2513,6 +2546,26 @@ class ScenarioSpec(BaseModel):
         if self.kube_config is not None and self.kube_clusters:
             raise ValueError(
                 "kube_config and kube_clusters are mutually exclusive"
+            )
+        cap_admission_agents = []
+        if self.kube_config and self.kube_config.grid_cap_admission_enabled:
+            cap_admission_agents.append(self.kube_config)
+        cap_admission_agents.extend(
+            cluster
+            for cluster in self.kube_clusters
+            if cluster.grid_cap_admission_enabled
+        )
+        if cap_admission_agents and self.grid_import_limit_mw is None:
+            raise ValueError(
+                "grid_cap_admission_enabled requires grid_import_limit_mw"
+            )
+        if any(
+            agent.scheduler_type not in {"K8S", "RAY"}
+            for agent in cap_admission_agents
+            if hasattr(agent, "scheduler_type")
+        ):
+            raise ValueError(
+                "grid_cap_admission_enabled is supported for K8S and RAY agents only"
             )
         if not self.kube_clusters:
             return self
