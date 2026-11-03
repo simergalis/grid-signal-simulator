@@ -62,8 +62,8 @@ def test_mcp_tools_are_reachable_over_streamable_http(
 
         scenarios = _call(client, "list_scenarios", {}, READ_TOKEN)
         # Proxim8 is an additive JSON-backed MCP scenario.
-        assert scenarios["scenarios"]["total"] == 9
-        assert scenarios["scenarios"]["returned"] == 9
+        assert scenarios["scenarios"]["total"] == 10
+        assert scenarios["scenarios"]["returned"] == 10
         assert scenarios["scenarios"]["has_more"] is False
 
         metrics = _call(
@@ -172,8 +172,8 @@ def test_run_token_can_discover_read_tools_for_one_connector(
         assert {"get_scenario", "start_run"} <= tool_names
 
         scenarios = _call(client, "list_scenarios", {}, RUN_TOKEN)
-        # Proxim8 is the ninth additive MCP study-list entry.
-        assert scenarios["scenarios"]["total"] == 9
+        # The queue-stress variant is the tenth additive MCP study-list entry.
+        assert scenarios["scenarios"]["total"] == 10
 
 
 def test_mcp_cache_hit_and_build_parity_error(
@@ -422,7 +422,7 @@ def _wait_for_run(client: TestClient, run_id: str) -> dict:
     pytest.fail(f"run {run_id} did not finish within 90 seconds")
 
 
-def test_tc160_list_scenarios_marks_all_nine_study_scenarios(
+def test_tc160_list_scenarios_marks_all_ten_study_scenarios(
     monkeypatch,
 ) -> None:
     monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
@@ -431,7 +431,7 @@ def test_tc160_list_scenarios_marks_all_nine_study_scenarios(
         result = _call(client, "list_scenarios", {}, READ_TOKEN)["scenarios"]
 
         # Existing entries keep their positions; Proxim8 follows S11b.
-        assert result["total"] == result["returned"] == 9
+        assert result["total"] == result["returned"] == 10
         by_id = {item["scenario_id"]: item for item in result["items"]}
         assert set(by_id) == set(server_module.STUDY_SCENARIOS)
         assert all(item["study_supported"] is True for item in by_id.values())
