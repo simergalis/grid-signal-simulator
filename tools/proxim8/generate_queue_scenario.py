@@ -35,21 +35,12 @@ N = {
     "RAY_SURGE_CALLS": 7200,  # PROPOSED_HERE: original 16:35 Ray-chain cohort to reschedule.
     "MIN_TARGET_DURATION_SECONDS": 60,  # PROPOSED_HERE: minimum one-minute queue-episode target.
     "MAX_TARGET_DURATION_SECONDS": 420,  # PROPOSED_HERE: maximum seven-minute queue-episode target.
-    "BUSINESS_START_HOUR": 9,  # PROPOSED_HERE: earliest time in the requested business-day window.
-    "BUSINESS_END_HOUR": 18,  # PROPOSED_HERE: exclusive end of the requested business-day window.
-    "EARLY_ANCHOR_END_HOUR": 10,  # PROPOSED_HERE: ensure the first episode is drawn from the lighter morning curve.
-    "LATE_ANCHOR_START_HOUR": 14,  # PROPOSED_HERE: start the nine larger surges after the business-day load ramp is established.
-    "LATE_ANCHOR_END_HOUR": 17,  # PROPOSED_HERE: end the surge window before late-day demand falls below useful admission pressure.
-    "EARLY_EPISODE_COUNT": 1,  # PROPOSED_HERE: one early high-volume surge establishes the business-day span.
-    "LATE_EPISODE_COUNT": 9,  # PROPOSED_HERE: nine later surges provide repeated queue episodes during the afternoon.
-    "EARLY_CALLS_PER_CHAIN": 45,  # PROPOSED_HERE: concentrate 1,800 existing calls into one early queue episode.
-    "LATE_CALLS_PER_CHAIN": 15,  # PROPOSED_HERE: divide the remaining 5,400 calls into nine 600-call afternoon surges.
-    "MIN_EPISODE_START_GAP_SECONDS": 1200,  # PROPOSED_HERE: require at least twenty minutes between episode starts.
-    "MIN_EPISODE_START_SPAN_SECONDS": 21600,  # PROPOSED_HERE: require at least six hours between first and last episode starts.
-    "MAX_START_SAMPLING_ATTEMPTS": 10000,  # PROPOSED_HERE: bounded deterministic rejection sampling for valid starts.
+    "FIRST_EPISODE_START_SECONDS": 900,  # PROPOSED_HERE: begin the first stress peak 15 minutes into the run.
+    "EPISODE_START_INTERVAL_SECONDS": 3600,  # PROPOSED_HERE: separate successive stress peaks by one hour.
+    "FIRST_WAVE_CALLS_PER_CHAIN": 45,  # PROPOSED_HERE: concentrate 1,800 existing calls into the first queue episode.
+    "SUBSEQUENT_WAVE_CALLS_PER_CHAIN": 15,  # PROPOSED_HERE: divide the remaining 5,400 calls into nine 600-call hourly waves.
     "RAY_CALLS_PER_SPACING_GROUP": 2,  # PROPOSED_HERE: agentic API chains release two calls per short interval.
     "RAY_CALL_CADENCE_SECONDS": 2,  # PROPOSED_HERE: two-second gaps keep calls a few seconds apart and concentrate capacity pressure.
-    "SECONDS_PER_HOUR": 3600,  # PROPOSED_HERE: time conversion.
     "SECONDS_PER_DAY": 86400,  # PROPOSED_HERE: Proxim8's 24-hour horizon.
     "K8S_AGENT_MAX_NODES": 1900,  # PROPOSED_HERE: keep cluster capacity above the source workload so grid-cap admission is the tested queue.
     "RAY_AGENT_MAX_NODES": 1900,  # PROPOSED_HERE: let the grid-cap gate, not a 128-node scheduler ceiling, create the intended Ray queue.
@@ -60,14 +51,13 @@ SCENARIO_ID = "proxim8-5mw-24h-queue"
 RAY_SURGE_PREFIX = "ray-agentic-call-burst-"
 DECISION_RECORD = "DR-2026-11-03-PROXIM8-QUEUE (PROPOSED_HERE)"
 SURGE_METHOD = (
-    "The former 16:35 Ray burst is rescheduled as one concentrated early "
-    "chain wave and nine seeded afternoon call-chain waves. Starts are sampled "
-    "from the source K8S inference arrival-time curve across 09:00–18:00, "
-    "with a morning anchor, at least twenty minutes between starts, and a "
-    "six-hour minimum span. Uniform 60–420 second target durations are recorded "
-    "independently; the test reports measured cap-held durations from telemetry. "
-    "All moved calls retain their IDs, durations, node counts, profiles and "
-    "model names."
+    "The former 16:35 Ray burst is rescheduled as ten call-chain waves. "
+    "The first wave starts 15 minutes into the run, and each following wave "
+    "starts one hour after the previous wave, ending at 09:15. The first wave "
+    "contains 1,800 calls and each of the remaining nine contains 600. "
+    "Uniform 60–420 second target durations are drawn from the fixed seed; "
+    "the test reports measured cap-held durations from telemetry. All moved "
+    "calls retain their IDs, durations, node counts, profiles and model names."
 )
 
 
@@ -128,79 +118,21 @@ def _allocate_calls_per_episode(
     calls_per_chain: int,
 ) -> list[int]:
     allocations = (
-        [N["EARLY_CALLS_PER_CHAIN"]]
-        + [N["LATE_CALLS_PER_CHAIN"]] * N["LATE_EPISODE_COUNT"]
+        [N["FIRST_WAVE_CALLS_PER_CHAIN"]]
+        + [N["SUBSEQUENT_WAVE_CALLS_PER_CHAIN"]]
+        * (N["TEN"] - N["ONE"])
     )
     if sum(allocations) != calls_per_chain:
         raise ValueError("the seeded episode allocation must preserve each source chain")
     return allocations
 
 
-def _sample_episode_starts(
-    rng: random.Random,
-    k8s_starts: list[dict],
-    max_chain_span_s: int,
-) -> list[int]:
-    window_start_s = N["BUSINESS_START_HOUR"] * N["SECONDS_PER_HOUR"]
-    window_end_s = N["BUSINESS_END_HOUR"] * N["SECONDS_PER_HOUR"]
-    early_end_s = N["EARLY_ANCHOR_END_HOUR"] * N["SECONDS_PER_HOUR"]
-    late_start_s = N["LATE_ANCHOR_START_HOUR"] * N["SECONDS_PER_HOUR"]
-    late_end_s = N["LATE_ANCHOR_END_HOUR"] * N["SECONDS_PER_HOUR"]
-    latest_start_s = window_end_s - max_chain_span_s
-    source_times = [
-        int(float(event["timestamp"]))
-        for event in k8s_starts
-        if window_start_s
-        <= float(event["timestamp"])
-        <= latest_start_s
+def _episode_start_times() -> list[int]:
+    return [
+        N["FIRST_EPISODE_START_SECONDS"]
+        + index * N["EPISODE_START_INTERVAL_SECONDS"]
+        for index in range(N["TEN"])
     ]
-    early_times = [value for value in source_times if value < early_end_s]
-    late_times = [
-        value
-        for value in source_times
-        if late_start_s <= value < late_end_s
-    ]
-    if N["EARLY_EPISODE_COUNT"] + N["LATE_EPISODE_COUNT"] != N["TEN"]:
-        raise ValueError("early and late episode counts must total ten")
-    if not early_times or len(late_times) < N["LATE_EPISODE_COUNT"]:
-        raise ValueError("K8S source arrivals do not cover both episode anchors")
-
-    for _ in range(N["MAX_START_SAMPLING_ATTEMPTS"]):
-        starts = [
-            rng.choice(early_times)
-            for _ in range(N["EARLY_EPISODE_COUNT"])
-        ]
-        attempts = 0
-        while (
-            len(starts) < N["TEN"]
-            and attempts < N["MAX_START_SAMPLING_ATTEMPTS"]
-        ):
-            attempts += N["ONE"]
-            candidate = rng.choice(
-                early_times
-                if len(starts) < N["EARLY_EPISODE_COUNT"]
-                else late_times
-            )
-            if all(
-                abs(candidate - existing)
-                >= N["MIN_EPISODE_START_GAP_SECONDS"]
-                for existing in starts
-            ):
-                starts.append(candidate)
-        if len(starts) != N["TEN"]:
-            continue
-        starts.sort()
-        gaps = [
-            starts[index + N["ONE"]] - starts[index]
-            for index in range(len(starts) - N["ONE"])
-        ]
-        if (
-            starts[-N["ONE"]] - starts[N["ZERO"]]
-            >= N["MIN_EPISODE_START_SPAN_SECONDS"]
-            and len(set(gaps)) > N["ONE"]
-        ):
-            return starts
-    raise ValueError("could not draw ten spread, non-even episode starts")
 
 
 def build_scenario(source: dict, template: dict) -> dict:
@@ -247,18 +179,7 @@ def build_scenario(source: dict, template: dict) -> dict:
     if calls_per_chain * len(chain_groups) != N["RAY_SURGE_CALLS"]:
         raise ValueError("source Ray chain dimensions do not match the burst size")
     calls_per_episode_per_chain = _allocate_calls_per_episode(calls_per_chain)
-    max_chain_span_s = (
-        (
-            max(calls_per_episode_per_chain)
-            - N["ONE"]
-        )
-        // N["RAY_CALLS_PER_SPACING_GROUP"]
-    ) * N["RAY_CALL_CADENCE_SECONDS"]
-    episode_start_times_s = _sample_episode_starts(
-        rng,
-        k8s_starts,
-        max_chain_span_s,
-    )
+    episode_start_times_s = _episode_start_times()
     ray_arrivals: list[dict] = []
     moved_jobs: list[dict] = []
     intended_episodes: list[dict] = []
@@ -372,16 +293,11 @@ def build_scenario(source: dict, template: dict) -> dict:
             "maximum_seconds": N["MAX_TARGET_DURATION_SECONDS"],
             "step_seconds": N["FIVE"],
             "target_durations_seconds": target_durations_s,
-            "use": "seeded target for measured telemetry comparison; calls are allocated by the documented one-early/nine-afternoon surge design",
+            "use": "seeded target for measured telemetry comparison; calls are allocated by the documented 15-minute-start, hourly-wave design",
         },
-        "business_window_start_s": (
-            N["BUSINESS_START_HOUR"] * N["SECONDS_PER_HOUR"]
-        ),
-        "business_window_end_s": (
-            N["BUSINESS_END_HOUR"] * N["SECONDS_PER_HOUR"]
-        ),
-        "minimum_episode_start_gap_s": N["MIN_EPISODE_START_GAP_SECONDS"],
-        "minimum_episode_start_span_s": N["MIN_EPISODE_START_SPAN_SECONDS"],
+        "first_episode_start_s": N["FIRST_EPISODE_START_SECONDS"],
+        "episode_start_interval_s": N["EPISODE_START_INTERVAL_SECONDS"],
+        "minimum_episode_start_gap_s": N["EPISODE_START_INTERVAL_SECONDS"],
         "moved_call_count": len(moved_jobs),
         "maximum_observed_shift_seconds": max(
             abs(item["new_time_s"] - item["original_time_s"])
@@ -390,7 +306,7 @@ def build_scenario(source: dict, template: dict) -> dict:
         "episode_targets": intended_episodes,
         "moved_jobs": sorted(moved_jobs, key=lambda item: item["job_id"]),
         "proposed_here": [
-            "Episode starts are sampled from source K8S arrivals; early and late anchors guarantee a non-even six-hour spread.",
+            "The first stress wave starts at 00:15 and subsequent waves start at one-hour intervals through 09:15.",
             "Uniform target durations are comparison targets; actual held durations are verified from simulation telemetry.",
             "Each original Ray call chain retains its call order; calls are released in pairs every two seconds within each episode.",
             "K8S and RAY node inventories are set above source demand so the grid-cap rule, not scheduler inventory, produces the held queues.",
