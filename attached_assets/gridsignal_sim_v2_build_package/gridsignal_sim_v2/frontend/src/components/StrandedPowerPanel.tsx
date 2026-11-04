@@ -80,13 +80,123 @@ const POLICY_OPTIONS: { value: ReservePolicy; label: string }[] = [
   { value: 'derate80', label: '80% derating rule' },
 ]
 
-const LAYERS = [
-  { key: 'consumed_mw', label: 'Consumed (served)', color: '#3987e8' },
-  { key: 'reserve_held_mw', label: 'Reserve held', color: '#8b949e' },
-  { key: 'recoverable_mw', label: 'Recoverable (stranded above reserve)', color: '#27b5a5' },
-  { key: 'above_cap_bess_mw', label: 'Above cap, BESS-covered', color: '#f85149' },
-  { key: 'above_cap_unserved_mw', label: 'Above cap, unserved', color: '#da3633' },
-] as const
+type SeriesDefinition = {
+  key: keyof StrandedMinute
+  label: string
+  color: string
+} & (
+  | { style: 'band'; fillOpacity: number }
+  | { style: 'line'; lineStyle: 'solid' | 'dashed'; strokeWidth: number }
+)
+
+// Ordered top-to-bottom for the reader. Stacked areas are rendered in reverse
+// order below so their visual stacking remains bottom-to-top.
+const SERIES_DEFINITIONS: readonly SeriesDefinition[] = [
+  {
+    key: 'requested_demand_max_mw',
+    label: 'Requested demand (incl. queued jobs)',
+    color: '#f2cc60',
+    style: 'line',
+    lineStyle: 'dashed',
+    strokeWidth: 1.8,
+  },
+  {
+    key: 'demand_max_mw',
+    label: 'Demand peak',
+    color: '#f0f3f6',
+    style: 'line',
+    lineStyle: 'solid',
+    strokeWidth: 1.4,
+  },
+  {
+    key: 'above_cap_unserved_mw',
+    label: 'Above cap, unserved',
+    color: '#da3633',
+    style: 'band',
+    fillOpacity: 0.9,
+  },
+  {
+    key: 'above_cap_bess_mw',
+    label: 'Above cap, BESS-covered',
+    color: '#f85149',
+    style: 'band',
+    fillOpacity: 0.45,
+  },
+  {
+    key: 'recoverable_mw',
+    label: 'Recoverable (stranded above reserve)',
+    color: '#27b5a5',
+    style: 'band',
+    fillOpacity: 0.9,
+  },
+  {
+    key: 'reserve_held_mw',
+    label: 'Reserve held',
+    color: '#8b949e',
+    style: 'band',
+    fillOpacity: 0.9,
+  },
+  {
+    key: 'consumed_mw',
+    label: 'Consumed (served)',
+    color: '#3987e8',
+    style: 'band',
+    fillOpacity: 0.9,
+  },
+]
+
+interface TooltipPayloadItem {
+  dataKey?: string | number
+  value?: unknown
+}
+
+interface StrandedTooltipProps {
+  active?: boolean
+  label?: unknown
+  payload?: TooltipPayloadItem[]
+}
+
+export function StrandedChartTooltip({ active, label, payload }: StrandedTooltipProps) {
+  if (!active || !payload?.length) return null
+  const requestedIsPresent = payload.some(item => item.dataKey === 'requested_demand_max_mw')
+  const visibleSeries = SERIES_DEFINITIONS.filter(
+    series => series.key !== 'requested_demand_max_mw' || requestedIsPresent,
+  )
+
+  return (
+    <div
+      className="rounded border border-border bg-surface px-3 py-2 font-mono text-[11px]"
+      data-testid="stranded-chart-tooltip"
+    >
+      <div className="mb-2 text-foreground">
+        {typeof label === 'number' ? clock(label) : ''}
+      </div>
+      <div className="space-y-1">
+        {visibleSeries.map(series => {
+          const entry = payload.find(item => item.dataKey === series.key)
+          if (entry?.value == null) return null
+          return (
+            <div key={series.key} className="flex items-center gap-2">
+              <span
+                aria-hidden="true"
+                className={series.style === 'band' ? 'h-2.5 w-2.5 shrink-0' : 'w-4 shrink-0'}
+                style={series.style === 'band'
+                  ? { backgroundColor: series.color }
+                  : {
+                      borderTop: `${series.strokeWidth}px ${series.lineStyle === 'dashed' ? 'dashed' : 'solid'} ${series.color}`,
+                    }}
+              />
+              <span style={{ color: series.color }} data-series-label={series.key}>
+                {series.label}
+              </span>
+              <span>{fmt(Number(entry.value))} MW</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 function fmt(value: number): string {
   return value.toFixed(1)
@@ -247,14 +357,7 @@ function AvailablePanel({
                   label={{ value: 'MW', angle: -90, position: 'insideLeft', fill: '#8b949e', fontSize: 10 }}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: '#161b22',
-                    border: '1px solid #30363d',
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                  }}
-                  labelFormatter={value => typeof value === 'number' ? clock(value) : ''}
-                  formatter={(value: number, name: string) => [`${fmt(value)} MW`, name]}
+                  content={props => <StrandedChartTooltip {...props} />}
                 />
                 <ReferenceLine
                   y={cap}
@@ -274,71 +377,72 @@ function AvailablePanel({
                     fontSize: 10,
                   }}
                 />
-                {LAYERS.map(layer => (
-                  <Area
-                    key={layer.key}
-                    type="stepAfter"
-                    dataKey={layer.key}
-                    stackId="power"
-                    stroke={layer.color}
-                    fill={layer.color}
-                    fillOpacity={layer.key === 'above_cap_bess_mw' ? 0.45 : 0.9}
-                    isAnimationActive={false}
-                    name={layer.label}
-                  />
-                ))}
-                <Line
-                  type="monotone"
-                  dataKey="demand_max_mw"
-                  stroke="#f0f3f6"
-                  strokeWidth={1.4}
-                  dot={false}
-                  isAnimationActive={false}
-                  name="Demand peak"
-                />
-                {hasRequestedDemand && (
-                  <Line
-                    type="monotone"
-                    dataKey="requested_demand_max_mw"
-                    stroke="#f2cc60"
-                    strokeWidth={1.8}
-                    strokeDasharray="6 4"
-                    dot={false}
-                    isAnimationActive={false}
-                    name="Requested demand (incl. queued jobs)"
-                  />
-                )}
+                {[...SERIES_DEFINITIONS].reverse().map(series => {
+                  if (series.key === 'requested_demand_max_mw' && !hasRequestedDemand) return null
+                  if (series.style === 'band') {
+                    return (
+                      <Area
+                        key={series.key}
+                        type="stepAfter"
+                        dataKey={series.key}
+                        stackId="power"
+                        stroke={series.color}
+                        fill={series.color}
+                        fillOpacity={series.fillOpacity}
+                        isAnimationActive={false}
+                        name={series.label}
+                      />
+                    )
+                  }
+                  return (
+                    <Line
+                      key={series.key}
+                      type="monotone"
+                      dataKey={series.key}
+                      stroke={series.color}
+                      strokeWidth={series.strokeWidth}
+                      strokeDasharray={series.lineStyle === 'dashed' ? '6 4' : undefined}
+                      dot={false}
+                      isAnimationActive={false}
+                      name={series.label}
+                    />
+                  )
+                })}
               </ComposedChart>
             </ResponsiveContainer>
           )}
         </div>
 
         <div
-          className="flex flex-col-reverse justify-between gap-2 py-3 text-[10px] text-muted"
+          className="flex flex-col justify-between gap-2 py-3 text-[10px] text-muted"
           aria-label="Chart legend"
           data-testid="stranded-chart-legend"
-          data-order="bottom-to-top"
+          data-order="top-to-bottom"
         >
-          {LAYERS.map(layer => (
-            <span key={layer.key} className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: layer.color }} />
-              {layer.label}
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-px w-4 shrink-0 bg-white" /> Demand peak
-          </span>
-          {hasRequestedDemand && (
-            <span className="inline-flex items-center gap-1.5">
+          {SERIES_DEFINITIONS
+            .filter(series => series.key !== 'requested_demand_max_mw' || hasRequestedDemand)
+            .map(series => (
               <span
-                className="h-px w-4 shrink-0 border-t-2 border-dashed"
-                style={{ borderColor: '#f2cc60' }}
-              />
-              <span data-testid="legend-requested-demand">
-                Requested demand (incl. queued jobs)
+                key={series.key}
+                className="inline-flex items-center gap-1.5"
+              >
+                <span
+                  aria-hidden="true"
+                  className={series.style === 'band' ? 'h-2.5 w-2.5 shrink-0 rounded-sm' : 'w-4 shrink-0'}
+                  style={series.style === 'band'
+                    ? { backgroundColor: series.color }
+                    : {
+                        borderTop: `${series.strokeWidth}px ${series.lineStyle === 'dashed' ? 'dashed' : 'solid'} ${series.color}`,
+                      }}
+                />
+                <span
+                  data-testid={series.key === 'requested_demand_max_mw' ? 'legend-requested-demand' : undefined}
+                  data-series-label={series.key}
+                >
+                  {series.label}
+                </span>
               </span>
-            </span>
-          )}
+            ))}
         </div>
       </div>
 

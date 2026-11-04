@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { StrandedPowerPanel } from '../components/StrandedPowerPanel'
+import { StrandedChartTooltip, StrandedPowerPanel } from '../components/StrandedPowerPanel'
 
 afterEach(() => {
   cleanup()
@@ -93,13 +93,55 @@ describe('StrandedPowerPanel', () => {
     expect(screen.getByText('Peak requested demand')).toBeInTheDocument()
     expect(screen.getByText('13.0 MW')).toBeInTheDocument()
     const legend = screen.getByTestId('stranded-chart-legend')
-    expect(legend).toHaveAttribute('data-order', 'bottom-to-top')
-    expect(legend).toHaveClass('flex-col-reverse')
+    expect(legend).toHaveAttribute('data-order', 'top-to-bottom')
     fireEvent.change(screen.getByLabelText('Reserve policy'), {
       target: { value: 'derate80' },
     })
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
     expect(fetchMock.mock.calls[1][0]).toContain('reserve_policy=derate80')
+  })
+
+  it('renders tooltip and legend series in matching top-to-bottom order', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => availableResponse,
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<StrandedPowerPanel runId="run-ordered" scenario="S11b" />)
+    render(
+      <StrandedChartTooltip
+        active
+        label={0}
+        payload={[
+          { dataKey: 'requested_demand_max_mw', value: 13 },
+          { dataKey: 'demand_max_mw', value: 12 },
+          { dataKey: 'above_cap_unserved_mw', value: 0 },
+          { dataKey: 'above_cap_bess_mw', value: 0 },
+          { dataKey: 'recoverable_mw', value: 47 },
+          { dataKey: 'reserve_held_mw', value: 3 },
+          { dataKey: 'consumed_mw', value: 10 },
+        ]}
+      />,
+    )
+
+    const expectedLabels = [
+      'Requested demand (incl. queued jobs)',
+      'Demand peak',
+      'Above cap, unserved',
+      'Above cap, BESS-covered',
+      'Recoverable (stranded above reserve)',
+      'Reserve held',
+      'Consumed (served)',
+    ]
+    await screen.findByTestId('stranded-chart-legend')
+    const rowLabels = (container: Element | null) =>
+      Array.from(container?.children ?? [])
+        .map(row => row.querySelector('[data-series-label]')?.textContent?.trim())
+
+    const tooltip = screen.getByTestId('stranded-chart-tooltip')
+    expect(rowLabels(tooltip.querySelector('.space-y-1'))).toEqual(expectedLabels)
+    expect(rowLabels(screen.getByTestId('stranded-chart-legend'))).toEqual(expectedLabels)
   })
 
   it('hides requested-demand display when the telemetry field is absent', async () => {
