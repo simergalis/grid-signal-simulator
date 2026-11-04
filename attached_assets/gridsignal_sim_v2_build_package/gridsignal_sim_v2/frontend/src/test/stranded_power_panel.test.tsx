@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { StrandedChartTooltip, StrandedPowerPanel } from '../components/StrandedPowerPanel'
+import { useTickStore } from '../store/tickStore'
+import type { TickPayload } from '../types'
 
 afterEach(() => {
   cleanup()
+  useTickStore.setState({ latestTick: null })
   vi.unstubAllGlobals()
   vi.useRealTimers()
 })
@@ -163,6 +166,47 @@ describe('StrandedPowerPanel', () => {
     )
     expect(screen.queryByTestId('legend-requested-demand')).toBeNull()
     expect(screen.queryByText('Peak requested demand')).toBeNull()
+  })
+
+  it('overlays forecast demand and yellow scarce windows on the live chart', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...availableResponse,
+        p_avail_mw: 5,
+        p_res_mw: 3,
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    useTickStore.setState({
+      latestTick: {
+        run_id: 'run-live-forecast',
+        sim_time_seconds: 300,
+        p_demand_mw: 1.5,
+        p_compute_mw: 0.5,
+        forecast_mw: 3,
+        planning_forecast_mw: [{ minutes_from_now: 15, forecast_mw: 3 }],
+        dt_lead_next_s: 0,
+        contingency_coverage: null,
+        p_generation_mw: 0,
+        p_renewable_mw: 0,
+      } as unknown as TickPayload,
+    })
+
+    render(
+      <StrandedPowerPanel
+        runId="run-live-forecast"
+        scenario="Proxim8 — queue stress"
+        live
+      />,
+    )
+
+    expect(await screen.findByTestId('forecast-scarce-episode-0')).toBeInTheDocument()
+    expect(screen.getByTestId('forecast-scarce-legend')).toHaveTextContent('Forecast')
+    expect(screen.getByTestId('forecast-overlay-note')).toHaveTextContent(
+      '15-minute steps, up to 4 hours ahead',
+    )
+    expect(screen.getByText('Forecast demand (15 min–4 h)')).toBeInTheDocument()
   })
 
   it('polls the active run endpoint and replaces visible cumulative data', async () => {

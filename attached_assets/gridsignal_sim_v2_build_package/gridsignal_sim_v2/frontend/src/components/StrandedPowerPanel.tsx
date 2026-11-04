@@ -10,6 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { deriveRollingShortfall } from '../alerts/rollingShortfall'
+import { useTickStore } from '../store/tickStore'
 
 type ReservePolicy = 'none' | 'fixed_3mw' | 'pct10' | 'derate80'
 
@@ -19,6 +21,7 @@ interface StrandedMinute {
   demand_mean_mw: number
   demand_max_mw: number
   requested_demand_max_mw?: number | null
+  forecast_demand_mw?: number | null
   consumed_mw: number
   reserve_held_mw: number
   recoverable_mw: number
@@ -73,6 +76,20 @@ interface Props {
   paused?: boolean
 }
 
+interface ForecastDemandSample {
+  seconds: number
+  demand_mw: number
+}
+
+interface ForecastScarceInterval {
+  start_s: number
+  end_s: number
+}
+
+interface ForecastOverlay {
+  samples: ForecastDemandSample[]
+}
+
 const POLICY_OPTIONS: { value: ReservePolicy; label: string }[] = [
   { value: 'none', label: 'None (0 MW)' },
   { value: 'fixed_3mw', label: 'Fixed 3 MW (central)' },
@@ -86,7 +103,7 @@ type SeriesDefinition = {
   color: string
 } & (
   | { style: 'band'; fillOpacity: number }
-  | { style: 'line'; lineStyle: 'solid' | 'dashed'; strokeWidth: number }
+  | { style: 'line'; lineStyle: 'solid' | 'dashed' | 'dotted'; strokeWidth: number }
 )
 
 // Ordered top-to-bottom for the reader. Stacked areas are rendered in reverse
@@ -99,6 +116,14 @@ const SERIES_DEFINITIONS: readonly SeriesDefinition[] = [
     style: 'line',
     lineStyle: 'dashed',
     strokeWidth: 1.8,
+  },
+  {
+    key: 'forecast_demand_mw',
+    label: 'Forecast demand (15 min–4 h)',
+    color: '#ffcc00',
+    style: 'line',
+    lineStyle: 'dotted',
+    strokeWidth: 2,
   },
   {
     key: 'demand_max_mw',
@@ -145,6 +170,50 @@ const SERIES_DEFINITIONS: readonly SeriesDefinition[] = [
   },
 ]
 
+/**
+ * Mark the projected portions of the rolling forecast that cross the safe
+ * limit. Forecast points are interpolated only for drawing the yellow window;
+ * the simulator's demand and dispatch values are not changed.
+ */
+export function buildForecastScarceIntervals(
+  samples: readonly ForecastDemandSample[],
+  safeLimitMw: number,
+): ForecastScarceInterval[] {
+  const intervals: ForecastScarceInterval[] = []
+  if (!Number.isFinite(safeLimitMw) || samples.length < 2) return intervals
+
+  for (let index = 0; index < samples.length - 1; index += 1) {
+    const left = samples[index]
+    const right = samples[index + 1]
+    if (!Number.isFinite(left.seconds) || !Number.isFinite(right.seconds) ||
+        !Number.isFinite(left.demand_mw) || !Number.isFinite(right.demand_mw) ||
+        right.seconds <= left.seconds) continue
+
+    const leftAbove = left.demand_mw > safeLimitMw
+    const rightAbove = right.demand_mw > safeLimitMw
+    if (!leftAbove && !rightAbove) continue
+
+    let start = left.seconds
+    let end = right.seconds
+    if (leftAbove !== rightAbove) {
+      const fraction = (safeLimitMw - left.demand_mw) /
+        (right.demand_mw - left.demand_mw)
+      const crossing = left.seconds + fraction * (right.seconds - left.seconds)
+      if (leftAbove) end = crossing
+      else start = crossing
+    }
+
+    const previous = intervals[intervals.length - 1]
+    if (previous && Math.abs(previous.end_s - start) < 1e-6) {
+      previous.end_s = end
+    } else {
+      intervals.push({ start_s: start, end_s: end })
+    }
+  }
+
+  return intervals
+}
+
 interface TooltipPayloadItem {
   dataKey?: string | number
   value?: unknown
@@ -159,8 +228,11 @@ interface StrandedTooltipProps {
 export function StrandedChartTooltip({ active, label, payload }: StrandedTooltipProps) {
   if (!active || !payload?.length) return null
   const requestedIsPresent = payload.some(item => item.dataKey === 'requested_demand_max_mw')
+  const forecastIsPresent = payload.some(item => item.dataKey === 'forecast_demand_mw')
   const visibleSeries = SERIES_DEFINITIONS.filter(
-    series => series.key !== 'requested_demand_max_mw' || requestedIsPresent,
+    series =>
+      (series.key !== 'requested_demand_max_mw' || requestedIsPresent) &&
+      (series.key !== 'forecast_demand_mw' || forecastIsPresent),
   )
 
   return (
@@ -183,7 +255,7 @@ export function StrandedChartTooltip({ active, label, payload }: StrandedTooltip
                 style={series.style === 'band'
                   ? { backgroundColor: series.color }
                   : {
-                      borderTop: `${series.strokeWidth}px ${series.lineStyle === 'dashed' ? 'dashed' : 'solid'} ${series.color}`,
+                       borderTop: `${series.strokeWidth}px ${series.lineStyle} ${series.color}`,
                     }}
               />
               <span style={{ color: series.color }} data-series-label={series.key}>
@@ -258,29 +330,64 @@ function AvailablePanel({
   runId,
   scenario,
   live,
+  forecast,
 }: {
   data: StrandedAvailable
   runId: string
   scenario: string
   live: boolean
+  forecast: ForecastOverlay | null
 }) {
   const { series, p_avail_mw: cap, p_res_mw: reserve } = data
   const requestedValues = series
     .map(row => row.requested_demand_max_mw)
     .filter((value): value is number => value != null)
   const hasRequestedDemand = requestedValues.length > 0
+  const forecastIntervals = useMemo(
+    () => forecast
+      ? buildForecastScarceIntervals(forecast.samples, cap - reserve)
+      : [],
+    [cap, forecast, reserve],
+  )
+  const hasForecast = Boolean(forecast && forecast.samples.length > 1)
+  const chartData = useMemo(() => {
+    const observedRows = series.map(row => ({
+      ...row,
+      forecast_demand_mw: null,
+    }))
+    if (!forecast) return observedRows
+
+    const forecastRows = forecast.samples.map(sample => ({
+      minute: sample.seconds / 60,
+      t_start_s: sample.seconds,
+      demand_mean_mw: null,
+      demand_max_mw: null,
+      requested_demand_max_mw: null,
+      forecast_demand_mw: sample.demand_mw,
+      consumed_mw: null,
+      reserve_held_mw: null,
+      recoverable_mw: null,
+      above_cap_bess_mw: null,
+      above_cap_unserved_mw: null,
+      scarce: false,
+    }))
+    return [...observedRows, ...forecastRows].sort((left, right) => left.t_start_s - right.t_start_s)
+  }, [forecast, series])
   const bounds = useMemo(() => {
     const firstMinute = series[0]?.minute ?? 0
     const lastMinute = series[series.length - 1]?.minute ?? firstMinute
     const start = firstMinute * 60
-    const end = (lastMinute + 1) * 60
+    const observedEnd = (lastMinute + 1) * 60
+    const forecastEnd = forecast?.samples[forecast.samples.length - 1]?.seconds ?? observedEnd
+    const end = Math.max(observedEnd, forecastEnd)
     const duration = Math.max(60, end - start)
     const maxDemand = Math.max(0, ...series.map(row => row.demand_max_mw))
     const maxRequested = Math.max(
       0,
       ...series.map(row => row.requested_demand_max_mw ?? 0),
     )
-    const yMax = Math.max(cap, maxDemand, maxRequested) * 1.05 || cap
+    const maxForecast = Math.max(0, ...(forecast?.samples.map(point => point.demand_mw) ?? []))
+    const yMax = Math.max(cap, maxDemand, maxRequested, maxForecast) * 1.05 || cap
     const step = duration >= 12 * 3600 ? 3 * 3600 : Math.max(3600, Math.ceil(duration / 6 / 3600) * 3600)
     const firstTick = Math.ceil(start / step) * step
     const ticks: number[] = [start]
@@ -290,7 +397,7 @@ function AvailablePanel({
     if (ticks[ticks.length - 1] !== end) ticks.push(end)
     const yTicks = Array.from(new Set([0, cap - reserve, cap, yMax])).sort((a, b) => a - b)
     return { start, end, yMax, xTicks: ticks, yTicks }
-  }, [cap, reserve, series])
+  }, [cap, forecast, reserve, series])
 
   return (
     <section className="rounded border border-border bg-background p-3" data-testid="panel-stranded-power">
@@ -300,11 +407,21 @@ function AvailablePanel({
         </h2>
       </div>
 
-      <div className="mb-1 flex items-center gap-2 text-[10px] text-muted">
-        <span className="shrink-0">Scarce episodes (demand above safe limit)</span>
+      <div className="mb-1 flex flex-wrap items-center gap-2 text-[10px] text-muted">
+        <span className="shrink-0">Scarce activity (demand above safe limit)</span>
+        <span className="inline-flex items-center gap-1" data-testid="observed-scarce-legend">
+          <span aria-hidden="true" className="h-2.5 w-3 bg-red-500" />
+          Observed
+        </span>
+        {hasForecast && (
+          <span className="inline-flex items-center gap-1" data-testid="forecast-scarce-legend">
+            <span aria-hidden="true" className="h-2.5 w-3 bg-amber-300" />
+            Forecast
+          </span>
+        )}
         <div
-          className="relative h-3 flex-1 rounded-sm bg-surface"
-          aria-label="Scarce episodes"
+          className="relative h-3 min-w-24 flex-1 rounded-sm bg-surface"
+          aria-label="Observed and forecast scarce periods"
           data-testid="scarce-episode-strip"
         >
           {data.scarce_episodes.map((episode, index) => {
@@ -321,8 +438,27 @@ function AvailablePanel({
               />
             )
           })}
+          {forecastIntervals.map((interval, index) => {
+            const span = Math.max(1, bounds.end - bounds.start)
+            const left = ((interval.start_s - bounds.start) / span) * 100
+            const width = ((interval.end_s - interval.start_s) / span) * 100
+            return (
+              <span
+                key={`forecast-${interval.start_s}-${interval.end_s}`}
+                className="absolute top-0 h-3 bg-amber-300"
+                style={{ left: `${left}%`, width: `${Math.max(width, 0.15)}%` }}
+                title={`Forecast scarce window: ${clock(interval.start_s)}–${clock(interval.end_s)}`}
+                data-testid={`forecast-scarce-episode-${index}`}
+              />
+            )
+          })}
         </div>
       </div>
+      {hasForecast && (
+        <p className="mb-2 font-mono text-[9px] text-muted" data-testid="forecast-overlay-note">
+          Yellow overlay: advisory simulator demand projection at 15-minute steps, up to 4 hours ahead.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
         <div className="h-[300px] min-w-0">
@@ -332,7 +468,7 @@ function AvailablePanel({
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={series} margin={{ top: 20, right: 28, bottom: 18, left: 8 }}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: 28, bottom: 18, left: 8 }}>
                 <CartesianGrid stroke="#30363d" strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="t_start_s"
@@ -379,6 +515,7 @@ function AvailablePanel({
                 />
                 {[...SERIES_DEFINITIONS].reverse().map(series => {
                   if (series.key === 'requested_demand_max_mw' && !hasRequestedDemand) return null
+                  if (series.key === 'forecast_demand_mw' && !hasForecast) return null
                   if (series.style === 'band') {
                     return (
                       <Area
@@ -401,7 +538,9 @@ function AvailablePanel({
                       dataKey={series.key}
                       stroke={series.color}
                       strokeWidth={series.strokeWidth}
-                      strokeDasharray={series.lineStyle === 'dashed' ? '6 4' : undefined}
+                      strokeDasharray={series.lineStyle === 'dashed'
+                        ? '6 4'
+                        : series.lineStyle === 'dotted' ? '2 3' : undefined}
                       dot={false}
                       isAnimationActive={false}
                       name={series.label}
@@ -421,6 +560,7 @@ function AvailablePanel({
         >
           {SERIES_DEFINITIONS
             .filter(series => series.key !== 'requested_demand_max_mw' || hasRequestedDemand)
+            .filter(series => series.key !== 'forecast_demand_mw' || hasForecast)
             .map(series => (
               <span
                 key={series.key}
@@ -432,7 +572,7 @@ function AvailablePanel({
                   style={series.style === 'band'
                     ? { backgroundColor: series.color }
                     : {
-                        borderTop: `${series.strokeWidth}px ${series.lineStyle === 'dashed' ? 'dashed' : 'solid'} ${series.color}`,
+                        borderTop: `${series.strokeWidth}px ${series.lineStyle} ${series.color}`,
                       }}
                 />
                 <span
@@ -463,6 +603,24 @@ export function StrandedPowerPanel({ runId, scenario, live = false, paused = fal
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<StrandedResponse | null>(null)
   const [retryKey, setRetryKey] = useState(0)
+  const latestTick = useTickStore(state => state.latestTick)
+  const forecast = useMemo<ForecastOverlay | null>(() => {
+    if (!live || !latestTick || latestTick.run_id !== runId) return null
+    const projection = deriveRollingShortfall(latestTick)
+    if (!projection) return null
+    return {
+      samples: [
+        {
+          seconds: latestTick.sim_time_seconds,
+          demand_mw: Math.max(0, latestTick.p_demand_mw),
+        },
+        ...projection.points.map(point => ({
+          seconds: latestTick.sim_time_seconds + point.minutesFromNow * 60,
+          demand_mw: point.projectedDemandMw,
+        })),
+      ],
+    }
+  }, [latestTick, live, runId])
 
   useEffect(() => {
     let cancelled = false
@@ -599,7 +757,13 @@ export function StrandedPowerPanel({ runId, scenario, live = false, paused = fal
               : 'Cumulative run-to-date statistics · refreshes every 2 seconds while active.'}
         </p>
       )}
-      <AvailablePanel data={data} runId={runId} scenario={scenario} live={live} />
+      <AvailablePanel
+        data={data}
+        runId={runId}
+        scenario={scenario}
+        live={live}
+        forecast={forecast}
+      />
     </div>
   )
 }
