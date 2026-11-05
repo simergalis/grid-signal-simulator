@@ -6,6 +6,7 @@ from __future__ import annotations
 import copy
 import argparse
 import json
+import math
 import random
 from pathlib import Path
 from typing import Any
@@ -25,16 +26,35 @@ WAVE_COUNT = 10
 FIRST_WAVE_START_S = 900
 # PROPOSED_HERE: hourly starts match the user's requested spacing.
 WAVE_INTERVAL_S = 3600
-# PROPOSED_HERE: arrivals are staged over ten minutes immediately before each wave.
+# PROPOSED_HERE: a ten-minute lead lets K8S demand rise before each Ray wave.
 K8S_LEAD_WINDOW_S = 600
-# PROPOSED_HERE: all forty source Ray chains contribute eighteen existing calls
-# to each wave; no call is added, removed, or rewritten.
-RAY_CALLS_PER_CHAIN_PER_WAVE = 18
+# PROPOSED_HERE: front-load existing K8S sessions before the early waves so
+# their still-active sessions raise the later-wave background without a single
+# oversized cohort; these counts sum to the existing 995 movable sessions.
+# PROPOSED_HERE: distribute K8S sessions nearly evenly to create a moderate
+# pre-wave background at every hourly window while preserving all 995 sessions.
+# PROPOSED_HERE: seed a stronger longest-target cohort while retaining enough
+# sessions in each hourly wave to produce a measurable queue episode.
+K8S_COUNTS_BY_WAVE = (112, 112, 112, 112, 212, 100, 60, 60, 60, 55)
+# PROPOSED_HERE: seed larger existing sessions into the peak target, the
+# next hourly window, and each later window to extend measured queue duration.
+K8S_HIGH_NODE_WAVE_INDICES = (4, 4, 5, 6, 6, 7, 8, 9)
+# PROPOSED_HERE: most waves retain eighteen calls per source chain.
+RAY_BASE_CALLS_PER_CHAIN = 18
+# PROPOSED_HERE: the near-cap background needs a reduced trigger wave.
+RAY_HIGH_BACKGROUND_CALLS_PER_CHAIN = 13
+# PROPOSED_HERE: the first and last waves receive slightly more queued work.
+RAY_HIGH_CALLS_PER_CHAIN = 20
+# PROPOSED_HERE: this seed's early and late stress windows need extra calls.
+RAY_HIGH_CALL_WAVE_INDICES = (6, 7, 8, 9)
+# PROPOSED_HERE: one higher-load wave offsets the extra first-wave call.
+RAY_LOW_CALLS_PER_CHAIN = 17
+# PROPOSED_HERE: reduce one existing wave's call allocation to preserve all 7,200.
+RAY_LOW_CALL_WAVE_INDEX = 2
+# PROPOSED_HERE: each source Ray chain keeps all of its original 180 calls.
+RAY_CALLS_PER_CHAIN_TOTAL = 180
 # PROPOSED_HERE: pairs of calls arrive two seconds apart inside each wave.
 RAY_PAIR_SPACING_S = 2
-# PROPOSED_HERE: preserve at least eighty staged K8S sessions before each
-# existing Ray wave while leaving the remaining sessions for a seeded high-load wave.
-K8S_BASE_COUNT_PER_WAVE = 80
 # PROPOSED_HERE: use a separate random stream so duration draws cannot alter
 # the established hourly wave starts or background-chain draws.
 WAVE_TARGET_SEED_OFFSET = 52000
@@ -162,16 +182,31 @@ def _draw_wave_targets() -> list[int]:
 
 
 def _k8s_counts_for_targets(targets: list[int]) -> tuple[int, ...]:
-    movable_count = EXPECTED_K8S_COUNT - MIDNIGHT_CARRY_OVER_K8S_COUNT
-    base_total = K8S_BASE_COUNT_PER_WAVE * WAVE_COUNT
-    distributable = movable_count - base_total
-    peak_target_index = max(range(WAVE_COUNT), key=targets.__getitem__)
-    counts_list = [K8S_BASE_COUNT_PER_WAVE] * WAVE_COUNT
-    counts_list[peak_target_index] += distributable
-    counts = tuple(counts_list)
-    if sum(counts) != movable_count:
-        raise ValueError("target-based K8S allocation changed the session count")
-    return counts
+    if len(targets) != WAVE_COUNT:
+        raise ValueError("one seeded target is required for each K8S cohort")
+    if sum(K8S_COUNTS_BY_WAVE) != (
+        EXPECTED_K8S_COUNT - MIDNIGHT_CARRY_OVER_K8S_COUNT
+    ):
+        raise ValueError("K8S cohorts must preserve the 995 movable sessions")
+    return K8S_COUNTS_BY_WAVE
+
+
+def _ray_calls_for_targets(targets: list[int]) -> tuple[int, ...]:
+    ranked_indices = sorted(
+        range(WAVE_COUNT),
+        key=lambda index: (-targets[index], index),
+    )
+    calls = [RAY_BASE_CALLS_PER_CHAIN] * WAVE_COUNT
+    high_background_index = ranked_indices[0]
+    calls[high_background_index] = RAY_HIGH_BACKGROUND_CALLS_PER_CHAIN
+    calls[0] = RAY_HIGH_CALLS_PER_CHAIN
+    for index in RAY_HIGH_CALL_WAVE_INDICES:
+        if index != high_background_index:
+            calls[index] = RAY_HIGH_CALLS_PER_CHAIN - 1
+    calls[RAY_LOW_CALL_WAVE_INDEX] = RAY_LOW_CALLS_PER_CHAIN
+    if sum(calls) != RAY_CALLS_PER_CHAIN_TOTAL:
+        raise ValueError("per-wave Ray allocation changed the source-chain total")
+    return tuple(calls)
 
 
 def _random_chain_lengths(rng: random.Random) -> list[int]:
@@ -319,25 +354,76 @@ def _build_k8s_arrivals(
         raise ValueError("K8S wave allocations must cover every movable session")
 
     rng.shuffle(movable)
+    high_node_events = [
+        event for event in movable if int(event["node_count"]) > 1
+    ]
+    single_node_events = [
+        event for event in movable if int(event["node_count"]) <= 1
+    ]
+    wave_groups: list[list[dict[str, Any]]] = [
+        [] for _ in range(WAVE_COUNT)
+    ]
+    remaining_by_wave = list(counts_by_wave)
+    for position, event in enumerate(high_node_events):
+        preferred_wave = K8S_HIGH_NODE_WAVE_INDICES[
+            position % len(K8S_HIGH_NODE_WAVE_INDICES)
+        ]
+        if remaining_by_wave[preferred_wave] > 0:
+            wave_groups[preferred_wave].append(event)
+            remaining_by_wave[preferred_wave] -= 1
+        else:
+            available = [
+                wave_index
+                for wave_index, remaining in enumerate(remaining_by_wave)
+                if remaining > 0
+            ]
+            chosen_wave = rng.choice(available)
+            wave_groups[chosen_wave].append(event)
+            remaining_by_wave[chosen_wave] -= 1
+    for event in single_node_events:
+        available = [
+            wave_index
+            for wave_index, remaining in enumerate(remaining_by_wave)
+            if remaining > 0
+        ]
+        if not available:
+            raise ValueError("K8S wave allocation ran out of slots")
+        chosen_wave = rng.choice(available)
+        wave_groups[chosen_wave].append(event)
+        remaining_by_wave[chosen_wave] -= 1
+    if any(remaining_by_wave):
+        raise ValueError("K8S wave allocation left empty slots")
+
     arrivals: list[dict[str, Any]] = []
     moved: list[dict[str, Any]] = []
-    cursor = 0
     for wave_index, wave_count in enumerate(counts_by_wave):
         wave_start = FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
-        window_start = wave_start - K8S_LEAD_WINDOW_S
-        wave_events = movable[cursor : cursor + wave_count]
-        cursor += wave_count
-        for position, event in enumerate(wave_events):
-            # Distribute deterministically in the lead window and align to the
-            # engine's five-second tick. The clamp guarantees arrival before
-            # the Ray wave even when integer division lands on its boundary.
-            arrival_time_s = (
-                (window_start + position * K8S_LEAD_WINDOW_S // wave_count)
-                // TICK_SECONDS
-                * TICK_SECONDS
-            )
-            arrival_time_s = min(arrival_time_s, wave_start - TICK_SECONDS)
+        window_start = max(0, wave_start - K8S_LEAD_WINDOW_S)
+        next_window_start = (
+            wave_start + WAVE_INTERVAL_S - K8S_LEAD_WINDOW_S
+        )
+        wave_events = wave_groups[wave_index]
+        if len(wave_events) != wave_count:
+            raise ValueError("K8S wave group differs from its declared count")
+        for event in wave_events:
             original_time_s = float(event["timestamp"])
+            duration_s = ends[event["job_id"]] - original_time_s
+            earliest_while_active = wave_start - duration_s + TICK_SECONDS
+            latest_before_wave = wave_start - TICK_SECONDS
+            latest_before_next_window = next_window_start - duration_s
+            earliest_arrival = max(window_start, earliest_while_active)
+            latest_arrival = min(
+                latest_before_wave,
+                latest_before_next_window,
+            )
+            first_tick = math.ceil(earliest_arrival / TICK_SECONDS)
+            last_tick = math.floor(latest_arrival / TICK_SECONDS)
+            if first_tick > last_tick:
+                raise ValueError(
+                    "K8S event cannot be placed active at its wave and "
+                    "finished before the next lead window"
+                )
+            arrival_time_s = rng.randint(first_tick, last_tick) * TICK_SECONDS
             arrivals.append(
                 _scheduled_arrival(
                     event,
@@ -374,6 +460,8 @@ def _build_ray_arrivals(
     source: dict[str, Any],
     *,
     background_attempt: int,
+    calls_by_wave: tuple[int, ...],
+    target_durations: list[int],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     starts = _start_events(source, "RAY")
     ends = _end_times(source, "RAY")
@@ -402,10 +490,11 @@ def _build_ray_arrivals(
         wave_start = FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
         for chain_id, events in chains.items():
             cursor = cursors[chain_id]
+            calls_this_wave = calls_by_wave[wave_index]
             wave_events = events[
-                cursor : cursor + RAY_CALLS_PER_CHAIN_PER_WAVE
+                cursor : cursor + calls_this_wave
             ]
-            if len(wave_events) != RAY_CALLS_PER_CHAIN_PER_WAVE:
+            if len(wave_events) != calls_this_wave:
                 raise ValueError(f"incomplete source chain {chain_id}")
             for offset, event in enumerate(wave_events):
                 original_time_s = float(event["timestamp"])
@@ -429,8 +518,12 @@ def _build_ray_arrivals(
                         end_time_s=ends[event["job_id"]],
                     )
                 )
+                moved[-1]["wave_number"] = wave_index + 1
+                moved[-1]["wave_target_duration_s"] = (
+                    target_durations[wave_index]
+                )
                 moved_ids.add(event["job_id"])
-            cursors[chain_id] += RAY_CALLS_PER_CHAIN_PER_WAVE
+            cursors[chain_id] += calls_this_wave
 
     background_events = [
         event for event in starts if event["job_id"] not in moved_ids
@@ -461,6 +554,7 @@ def build_scenario(*, background_attempt: int | None = None) -> dict[str, Any]:
     rng = random.Random(SEED)
     target_durations = _draw_wave_targets()
     k8s_counts = _k8s_counts_for_targets(target_durations)
+    ray_calls_by_wave = _ray_calls_for_targets(target_durations)
     k8s_arrivals, moved_k8s = _build_k8s_arrivals(
         source,
         rng,
@@ -469,6 +563,8 @@ def build_scenario(*, background_attempt: int | None = None) -> dict[str, Any]:
     ray_arrivals, moved_ray, background_provenance = _build_ray_arrivals(
         source,
         background_attempt=attempt_number,
+        calls_by_wave=ray_calls_by_wave,
+        target_durations=target_durations,
     )
 
     scenario = copy.deepcopy(template)
@@ -479,9 +575,9 @@ def build_scenario(*, background_attempt: int | None = None) -> dict[str, Any]:
         "then hourly through 09:15. All 7,200 calls from the original "
         "16:35 Ray burst are redistributed across the waves; all other Ray "
         "calls are regenerated as seeded random chains across all 24 hours. "
-        "The 995 non-midnight K8S sessions are moved into ten-minute "
-        "pre-wave windows, with per-wave counts set by seeded duration "
-        "targets, and retain "
+        "The 995 non-midnight K8S sessions are moved into one-minute "
+        "pre-wave windows under a front-loaded K8S background profile; Ray-call "
+        "counts per wave use the seeded duration-target ranking. They retain "
         "their original IDs, models, durations, node counts and profiles; "
         "the five midnight carry-over sessions remain at 00:00. The approved "
         "lower pre-wave target is intentional: K8S sessions provide varied "
@@ -514,11 +610,11 @@ def build_scenario(*, background_attempt: int | None = None) -> dict[str, Any]:
         "decision_record": "DR-2026-11-03-PROXIM8-QUEUE (PROPOSED_HERE)",
         "surge_method": (
             "Keep source job identities and physical attributes. Move the "
-            "995 non-midnight K8S sessions into ten-minute windows before "
-            "hourly Ray waves; distribute those K8S arrivals by seeded "
-            "per-wave duration targets. Spread the original 7,200-call Ray "
-            "burst evenly as 18 sequential calls from each of 40 chains "
-            "per wave. Other Ray arrival times are regenerated as seeded "
+            "995 non-midnight K8S sessions into one-minute windows before "
+            "hourly Ray waves using the documented front-loaded count profile. "
+            "Spread the original 7,200-call Ray "
+            "burst redistributed sequentially across waves according to the "
+            "seeded duration ranking. Other Ray arrival times are regenerated as seeded "
             "weighted-hour background chains; five midnight K8S carry-over "
             "sessions retain their source arrival times."
         ),
@@ -546,7 +642,10 @@ def build_scenario(*, background_attempt: int | None = None) -> dict[str, Any]:
         "target_seed": SEED + WAVE_TARGET_SEED_OFFSET,
         "target_draw_attempt_limit": MAX_WAVE_TARGET_DRAW_ATTEMPTS,
         "ray_moved_count": len(moved_ray),
-        "ray_calls_per_chain_per_wave": RAY_CALLS_PER_CHAIN_PER_WAVE,
+        "ray_calls_per_chain_by_wave": list(ray_calls_by_wave),
+        "ray_call_count_by_wave": [
+            calls * RAY_SOURCE_CHAIN_COUNT for calls in ray_calls_by_wave
+        ],
         "ray_chain_count": len({
             event["job_id"][len(RAY_BURST_PREFIX) :].split("-", 1)[0]
             for event in _start_events(source, "RAY")
@@ -560,9 +659,9 @@ def build_scenario(*, background_attempt: int | None = None) -> dict[str, Any]:
             "Ten waves at 00:15 and hourly: selected by user decision.",
             "K8S counts per wave: balanced for ten measured held episodes.",
             "Ten-minute K8S lead window: staged background before each wave.",
-            "18 Ray calls per source chain per wave: preserves all 7,200 calls.",
+            "Target-ranked Ray calls per source chain vary by wave and sum to 180 per chain.",
             "Lower pre-wave demand target: approved by user to preserve counts and durations.",
-            "Seeded target durations determine the K8S sessions staged before each wave; all 995 movable sessions are retained.",
+            "Seeded target durations rank the per-wave Ray call counts; the front-loaded K8S profile retains all 995 movable sessions.",
             "Seeded weighted-hour background chains randomize only non-wave Ray arrival times; job IDs and physical attributes are unchanged.",
             "The recorded background attempt is the accepted deterministic redraw after checking held-queue telemetry.",
         ],
