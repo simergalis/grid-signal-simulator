@@ -27,10 +27,89 @@ SESSION_START_OFFSET_S = SESSION_START_LOCAL_HOUR * 3600
 FIRST_LOCAL_WAVE_OFFSET_S = 900
 # PROPOSED_HERE: waves remain one hour apart through local 18:15.
 LOCAL_WAVE_INTERVAL_S = 3600
-# PROPOSED_HERE: calibrated counts keep the total at 180 calls per chain.
-RAY_CALLS_PER_CHAIN_BY_WAVE = (24, 24, 24, 24, 24, 8, 13, 9, 6, 24)
-# PROPOSED_HERE: per-wave interarrival gaps shape concurrent queue pressure.
-RAY_INTERARRIVAL_BY_WAVE_S = (1, 1, 1, 1, 1, 2, 2, 2, 2, 1)
+# PROPOSED_HERE: the closest 12-iteration allocation keeps all 7,200 original
+# wave calls; it produces five in-range episodes but cannot meet all ten floors.
+RAY_CALLS_PER_CHAIN_BY_WAVE = (34, 15, 15, 15, 15, 5, 15, 15, 15, 36)
+# PROPOSED_HERE: simultaneous arrivals maximize cap pressure within each wave;
+# the fixed 7,200-call budget still leaves five episodes shorter than 60 s.
+RAY_INTERARRIVAL_BY_WAVE_S = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+# PROPOSED_HERE: retain every measured candidate from the bounded 12-run
+# calibration so the unmet duration constraint and count tradeoffs are auditable.
+CALIBRATION_ITERATION_LOG = (
+    {
+        "iteration": 1,
+        "calls_per_chain": (24, 24, 24, 24, 24, 8, 13, 9, 6, 24),
+        "interarrival_s": (0.5, 0.5, 0.5, 0.5, 0.5, 2, 2, 2, 0.5, 0.5),
+        "measured_duration_s": (35, 35, 40, 40, 50, 85, 315, 70, 25, 35),
+    },
+    {
+        "iteration": 2,
+        "calls_per_chain": (24, 24, 24, 24, 24, 8, 13, 9, 6, 24),
+        "interarrival_s": (2,) * 10,
+        "measured_duration_s": (20, 25, 35, 35, 45, 85, 315, 70, 25, 35),
+    },
+    {
+        "iteration": 3,
+        "calls_per_chain": (24, 24, 24, 24, 24, 8, 13, 9, 6, 24),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (40, 45, 45, 45, 55, 85, 315, 65, 25, 35),
+    },
+    {
+        "iteration": 4,
+        "calls_per_chain": (18,) * 10,
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (25, 30, 30, 30, 40, 225, 450, 150, 105, 25),
+    },
+    {
+        "iteration": 5,
+        "calls_per_chain": (26, 26, 26, 26, 26, 8, 5, 8, 15, 14),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (45, 45, 50, 50, 60, 85, 100, 55, 85, 15),
+    },
+    {
+        "iteration": 6,
+        "calls_per_chain": (30, 30, 30, 30, 30, 6, 6, 6, 6, 6),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (50, 55, 60, 60, 70, 60, 125, 40, 25, 5),
+    },
+    {
+        "iteration": 7,
+        "calls_per_chain": (16, 16, 16, 16, 16, 16, 16, 16, 12, 40),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (20, 25, 25, 25, 30, 195, 395, 130, 65, 80),
+    },
+    {
+        "iteration": 8,
+        "calls_per_chain": (24, 24, 24, 24, 24, 5, 5, 5, 5, 40),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (40, 45, 45, 45, 55, 50, 100, 30, 20, 80),
+    },
+    {
+        "iteration": 9,
+        "calls_per_chain": (15, 15, 15, 15, 15, 15, 15, 15, 28, 32),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (20, 25, 25, 25, 30, 180, 370, 120, 175, 55),
+    },
+    {
+        "iteration": 10,
+        "calls_per_chain": (14, 15, 15, 15, 15, 15, 15, 15, 25, 36),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (20, 25, 25, 25, 30, 180, 370, 120, 150, 70),
+    },
+    {
+        "iteration": 11,
+        "calls_per_chain": (34, 15, 15, 15, 15, 5, 5, 15, 25, 36),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (60, 25, 25, 25, 30, 50, 100, 120, 150, 70),
+    },
+    {
+        "iteration": 12,
+        "calls_per_chain": (34, 15, 15, 15, 15, 5, 15, 15, 15, 36),
+        "interarrival_s": (0,) * 10,
+        "measured_duration_s": (60, 25, 25, 25, 30, 50, 370, 120, 85, 70),
+    },
+)
 
 # PROPOSED_HERE: preserve the approved deterministic Proxim8 seed.
 SEED = 20261102
@@ -833,6 +912,26 @@ def build_scenario() -> dict[str, Any]:
             for calls in RAY_CALLS_PER_CHAIN_BY_WAVE
         ],
         "ray_interarrival_by_wave_s": list(RAY_INTERARRIVAL_BY_WAVE_S),
+        "calibration_status": (
+            "stopped_after_12_iterations: fixed_7200_call_budget_did_not_put_"
+            "all_10_measured_episodes_in_60_to_420_seconds"
+        ),
+        "selected_calibration_iteration": 12,
+        "calibration_iteration_log": [
+            {
+                "iteration": entry["iteration"],
+                "calls_per_chain_by_wave": list(entry["calls_per_chain"]),
+                "calls_by_wave": [
+                    calls * RAY_SOURCE_CHAIN_COUNT
+                    for calls in entry["calls_per_chain"]
+                ],
+                "interarrival_s_by_wave": list(entry["interarrival_s"]),
+                "measured_duration_s_by_wave": list(
+                    entry["measured_duration_s"]
+                ),
+            }
+            for entry in CALIBRATION_ITERATION_LOG
+        ],
         "ray_wave_call_count": len(moved_ray),
         "ray_background_rotation": background_provenance,
         "k8s_rotated_count": len(moved_k8s),
@@ -853,6 +952,7 @@ def build_scenario() -> dict[str, Any]:
             "The five midnight K8S carry-over sessions rotate to the following-night position.",
             "Ten Ray wave starts are 09:15 through 18:15 local, one hour apart.",
             "The 7,200 former Ray burst calls are allocated by per-wave chain counts and spacing.",
+            "The best measured 12-iteration allocation has five episodes in the requested duration band; five remain short, so the acceptance criterion is unmet.",
             "PG&E B-20 uses sim time from midnight, so its periods are offset by nine hours from local time.",
         ],
     }
@@ -875,6 +975,12 @@ def main() -> None:
     provenance = scenario["provenance_proxim8_queue_early"]
     print(f"Wave targets: {provenance['target_durations_seconds']}")
     print(f"Ray calls per chain by wave: {provenance['ray_calls_per_chain_by_wave']}")
+    print(f"Ray calls by wave: {provenance['ray_call_count_by_wave']}")
+    print(f"Calibration status: {provenance['calibration_status']}")
+    print(
+        "Calibration iterations: "
+        f"{len(provenance['calibration_iteration_log'])}"
+    )
     print(f"Rotated background counts per hour: {provenance['ray_background_rotation']['rotated_hourly_call_counts']}")
 
 
