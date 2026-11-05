@@ -47,21 +47,77 @@ RAY_IMMEDIATE_BATCH_COUNT_BY_WAVE = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 CALIBRATION_MAX_ITERATIONS = 12
 # PROPOSED_HERE: seeded duration targets span the requested short-to-long range.
 CALIBRATION_TARGET_DURATIONS_S = (255, 270, 95, 345, 380, 240, 330, 245, 365, 100)
-# PROPOSED_HERE: preserve every measured trial so the infeasible count tradeoff is auditable.
-CALIBRATION_ITERATION_LOG: tuple[dict[str, Any], ...] = (
-    {"iteration": 1, "calls_by_wave": (1360, 1280, 1200, 1200, 1200, 240, 120, 320, 440, 1340), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 70, 60, 50, 55, 55, 60)},
-    {"iteration": 2, "calls_by_wave": (1300, 1200, 1100, 1100, 1100, 200, 600, 250, 350, 1500), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (55, 55, 50, 55, 65, 50, 370, 45, 45, 70)},
-    {"iteration": 3, "calls_by_wave": (1284, 1204, 1124, 1124, 1124, 220, 600, 300, 420, 1300), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (55, 370, 55, 45)},
-    {"iteration": 4, "calls_by_wave": (1300, 1220, 1160, 1160, 1160, 220, 600, 300, 420, 1160), "interarrival_s_by_wave": (1, 1, 1, 1, 1, 1, 0, 1, 1, 1), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (50, 55, 50, 55, 65, 55, 370, 55, 55, 45)},
-    {"iteration": 5, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 240, 600, 320, 440, 1060), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 55, 60, 370, 55, 55, 45)},
-    {"iteration": 6, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 55, 55, 340, 65, 70, 40)},
-    {"iteration": 7, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (2, 2, 2, 2, 2, 2, 0, 2, 2, 2), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (45, 40, 50, 50, 45, 55, 340, 70, 70, 35)},
-    {"iteration": 8, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0.5, 0.5, 0.5), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (55, 55, 55, 55, 55, 55, 340, 70, 70, 40)},
-    {"iteration": 9, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (8, 8, 8, 8, 8, 8, 14, 8, 8, 8), "measured_episode_durations_s": (15, 15, 20, 20, 20, 55, 340, 65, 70, 5)},
-    {"iteration": 10, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (15, 15, 15, 15, 15, 8, 14, 8, 8, 15), "measured_episode_durations_s": (30, 40, 40, 45, 55, 55, 340, 65, 70, 30)},
-    {"iteration": 11, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 500, 320, 360, 480, 1000), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 55, 145, 180, 65, 65, 40)},
-    {"iteration": 12, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (20, 20, 20, 20, 20, 6, 14, 8, 8, 20), "measured_episode_durations_s": (50, 60, 60, 60, 55, 55, 340, 65, 70, 40)},
+# PROPOSED_HERE: the first inference-wave allocation moves all 995 non-carryover
+# sessions; later calibration changes only these per-wave counts.
+K8S_SESSION_COUNT_BY_WAVE = (210, 120, 100, 100, 100, 100, 80, 70, 60, 55)
+# PROPOSED_HERE: one seeded ordering keeps session selection reproducible while
+# the per-wave counts are calibrated.
+K8S_WAVE_SELECTION_SEED_OFFSET = 840000
+# PROPOSED_HERE: weighted 5-second slots spread the former 16:35 burst across
+# the day without creating synchronized Ray waves.
+RAY_SPREAD_SLOT_S = 5
+# PROPOSED_HERE: isolate Ray background-chain draws from K8S selection and targets.
+RAY_SPREAD_SEED_OFFSET = 920000
+# PROPOSED_HERE: bound the inference-wave calibration to twelve 24-hour runs.
+INFERENCE_CALIBRATION_MAX_ITERATIONS = 12
+# PROPOSED_HERE: preserve all six measured count-only calibration trials.
+INFERENCE_CALIBRATION_ITERATION_LOG: tuple[dict[str, Any], ...] = (
+    {
+        "iteration": 1,
+        "k8s_session_count_by_wave": (250, 145, 120, 110, 100, 80, 60, 50, 45, 35),
+        "measured_episode_durations_s": (5, 1785),
+    },
+    {
+        "iteration": 2,
+        "k8s_session_count_by_wave": (220, 120, 110, 100, 100, 80, 70, 60, 50, 40),
+        "measured_episode_durations_s": (5, 270),
+    },
+    {
+        "iteration": 3,
+        "k8s_session_count_by_wave": (200, 90, 90, 90, 90, 75, 60, 50, 40, 35),
+        "measured_episode_durations_s": (),
+    },
+    {
+        "iteration": 4,
+        "k8s_session_count_by_wave": (210, 90, 90, 90, 90, 75, 60, 50, 40, 35),
+        "measured_episode_durations_s": (),
+    },
+    {
+        "iteration": 5,
+        "k8s_session_count_by_wave": (210, 87, 87, 87, 87, 87, 87, 87, 87, 87),
+        "measured_episode_durations_s": (),
+    },
+    {
+        "iteration": 6,
+        "k8s_session_count_by_wave": (210, 120, 100, 100, 100, 100, 80, 70, 60, 55),
+        "measured_episode_durations_s": (),
+    },
 )
+# PROPOSED_HERE: six measured trials show no passing queue schedule; iteration
+# 2 is the closest episode-count result, while iteration 6 stays under the cap.
+INFERENCE_CALIBRATION_STATUS = "stopped_no_passing_candidate_after_6_trials"
+# PROPOSED_HERE: preserve the closest and cap-safe measured trial summaries.
+INFERENCE_CALIBRATION_RESULT = {
+    "closest_episode_count_iteration": 2,
+    "closest_episode_count_durations_s": (5, 270),
+    "closest_episode_count_peak_demand_mw": 5.05082,
+    "closest_episode_count_peak_requested_mw": 5.08265,
+    "closest_episode_count_peak_grid_import_mw": 5.0,
+    "closest_episode_count_unserved_mwh": 0.0,
+    "cap_safe_iteration": 6,
+    "cap_safe_episode_durations_s": (),
+    "cap_safe_peak_demand_mw": 4.8662,
+    "cap_safe_peak_requested_mw": 4.8662,
+    "cap_safe_peak_grid_import_mw": 4.8662,
+    "cap_safe_unserved_mwh": 0.0,
+    "reason": (
+        "The first wave is either empty/5-second held telemetry below the "
+        "cap, or the held Ray backlog accompanies facility demand above 5 MW."
+    ),
+}
+# Historical Ray-wave trials are retained in git history; this redesign's
+# count-only results are recorded in INFERENCE_CALIBRATION_ITERATION_LOG.
+CALIBRATION_ITERATION_LOG: tuple[dict[str, Any], ...] = ()
 
 # PROPOSED_HERE: preserve the approved deterministic Proxim8 seed.
 SEED = 20261102
@@ -264,24 +320,29 @@ def _rotate_slurm_events(
     moves: list[dict[str, Any]] = []
     for event in events:
         original_time_s = float(event["timestamp"])
-        new_time_s = _rotate_daily_time(original_time_s)
+        truncated_after_session = False
+        remaining_after_session_s = 0.0
         if event.get("event_type") == "job_end":
             start_time = starts.get(event["job_id"])
-            if start_time is not None:
-                new_start = _rotate_daily_time(start_time)
-                if new_time_s <= new_start:
-                    new_time_s += SECONDS_PER_DAY
-            # The session ends at 24 hours; jobs crossing that boundary are
-            # naturally truncated, so their post-session end event is omitted.
-            if new_time_s >= SECONDS_PER_DAY:
-                moves.append({
-                    "job_id": event["job_id"],
-                    "event_type": event.get("event_type"),
-                    "original_time_s": original_time_s,
-                    "new_time_s": None,
-                    "truncated_after_session": True,
-                })
-                continue
+            if start_time is None:
+                raise ValueError(
+                    f"Slurm end has no matching start: {event['job_id']}"
+                )
+            rotated_start_s = _rotate_daily_time(start_time)
+            original_duration_s = original_time_s - start_time
+            unwrapped_end_s = rotated_start_s + original_duration_s
+            if unwrapped_end_s > SECONDS_PER_DAY:
+                # Split at the simulation horizon: retain a matching terminal
+                # end at 24:00 and record the out-of-window remainder.
+                new_time_s = float(SECONDS_PER_DAY)
+                truncated_after_session = True
+                remaining_after_session_s = (
+                    unwrapped_end_s - SECONDS_PER_DAY
+                )
+            else:
+                new_time_s = float(unwrapped_end_s)
+        else:
+            new_time_s = _rotate_daily_time(original_time_s)
         rotated_event = {**event, "timestamp": new_time_s}
         rotated.append(rotated_event)
         moves.append({
@@ -289,10 +350,180 @@ def _rotate_slurm_events(
             "event_type": event.get("event_type"),
             "original_time_s": original_time_s,
             "new_time_s": new_time_s,
-            "truncated_after_session": False,
+            "truncated_after_session": truncated_after_session,
+            "remaining_after_session_s": remaining_after_session_s,
         })
     rotated.sort(key=lambda row: (float(row["timestamp"]), row.get("job_id", "")))
     return rotated, moves
+
+
+def _build_inference_wave_arrivals(
+    source: dict[str, Any],
+    counts_by_wave: tuple[int, ...],
+    target_durations_s: list[int],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if len(counts_by_wave) != WAVE_COUNT:
+        raise ValueError(f"expected {WAVE_COUNT} K8S wave counts")
+    if any(count < 0 for count in counts_by_wave):
+        raise ValueError("K8S wave counts must be non-negative")
+
+    source_starts = _start_events(source, "K8S")
+    ends = _end_times(source, "K8S")
+    if len(source_starts) != EXPECTED_K8S_COUNT:
+        raise ValueError("the original K8S session count changed")
+    movable = [
+        event for event in source_starts
+        if float(event["timestamp"]) != 0.0
+    ]
+    if len(movable) != (
+        EXPECTED_K8S_COUNT - MIDNIGHT_CARRY_OVER_K8S_COUNT
+    ):
+        raise ValueError("unexpected count of non-carry-over K8S sessions")
+
+    selection_rng = random.Random(SEED + K8S_WAVE_SELECTION_SEED_OFFSET)
+    selection_order = sorted(movable, key=lambda event: event["job_id"])
+    selection_rng.shuffle(selection_order)
+    total_moved = sum(counts_by_wave)
+    if total_moved > len(selection_order):
+        raise ValueError(
+            f"requested {total_moved} K8S moves, only "
+            f"{len(selection_order)} sessions are movable"
+        )
+
+    wave_by_job: dict[str, tuple[int, float]] = {}
+    cursor = 0
+    for wave_index, count in enumerate(counts_by_wave):
+        wave_time_s = float(
+            FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
+        )
+        for event in selection_order[cursor:cursor + count]:
+            wave_by_job[event["job_id"]] = (wave_index, wave_time_s)
+        cursor += count
+
+    arrivals: list[dict[str, Any]] = []
+    moves: list[dict[str, Any]] = []
+    for event in source_starts:
+        original_time_s = float(event["timestamp"])
+        original_end_s = ends[event["job_id"]]
+        rotated_time_s = _rotate_daily_time(original_time_s)
+        assignment = wave_by_job.get(event["job_id"])
+        arrival_time_s = assignment[1] if assignment else rotated_time_s
+        arrival = _scheduled_arrival(
+            event,
+            original_time_s=original_time_s,
+            arrival_time_s=arrival_time_s,
+            end_time_s=original_end_s,
+        )
+        arrivals.append(arrival)
+        if assignment:
+            wave_index = assignment[0]
+            moves.append({
+                **_provenance_move(
+                    event,
+                    original_time_s=original_time_s,
+                    new_time_s=arrival_time_s,
+                    end_time_s=original_end_s,
+                ),
+                "rotated_original_time_s": rotated_time_s,
+                "wave_index": wave_index,
+                "target_duration_s": target_durations_s[wave_index],
+            })
+
+    arrivals.sort(key=lambda row: (row["arrival_time_s"], row["job_id"]))
+    moves.sort(key=lambda row: (row["wave_index"], row["job_id"]))
+    return arrivals, moves
+
+
+def _build_spread_ray_arrivals(
+    source: dict[str, Any],
+    *,
+    background_attempt: int = 1,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    source_starts = _start_events(source, "RAY")
+    ends = _end_times(source, "RAY")
+    if len(source_starts) != EXPECTED_RAY_COUNT:
+        raise ValueError("the original Ray call count changed")
+    burst_events = sorted(
+        (
+            event for event in source_starts
+            if event["job_id"].startswith(RAY_BURST_PREFIX)
+        ),
+        key=lambda event: event["job_id"],
+    )
+    day_events = [
+        event for event in source_starts
+        if not event["job_id"].startswith(RAY_BURST_PREFIX)
+    ]
+    if len(burst_events) != EXPECTED_RAY_BURST_COUNT:
+        raise ValueError("the original Ray burst count changed")
+    if len(day_events) != EXPECTED_RAY_COUNT - EXPECTED_RAY_BURST_COUNT:
+        raise ValueError("the original Ray background count changed")
+
+    # The source's 2,800 day calls retain their original rotated timestamps.
+    arrivals = [
+        _scheduled_arrival(
+            event,
+            original_time_s=float(event["timestamp"]),
+            arrival_time_s=_rotate_daily_time(float(event["timestamp"])),
+            end_time_s=ends[event["job_id"]],
+        )
+        for event in day_events
+    ]
+
+    rng = random.Random(
+        SEED + RAY_SPREAD_SEED_OFFSET + background_attempt
+    )
+    moved: list[dict[str, Any]] = []
+    hourly_counts = [0] * HOURS_PER_DAY
+    slots_per_hour = SECONDS_PER_HOUR // RAY_SPREAD_SLOT_S
+    for event in burst_events:
+        original_time_s = float(event["timestamp"])
+        hour = rng.choices(
+            population=list(range(HOURS_PER_DAY)),
+            weights=BACKGROUND_HOUR_WEIGHTS,
+            k=1,
+        )[0]
+        slot = rng.randrange(slots_per_hour)
+        new_time_s = float(
+            hour * SECONDS_PER_HOUR + slot * RAY_SPREAD_SLOT_S
+        )
+        arrival = _scheduled_arrival(
+            event,
+            original_time_s=original_time_s,
+            arrival_time_s=new_time_s,
+            end_time_s=ends[event["job_id"]],
+        )
+        arrivals.append(arrival)
+        hourly_counts[hour] += 1
+        moved.append({
+            **_provenance_move(
+                event,
+                original_time_s=original_time_s,
+                new_time_s=new_time_s,
+                end_time_s=ends[event["job_id"]],
+            ),
+            "rotated_original_time_s": _rotate_daily_time(
+                original_time_s
+            ),
+        })
+
+    if len(moved) != EXPECTED_RAY_BURST_COUNT:
+        raise ValueError("not all former burst calls were spread")
+    arrivals.sort(key=lambda row: (row["arrival_time_s"], row["job_id"]))
+    moved.sort(key=lambda row: row["job_id"])
+    provenance = {
+        "attempt": background_attempt,
+        "seed": SEED + RAY_SPREAD_SEED_OFFSET + background_attempt,
+        "source_day_calls_retained_at_rotated_times": len(day_events),
+        "former_burst_calls_spread": len(moved),
+        "arrival_shape": (
+            "weighted independent random arrivals in aligned 5-second slots"
+        ),
+        "slot_seconds": RAY_SPREAD_SLOT_S,
+        "spread_call_counts_by_sim_hour": hourly_counts,
+        "moved_calls": moved,
+    }
+    return arrivals, moved, provenance
 
 
 def _borrow_background_calls(
@@ -868,7 +1099,7 @@ def _build_ray_arrivals(
     return arrivals, moved, background_provenance
 
 
-def build_scenario() -> dict[str, Any]:
+def _build_legacy_scenario() -> dict[str, Any]:
     baseline = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
     business = json.loads(QUEUE_TEMPLATE_PATH.read_text(encoding="utf-8"))
     if baseline.get("end_sim_time") != SECONDS_PER_DAY:
@@ -1034,6 +1265,190 @@ def build_scenario() -> dict[str, Any]:
     return scenario
 
 
+def build_scenario(
+    *,
+    k8s_session_counts_by_wave: tuple[int, ...] | None = None,
+    background_attempt: int = 1,
+) -> dict[str, Any]:
+    """Build the early variant from the immutable original Proxim8 inputs."""
+    source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
+    queue_template = json.loads(
+        QUEUE_TEMPLATE_PATH.read_text(encoding="utf-8")
+    )
+    if source.get("end_sim_time") != SECONDS_PER_DAY:
+        raise ValueError("the original Proxim8 scenario is not a 24-hour run")
+
+    target_durations = _draw_wave_targets()
+    if tuple(target_durations) != CALIBRATION_TARGET_DURATIONS_S:
+        raise ValueError("seeded duration targets differ from the recorded calibration")
+    counts_by_wave = (
+        K8S_SESSION_COUNT_BY_WAVE
+        if k8s_session_counts_by_wave is None
+        else tuple(int(count) for count in k8s_session_counts_by_wave)
+    )
+
+    k8s_arrivals, moved_k8s = _build_inference_wave_arrivals(
+        source, counts_by_wave, target_durations
+    )
+    ray_arrivals, moved_ray, ray_spread = _build_spread_ray_arrivals(
+        source,
+        background_attempt=background_attempt,
+    )
+    rotated_slurm, moved_slurm = _rotate_slurm_events(
+        [
+            event for event in source["workload_events"]
+            if event.get("scheduler_type") == "SLURM"
+        ]
+    )
+    scenario = copy.deepcopy(source)
+    scenario["name"] = "Proxim8 — queue-stress early"
+    scenario["description"] = (
+        source["description"]
+        + "\n\nQueue-stress early variant (DR-2026-11-03-PROXIM8-QUEUE; "
+        "DR-2026-11-05-PROXIM8-EARLY-0900, PROPOSED_HERE): the session "
+        "starts at local 09:00 and the original 24-hour workload and building "
+        "timelines are rotated by nine hours. Ten hourly inference surges "
+        "arrive at local 09:15 through 18:15; seeded existing K8S sessions "
+        f"moved to those windows by wave: {list(counts_by_wave)} "
+        f"({sum(counts_by_wave)} total). Each retains its original job ID, "
+        "duration, node count, model identity and hardware profile. The five "
+        "midnight carry-over sessions rotate to the session's 15:00 mark. "
+        "The 2,800 original day Ray calls retain their rotated arrival times; "
+        "the 7,200 former 16:35 burst calls are spread into seeded weighted "
+        f"random 5-second slots (attempt {background_attempt}). "
+        "Slurm jobs retain their rotated starts and ends; a job extending "
+        "past the 24-hour session boundary is split at t=86,400 s, with the "
+        "post-boundary remainder outside this run recorded in provenance "
+        "(PROPOSED_HERE). PG&E B-20 periods still use simulated hours from "
+        "midnight because the engine has no session-start-hour field, so "
+        "tariff periods are offset from local clock time by nine hours "
+        "(PROPOSED_HERE). Seeded target episode durations in seconds are "
+        f"{target_durations}. Count-only calibration stopped after six measured "
+        "trials without a schedule meeting the queue-duration and cap limits; "
+        "this diagnostic candidate is not acceptance-ready."
+    )
+    scenario["non_gpu_load_profile_mw"] = _rotate_daily_profile(
+        source["non_gpu_load_profile_mw"]
+    )
+    scenario["workload_events"] = rotated_slurm
+    scenario["kube_clusters"] = copy.deepcopy(
+        queue_template["kube_clusters"]
+    )
+    for cluster in scenario["kube_clusters"]:
+        if cluster["scheduler_type"] == "K8S":
+            cluster["scheduled_arrivals"] = k8s_arrivals
+        elif cluster["scheduler_type"] == "RAY":
+            cluster["scheduled_arrivals"] = ray_arrivals
+        else:
+            raise ValueError(
+                f"unexpected cluster scheduler {cluster['scheduler_type']}"
+            )
+
+    wave_times = [
+        FIRST_WAVE_START_S + index * WAVE_INTERVAL_S
+        for index in range(WAVE_COUNT)
+    ]
+    ray_calls_by_hour = [
+        sum(
+            int(float(event["arrival_time_s"]) // SECONDS_PER_HOUR) == hour
+            for event in ray_arrivals
+        )
+        for hour in range(HOURS_PER_DAY)
+    ]
+    truncated_slurm = [
+        {
+            "job_id": move["job_id"],
+            "original_end_s": move["original_time_s"],
+            "session_end_s": move["new_time_s"],
+            "remainder_outside_session_s": move[
+                "remaining_after_session_s"
+            ],
+        }
+        for move in moved_slurm
+        if move["event_type"] == "job_end"
+        and move["truncated_after_session"]
+    ]
+
+    scenario["provenance_proxim8_queue_early"] = {
+        "seed": SEED,
+        "decision_records": [
+            "DR-2026-11-03-PROXIM8-QUEUE",
+            "DR-2026-11-05-PROXIM8-EARLY-0900 (PROPOSED_HERE)",
+        ],
+        "timeline_source": SOURCE_PATH.name,
+        "configuration_template": QUEUE_TEMPLATE_PATH.name,
+        "clock_rotation": {
+            "session_start_local_hour": SESSION_START_LOCAL_HOUR,
+            "rotation_seconds": SESSION_START_OFFSET_S,
+            "mapping": "(source_time - 09:00) modulo 24 hours",
+            "edl_time_basis": (
+                "EDL hour is sim_time_seconds // 3600 % 24; no scenario "
+                "session-start-hour override exists, so B-20 is 9 hours "
+                "behind site local time."
+            ),
+        },
+        "wave_count": WAVE_COUNT,
+        "wave_start_times_sim_seconds": wave_times,
+        "wave_start_times_local": [
+            f"{SESSION_START_LOCAL_HOUR + 0:02d}:"
+            f"{15 + index * 0:02d}"
+            if index == 0
+            else f"{SESSION_START_LOCAL_HOUR + index:02d}:15"
+            for index in range(WAVE_COUNT)
+        ],
+        "target_durations_seconds": target_durations,
+        "target_seed": SEED + WAVE_TARGET_SEED_OFFSET,
+        "k8s_session_count_by_wave": list(counts_by_wave),
+        "k8s_moved_session_count": len(moved_k8s),
+        "k8s_wave_moves": moved_k8s,
+        "k8s_wave_selection_seed": (
+            SEED + K8S_WAVE_SELECTION_SEED_OFFSET
+        ),
+        "ray_background": {
+            **{
+                key: value
+                for key, value in ray_spread.items()
+                if key != "moved_calls"
+            },
+            "moved_calls": moved_ray,
+            "calls_by_sim_hour": ray_calls_by_hour,
+        },
+        "ray_calls_by_sim_hour": ray_calls_by_hour,
+        "slurm_rotated_events": moved_slurm,
+        "slurm_jobs_split_at_session_end": truncated_slurm,
+        "slurm_boundary_policy": (
+            "A rotated job ending after t=86400 has a matching job_end at "
+            "t=86400; the remaining segment is outside this 24-hour run."
+        ),
+        "calibration_max_iterations": INFERENCE_CALIBRATION_MAX_ITERATIONS,
+        "calibration_status": INFERENCE_CALIBRATION_STATUS,
+        "calibration_selected_iteration": 6,
+        "calibration_result": INFERENCE_CALIBRATION_RESULT,
+        "calibration_iteration_log": [
+            {
+                "iteration": entry["iteration"],
+                "k8s_session_count_by_wave": list(
+                    entry["k8s_session_count_by_wave"]
+                ),
+                "measured_episode_durations_s": list(
+                    entry["measured_episode_durations_s"]
+                ),
+            }
+            for entry in INFERENCE_CALIBRATION_ITERATION_LOG
+        ],
+        "moved_job_count": len(moved_k8s) + len(moved_ray)
+        + len(truncated_slurm),
+        "proposed_here": [
+            "Proposed inference-session surges were tested, but no candidate met the measured queue and cap acceptance gates.",
+            "Each moved K8S session keeps its source model, duration, node count and profile.",
+            "The former 7,200-call Ray burst is distributed across seeded weighted random 5-second slots; all 2,800 day calls retain their rotated source arrivals.",
+            "A Slurm job crossing the 24-hour boundary ends at the horizon; the remainder is not simulated.",
+            "PG&E B-20 clock periods remain offset by nine hours from the site's local clock.",
+        ],
+    }
+    return scenario
+
+
 def main() -> None:
     scenario = build_scenario()
     OUTPUT_PATH.write_text(
@@ -1048,14 +1463,20 @@ def main() -> None:
             f"{len(cluster['scheduled_arrivals'])}"
         )
     provenance = scenario["provenance_proxim8_queue_early"]
-    print(f"Wave targets: {provenance['target_durations_seconds']}")
-    print(f"Ray calls by wave: {provenance['ray_call_count_by_wave']}")
+    print(f"Wave targets (s): {provenance['target_durations_seconds']}")
+    print(
+        "K8S moved sessions by wave: "
+        f"{provenance['k8s_session_count_by_wave']}"
+    )
+    print(
+        "Ray calls per sim hour: "
+        f"{provenance['ray_calls_by_sim_hour']}"
+    )
     print(f"Calibration status: {provenance['calibration_status']}")
     print(
         "Calibration iterations: "
         f"{len(provenance['calibration_iteration_log'])}"
     )
-    print(f"Rotated background counts per hour: {provenance['ray_background_rotation']['rotated_hourly_call_counts']}")
 
 
 if __name__ == "__main__":

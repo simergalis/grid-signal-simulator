@@ -21,6 +21,7 @@ from study_harness.executor import (
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_ID = PROXIM8_QUEUE_EARLY_SCENARIO_ID
 SCENARIO_PATH = PACKAGE_ROOT / "config" / "scenarios" / f"{SCENARIO_ID}.json"
+SCENARIO_DIRECTORY = PACKAGE_ROOT / "config" / "scenarios"
 SOURCE_PATH = PACKAGE_ROOT / "config" / "scenarios" / "proxim8-5mw-24h.json"
 SOURCE_GENERATOR_PATH = (
     PACKAGE_ROOT.parents[3] / "tools" / "proxim8" / "generate_scenario.py"
@@ -53,6 +54,17 @@ EXPECTED_SOURCE_HASHES = {
         "a1e535b03e5872b4c736a30843b63680b4e5afaa4624ed0c51b5ae34656e1273"
     ),
 }
+EXPECTED_PHYSICAL_HASHES = {
+    "proxim8-5mw-24h": (
+        "747432cf23b3da38d773c24f805d9dbc150e33ea870e4440f1c4ab3e28b7ddb0"
+    ),
+    "S11_mit_supercloud_2021-08-11_bchydro": (
+        "ea327a8d96a79de0160dc7519b6ff615b2863afe53c28224f649cb745a6bf189"
+    ),
+    "scenario-uneven-multisched-01": (
+        "bb2327da8e4c68e621e0ad13ebfda0fd732f34bfb98c743256165b7f8bf3f488"
+    ),
+}
 
 
 def _source_events(raw: dict, scheduler: str, event_type: str) -> list[dict]:
@@ -79,11 +91,28 @@ def _source_pairs(raw: dict, scheduler: str) -> dict[str, tuple[dict, float]]:
 
 
 def _scheduled_arrivals(raw: dict, scheduler: str) -> dict[str, dict]:
-    return {
+    clusters = raw.get("kube_clusters", [])
+    arrivals = {
         arrival["job_id"]: arrival
-        for cluster in raw["kube_clusters"]
+        for cluster in clusters
         if cluster.get("scheduler_type") == scheduler
-        for arrival in cluster["scheduled_arrivals"]
+        for arrival in cluster.get("scheduled_arrivals", [])
+    }
+    if arrivals:
+        return arrivals
+    ends = {
+        event["job_id"]: float(event["timestamp"])
+        for event in _source_events(raw, scheduler, "job_end")
+    }
+    return {
+        event["job_id"]: {
+            "job_id": event["job_id"],
+            "arrival_time_s": float(event["timestamp"]),
+            "duration_s": ends[event["job_id"]] - float(event["timestamp"]),
+            "node_count": int(event["node_count"]),
+            "hardware_profile_id": event["hardware_profile_id"],
+        }
+        for event in _source_events(raw, scheduler, "starting")
     }
 
 
@@ -233,27 +262,22 @@ def _measure_run() -> dict:
 
 def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
     raw = json.loads(SCENARIO_PATH.read_text(encoding="utf-8"))
-    original = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
-    source = json.loads(BUSINESS_QUEUE_PATH.read_text(encoding="utf-8"))
+    source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
     spec = ScenarioSpec.model_validate(raw)
     clusters = {cluster.scheduler_type: cluster for cluster in spec.kube_clusters}
     provenance = raw["provenance_proxim8_queue_early"]
     moved_k8s = {
-        item["job_id"]: item for item in provenance["k8s_rotated_arrivals"]
+        item["job_id"]: item for item in provenance["k8s_wave_moves"]
     }
-    moved_ray = {item["job_id"]: item for item in provenance["moved_ray_calls"]}
-    ray_background = provenance["ray_background_rotation"]
-    borrowed_background = {
-        item["job_id"]: item for item in ray_background["borrowed_calls"]
-    }
-    rotated_background = {
-        item["job_id"]: item
-        for item in ray_background["rotated_calls"]
+    ray_background = provenance["ray_background"]
+    moved_ray = {
+        item["job_id"]: item for item in ray_background["moved_calls"]
     }
 
     assert spec.end_sim_time == 86400
     assert spec.grid_import_limit_mw == 5.0
     assert len(_source_events(raw, "SLURM", "starting")) == 10
+    assert len(_source_events(raw, "SLURM", "job_end")) == 10
     assert set(clusters) == {"K8S", "RAY"}
     assert len(clusters["K8S"].scheduled_arrivals) == 1000
     assert len(clusters["RAY"].scheduled_arrivals) == 10000
@@ -267,72 +291,66 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
     assert build_seeded_store().get(SCENARIO_ID) is not None
     assert "DR-2026-11-05-PROXIM8-EARLY-0900" in spec.description
     assert "session starts at local 09:00" in spec.description
-    assert "offset from local time by nine hours" in spec.description
+    assert "offset from local clock time by nine hours" in spec.description
     assert provenance["seed"] == SEED
-    assert len(moved_k8s) == 1000
-    assert provenance["k8s_rotated_count"] == 1000
-    assert provenance["original_ray_wave_call_count"] == 7200
-    assert provenance["borrowed_background_call_count"] == 1500
-    assert provenance["ray_wave_call_count"] == 8700
-    assert len(moved_ray) == 8700
-    assert len(borrowed_background) == 1500
-    assert len(rotated_background) == 1300
-    assert ray_background["borrowed_call_count"] == 1500
-    assert ray_background["remaining_background_call_count"] == 1300
-    assert sum(ray_background["rotated_hourly_call_counts"]) == 1300
-    assert sum(
-        calls > 0 for calls in ray_background["rotated_hourly_call_counts"]
-    ) >= 20
-    assert {
-        job_id
-        for job_id, move in moved_ray.items()
-        if move["source_kind"] == "borrowed_background"
-    } == set(borrowed_background)
-    assert provenance["moved_job_count"] == 11010
-    assert len(provenance["wave_start_times_sim_seconds"]) == 10
-
-    source_slurm = [
-        event for event in source["workload_events"]
-        if event.get("scheduler_type") == "SLURM"
+    assert len(moved_k8s) == sum(provenance["k8s_session_count_by_wave"])
+    assert provenance["k8s_moved_session_count"] == len(moved_k8s)
+    assert len(provenance["k8s_session_count_by_wave"]) == 10
+    assert all(
+        count > 0 for count in provenance["k8s_session_count_by_wave"]
+    )
+    assert sum(provenance["k8s_session_count_by_wave"]) == len(moved_k8s)
+    assert len(moved_ray) == 7200
+    assert ray_background["source_day_calls_retained_at_rotated_times"] == 2800
+    assert ray_background["former_burst_calls_spread"] == 7200
+    assert ray_background["arrival_shape"] == (
+        "weighted independent random arrivals in aligned 5-second slots"
+    )
+    assert ray_background["slot_seconds"] == 5
+    assert len(ray_background["spread_call_counts_by_sim_hour"]) == 24
+    assert sum(ray_background["spread_call_counts_by_sim_hour"]) == 7200
+    assert len(ray_background["calls_by_sim_hour"]) == 24
+    assert sum(ray_background["calls_by_sim_hour"]) == 10000
+    assert provenance["ray_calls_by_sim_hour"] == [
+        sum(
+            int(float(arrival.arrival_time_s) // 3600) == hour
+            for arrival in clusters["RAY"].scheduled_arrivals
+        )
+        for hour in range(24)
     ]
+    assert len(provenance["wave_start_times_sim_seconds"]) == 10
+    assert provenance["calibration_max_iterations"] == 12
+
     actual_slurm = [
         event for event in raw["workload_events"]
         if event.get("scheduler_type") == "SLURM"
     ]
-    source_starts = {
-        event["job_id"]: event
-        for event in source_slurm
-        if event["event_type"] == "starting"
-    }
+    source_pairs = _source_pairs(source, "SLURM")
     actual_starts = {
         event["job_id"]: event
         for event in actual_slurm
         if event["event_type"] == "starting"
-    }
-    assert set(actual_starts) == set(source_starts)
-    assert all(
-        actual_starts[job_id]["timestamp"] == _rotated_time(event["timestamp"])
-        for job_id, event in source_starts.items()
-    )
-    source_ends = {
-        event["job_id"]: event
-        for event in source_slurm
-        if event["event_type"] == "job_end"
     }
     actual_ends = {
         event["job_id"]: event
         for event in actual_slurm
         if event["event_type"] == "job_end"
     }
-    for job_id, event in source_ends.items():
-        expected_end = _rotated_time(event["timestamp"])
-        expected_start = _rotated_time(source_starts[job_id]["timestamp"])
-        if expected_end <= expected_start:
-            expected_end += DAY_SECONDS
-        if expected_end >= DAY_SECONDS:
-            assert job_id not in actual_ends
-        else:
-            assert actual_ends[job_id]["timestamp"] == expected_end
+    assert set(actual_starts) == set(actual_ends) == set(source_pairs)
+    assert all(
+        actual_starts[job_id]["timestamp"] == _rotated_time(event["timestamp"])
+        for job_id, (event, _) in source_pairs.items()
+    )
+    for job_id, (event, duration_s) in source_pairs.items():
+        expected_end = min(
+            _rotated_time(event["timestamp"]) + duration_s,
+            DAY_SECONDS,
+        )
+        assert actual_ends[job_id]["timestamp"] == expected_end
+    assert {
+        item["job_id"] for item in provenance["slurm_jobs_split_at_session_end"]
+    } == {"slurm-training-0002"}
+    assert actual_ends["slurm-training-0002"]["timestamp"] == DAY_SECONDS
 
     wave_starts = provenance["wave_start_times_sim_seconds"]
     assert wave_starts == [900 + index * 3600 for index in range(10)]
@@ -343,7 +361,7 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
     expected_ray = _scheduled_arrivals(source, "RAY")
     for scheduler, expected, moved in (
         ("K8S", expected_k8s, moved_k8s),
-        ("RAY", expected_ray, {**moved_ray, **rotated_background}),
+        ("RAY", expected_ray, moved_ray),
     ):
         arrivals = {
             item.job_id: item for item in clusters[scheduler].scheduled_arrivals
@@ -355,16 +373,19 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
             assert actual.duration_s == event["duration_s"]
             assert actual.node_count == event["node_count"]
             assert actual.hardware_profile_id == event["hardware_profile_id"]
-            move = moved[job_id]
-            assert move["original_time_s"] == original_time
-            assert move["new_time_s"] == actual.arrival_time_s
-            if scheduler == "K8S" or job_id in rotated_background:
-                assert actual.arrival_time_s == _rotated_time(original_time)
-            if job_id in borrowed_background:
-                assert move["rotated_background_time_s"] == _rotated_time(
+            if job_id in moved:
+                move = moved[job_id]
+                assert move["original_time_s"] == original_time
+                assert move["new_time_s"] == actual.arrival_time_s
+                assert move["rotated_original_time_s"] == _rotated_time(
                     original_time
                 )
-                assert borrowed_background[job_id]["new_time_s"] == actual.arrival_time_s
+                if scheduler == "K8S":
+                    assert actual.arrival_time_s == wave_starts[
+                        move["wave_index"]
+                    ]
+            else:
+                assert actual.arrival_time_s == _rotated_time(original_time)
 
     carryover_ids = {
         job_id for job_id, event in expected_k8s.items()
@@ -412,7 +433,7 @@ def test_queue_early_has_ten_measured_held_episodes(
     assert min(durations) <= 120
     assert max(durations) >= 300
     assert all(episode["peak_queue_depth"] >= 5 for episode in episodes)
-    assert all(episode["schedulers"] == ["RAY"] for episode in episodes)
+    assert all(episode["schedulers"] == ["K8S"] for episode in episodes)
     assert 15 * 60 <= episodes[0]["start_time_s"] <= 20 * 60
     assert episodes[-1]["start_time_s"] - episodes[0]["start_time_s"] >= 8 * 3600
     assert all(
@@ -465,3 +486,26 @@ def test_early_variant_does_not_change_source_proxim8() -> None:
     assert hashlib.sha256(SOURCE_PATH.read_bytes()).hexdigest() == (
         EXPECTED_SOURCE_HASHES["proxim8-5mw-24h.json"]
     )
+
+
+def test_slow_non_regression_hashes_for_unmodified_scenarios() -> None:
+    for scenario_id, expected_hash in EXPECTED_PHYSICAL_HASHES.items():
+        raw = json.loads(
+            (SCENARIO_DIRECTORY / f"{scenario_id}.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        spec = ScenarioSpec.model_validate(raw)
+        hasher = PhysicalIdentityHasher()
+        with patch(
+            "runtime.run_manager._time_module.time",
+            return_value=PINNED_CLOCK,
+        ):
+            ctx = build_run_context_from_spec(
+                f"queue-pre-{scenario_id}",
+                spec.model_dump(mode="json"),
+                run_seed=1729,
+            )
+            for _ in range(int(spec.end_sim_time / TICK_SECONDS)):
+                hasher.update(ctx.step())
+        assert hasher.hexdigest() == expected_hash, scenario_id
