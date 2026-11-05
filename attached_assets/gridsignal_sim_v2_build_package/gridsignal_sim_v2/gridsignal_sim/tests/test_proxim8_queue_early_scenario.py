@@ -462,6 +462,11 @@ def test_queue_early_has_ten_measured_held_episodes(
         row["requested_mw"] + 1e-6 >= row["demand_mw"]
         for row in result["ticks"]
     )
+    assert all(
+        abs(row["requested_mw"] - row["demand_mw"]) <= 1e-9
+        for row in result["ticks"]
+        if row["held_count"] == 0
+    )
     for episode in episodes:
         episode_ticks = [
             row for row in result["ticks"]
@@ -475,6 +480,27 @@ def test_queue_early_has_ten_measured_held_episodes(
             episode["start_time_s"] <= row["time_s"] < episode["end_time_s"]
             for episode in episodes
         )
+    )
+
+
+def test_queue_early_draw_and_import_stay_within_cap(
+    measured_queue_early_run: dict,
+) -> None:
+    result = measured_queue_early_run
+    assert result["peak_demand_mw"] <= 5.0 + 1e-6
+    assert result["peak_grid_import_mw"] <= 5.0 + 1e-6
+    assert result["unserved_mwh"] == pytest.approx(0.0, abs=1e-9)
+    assert result["held_slurm"] == []
+    assert all(
+        row["demand_mw"] <= 5.0 + 1e-6
+        and row["grid_import_mw"] <= 5.0 + 1e-6
+        and row["requested_mw"] + 1e-6 >= row["demand_mw"]
+        for row in result["ticks"]
+    )
+    assert all(
+        abs(row["requested_mw"] - row["demand_mw"]) <= 1e-9
+        for row in result["ticks"]
+        if row["held_count"] == 0
     )
 
 

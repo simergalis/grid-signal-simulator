@@ -250,6 +250,9 @@ class KubeGridState:
     bess_headroom_mw: float         # rated_mw_total − bess_output_mw
     fuel_cell_headroom_mw: float = 0.0  # rated_mw − fc_output_mw; 0.0 when no FC configured
     facility_admission_headroom_mw: Optional[float] = None
+    # DR-2026-11-05-ADMISSION-PENDING-LOAD: keep not-yet-materialized
+    # admitted-job draw reserved in addition to the measured demand snapshot.
+    facility_admission_pending_mw: float = 0.0
     _facility_admission_reserved_mw: float = 0.0
 
     def remaining_facility_admission_headroom_mw(self) -> Optional[float]:
@@ -257,6 +260,7 @@ class KubeGridState:
             return None
         return (
             self.facility_admission_headroom_mw
+            - self.facility_admission_pending_mw
             - self._facility_admission_reserved_mw
         )
 
@@ -303,6 +307,25 @@ class _ActiveJob:
     # Multi-tenant identity — threaded from _PendingAdmission at admission time.
     tenant_id: str = "default"
     scheduler_type: str = "K8S"
+
+
+# PROPOSED_HERE: treat a one-microwatt residual as fully realized to avoid
+# retaining a reservation forever while the exponential thermal response
+# approaches its steady state asymptotically.
+FACILITY_ADMISSION_REALIZATION_TOLERANCE_MW = 1e-6
+
+
+@dataclass
+class _FacilityAdmissionReservation:
+    """One accepted cap-gated job's not-yet-realized facility increment."""
+    event_id: str
+    node_count: int
+    projected_increment_mw: float
+    admitted_at: float
+    ends_at: float
+    cohort_key: Optional[str] = None
+    cohort_node_count: int = 0
+    remaining_mw: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -388,6 +411,13 @@ class KubeDemandAgent:
         self._reorder_buffer: list[_PendingAdmission] = []
         self._active_jobs: list[_ActiveJob] = []
         self._seen_event_ids: set[str] = set()
+        self._facility_admission_reservations: list[
+            _FacilityAdmissionReservation
+        ] = []
+        self._facility_admissions_this_tick: list[
+            _FacilityAdmissionReservation
+        ] = []
+        self._facility_admission_tick_time: float = 0.0
         self._job_counter: int = 0
         # Next sim_time at which a new job arrives at the informer
         self._next_arrival_sim_time: float = 0.0
@@ -497,10 +527,112 @@ class KubeDemandAgent:
         admission: _PendingAdmission,
         grid_state: Optional[KubeGridState],
     ) -> None:
-        if self.config.grid_cap_admission_enabled and grid_state is not None:
-            grid_state.reserve_facility_admission_mw(
-                self._facility_admission_increment_mw(admission)
+        if self.config.grid_cap_admission_enabled:
+            increment_mw = self._facility_admission_increment_mw(admission)
+            if grid_state is not None:
+                grid_state.reserve_facility_admission_mw(increment_mw)
+            reservation = _FacilityAdmissionReservation(
+                event_id=admission.event_id,
+                node_count=admission.node_count,
+                projected_increment_mw=increment_mw,
+                admitted_at=self._facility_admission_tick_time,
+                ends_at=(
+                    self._facility_admission_tick_time + admission.duration_s
+                ),
+                remaining_mw=increment_mw,
             )
+            self._facility_admission_reservations.append(reservation)
+            self._facility_admissions_this_tick.append(reservation)
+
+    @property
+    def facility_admission_unrealized_mw(self) -> float:
+        if not self.config.grid_cap_admission_enabled:
+            return 0.0
+        return sum(
+            reservation.remaining_mw
+            for reservation in self._facility_admission_reservations
+        )
+
+    def bind_facility_admissions_to_cohort(
+        self, cohort_key: str, cohort_node_count: int
+    ) -> None:
+        """Associate this tick's accepted jobs with their physical GPU cohort."""
+        if not self._facility_admissions_this_tick:
+            return
+        accepted_nodes = sum(
+            reservation.node_count
+            for reservation in self._facility_admissions_this_tick
+        )
+        denominator = max(accepted_nodes, cohort_node_count)
+        for reservation in self._facility_admissions_this_tick:
+            reservation.cohort_key = cohort_key
+            reservation.cohort_node_count = denominator
+        self._facility_admissions_this_tick.clear()
+
+    def facility_admission_ended_cohort_keys(
+        self, sim_time: float
+    ) -> set[str]:
+        return {
+            reservation.cohort_key
+            for reservation in self._facility_admission_reservations
+            if reservation.cohort_key is not None
+            and sim_time >= reservation.ends_at
+        }
+
+    def update_facility_admission_realization(
+        self,
+        *,
+        compute_by_job_mw: dict[str, float],
+        cooling_by_job_mw: dict[str, float],
+        future_cooling_peak_by_job_mw: dict[str, float],
+        sim_time: float,
+        cooling_retention_s: float,
+    ) -> None:
+        """Release reservations only as the engine's corresponding draw appears."""
+        if not self.config.grid_cap_admission_enabled:
+            return
+        remaining: list[_FacilityAdmissionReservation] = []
+        for reservation in self._facility_admission_reservations:
+            realized_share_mw = 0.0
+            cooling_share_mw = 0.0
+            if reservation.cohort_key is not None:
+                node_fraction = (
+                    reservation.node_count
+                    / max(1, reservation.cohort_node_count)
+                )
+                cohort_draw_mw = (
+                    compute_by_job_mw.get(reservation.cohort_key, 0.0)
+                    + cooling_by_job_mw.get(reservation.cohort_key, 0.0)
+                )
+                realized_share_mw = cohort_draw_mw * node_fraction
+                cooling_share_mw = (
+                    cooling_by_job_mw.get(reservation.cohort_key, 0.0)
+                    * node_fraction
+                )
+            if sim_time >= reservation.ends_at:
+                future_cooling_share_mw = (
+                    future_cooling_peak_by_job_mw.get(
+                        reservation.cohort_key or "", cooling_share_mw
+                    )
+                    * reservation.node_count
+                    / max(1, reservation.cohort_node_count)
+                )
+                reservation.remaining_mw = max(
+                    0.0, future_cooling_share_mw - cooling_share_mw
+                )
+            else:
+                reservation.remaining_mw = max(
+                    0.0,
+                    reservation.projected_increment_mw - realized_share_mw,
+                )
+            if (
+                reservation.remaining_mw
+                <= FACILITY_ADMISSION_REALIZATION_TOLERANCE_MW
+                or sim_time > reservation.ends_at + cooling_retention_s
+            ):
+                continue
+            remaining.append(reservation)
+        self._facility_admission_reservations = remaining
 
     # ------------------------------------------------------------------
     # Public API
@@ -530,6 +662,8 @@ class KubeDemandAgent:
                      Empty when no admission changes node count this tick.
             metrics: KubeMetrics snapshot for this tick (wire + UI).
         """
+        self._facility_admission_tick_time = sim_time
+        self._facility_admissions_this_tick.clear()
         # A few compatibility callers preload the legacy _active_jobs list to
         # test GridSignal's power/capacity gates in isolation. Keep that
         # fixture path on the original gate implementation; live K8S runs

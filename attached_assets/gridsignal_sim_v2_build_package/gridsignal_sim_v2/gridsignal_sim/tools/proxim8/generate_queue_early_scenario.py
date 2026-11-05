@@ -54,10 +54,21 @@ K8S_SESSION_COUNT_BY_WAVE = (210, 120, 100, 100, 100, 100, 80, 70, 60, 55)
 # the per-wave counts are calibrated.
 K8S_WAVE_SELECTION_SEED_OFFSET = 840000
 # PROPOSED_HERE: weighted 5-second slots spread the former 16:35 burst across
-# the day without creating synchronized Ray waves.
+# the day; calls selected for each hourly surge are moved out of those slots.
 RAY_SPREAD_SLOT_S = 5
 # PROPOSED_HERE: isolate Ray background-chain draws from K8S selection and targets.
 RAY_SPREAD_SEED_OFFSET = 920000
+# PROPOSED_HERE: seed a repeatable slice of the 7,200 former burst calls into
+# the same ten hourly windows as the moved inference sessions.
+RAY_WAVE_SELECTION_SEED_OFFSET = 960000
+# PROPOSED_HERE: the fifth measured mix reduces the first wave to bring its
+# 465-second hold inside the seven-minute limit; other wave counts are retained.
+RAY_SURGE_CALL_COUNT_BY_WAVE = (240, 700, 500, 700, 750, 650, 700, 600, 750, 750)
+# PROPOSED_HERE: forty simultaneous agentic calls create a short admission
+# burst; subsequent batches continue every two seconds within the same wave.
+RAY_WAVE_CALLS_PER_BATCH = 40
+# PROPOSED_HERE: two-second batch spacing matches the source agentic call cadence.
+RAY_WAVE_BATCH_CADENCE_S = 2
 # PROPOSED_HERE: bound the inference-wave calibration to twelve 24-hour runs.
 INFERENCE_CALIBRATION_MAX_ITERATIONS = 12
 # PROPOSED_HERE: preserve all six measured count-only calibration trials.
@@ -438,6 +449,8 @@ def _build_spread_ray_arrivals(
     source: dict[str, Any],
     *,
     background_attempt: int = 1,
+    wave_call_counts_by_wave: tuple[int, ...] | None = None,
+    target_durations_s: list[int] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     source_starts = _start_events(source, "RAY")
     ends = _end_times(source, "RAY")
@@ -458,6 +471,22 @@ def _build_spread_ray_arrivals(
         raise ValueError("the original Ray burst count changed")
     if len(day_events) != EXPECTED_RAY_COUNT - EXPECTED_RAY_BURST_COUNT:
         raise ValueError("the original Ray background count changed")
+    wave_counts = (
+        RAY_SURGE_CALL_COUNT_BY_WAVE
+        if wave_call_counts_by_wave is None
+        else tuple(int(count) for count in wave_call_counts_by_wave)
+    )
+    targets = (
+        CALIBRATION_TARGET_DURATIONS_S
+        if target_durations_s is None
+        else tuple(int(value) for value in target_durations_s)
+    )
+    if len(wave_counts) != WAVE_COUNT or any(count < 0 for count in wave_counts):
+        raise ValueError("one non-negative Ray surge count is required per wave")
+    if sum(wave_counts) > len(burst_events):
+        raise ValueError("Ray surge counts exceed the former burst-call pool")
+    if len(targets) != WAVE_COUNT:
+        raise ValueError("one target duration is required per Ray surge")
 
     # The source's 2,800 day calls retain their original rotated timestamps.
     arrivals = [
@@ -474,7 +503,10 @@ def _build_spread_ray_arrivals(
         SEED + RAY_SPREAD_SEED_OFFSET + background_attempt
     )
     moved: list[dict[str, Any]] = []
-    hourly_counts = [0] * HOURS_PER_DAY
+    moved_by_id: dict[str, dict[str, Any]] = {}
+    arrivals_by_id: dict[str, dict[str, Any]] = {
+        arrival["job_id"]: arrival for arrival in arrivals
+    }
     slots_per_hour = SECONDS_PER_HOUR // RAY_SPREAD_SLOT_S
     for event in burst_events:
         original_time_s = float(event["timestamp"])
@@ -494,8 +526,7 @@ def _build_spread_ray_arrivals(
             end_time_s=ends[event["job_id"]],
         )
         arrivals.append(arrival)
-        hourly_counts[hour] += 1
-        moved.append({
+        move = {
             **_provenance_move(
                 event,
                 original_time_s=original_time_s,
@@ -505,10 +536,56 @@ def _build_spread_ray_arrivals(
             "rotated_original_time_s": _rotate_daily_time(
                 original_time_s
             ),
-        })
+        }
+        moved.append(move)
+        moved_by_id[event["job_id"]] = move
+        arrivals_by_id[event["job_id"]] = arrival
+
+    # A separately seeded sample of the former burst calls is routed through
+    # the same scheduled-arrival admission path as the K8S inference surges.
+    wave_rng = random.Random(SEED + RAY_WAVE_SELECTION_SEED_OFFSET)
+    wave_pool = sorted(burst_events, key=lambda event: event["job_id"])
+    wave_rng.shuffle(wave_pool)
+    cursor = 0
+    wave_moves: list[dict[str, Any]] = []
+    for wave_index, wave_call_count in enumerate(wave_counts):
+        wave_start_s = FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
+        wave_events = wave_pool[cursor : cursor + wave_call_count]
+        if len(wave_events) != wave_call_count:
+            raise ValueError(f"incomplete seeded Ray wave {wave_index + 1}")
+        for position, event in enumerate(wave_events):
+            job_id = event["job_id"]
+            new_time_s = float(
+                wave_start_s
+                + (position // RAY_WAVE_CALLS_PER_BATCH)
+                * RAY_WAVE_BATCH_CADENCE_S
+            )
+            arrivals_by_id[job_id] = {
+                **arrivals_by_id[job_id],
+                "arrival_time_s": new_time_s,
+            }
+            move = moved_by_id[job_id]
+            move["new_time_s"] = new_time_s
+            move["wave_number"] = wave_index + 1
+            move["wave_target_duration_s"] = targets[wave_index]
+            move["wave_offset_s"] = new_time_s - wave_start_s
+            wave_moves.append(move.copy())
+        cursor += wave_call_count
+
+    arrivals = [
+        arrivals_by_id[event["job_id"]]
+        for event in day_events
+    ] + [arrivals_by_id[event["job_id"]] for event in burst_events]
+    hourly_counts = [0] * HOURS_PER_DAY
+    for event in burst_events:
+        hour = int(
+            float(arrivals_by_id[event["job_id"]]["arrival_time_s"])
+            // SECONDS_PER_HOUR
+        )
+        hourly_counts[hour] += 1
 
     if len(moved) != EXPECTED_RAY_BURST_COUNT:
-        raise ValueError("not all former burst calls were spread")
+        raise ValueError("not all former burst calls were rescheduled")
     arrivals.sort(key=lambda row: (row["arrival_time_s"], row["job_id"]))
     moved.sort(key=lambda row: row["job_id"])
     provenance = {
@@ -522,6 +599,13 @@ def _build_spread_ray_arrivals(
         "slot_seconds": RAY_SPREAD_SLOT_S,
         "spread_call_counts_by_sim_hour": hourly_counts,
         "moved_calls": moved,
+        "wave_call_counts_by_wave": list(wave_counts),
+        "wave_call_count": sum(wave_counts),
+        "wave_selection_seed": SEED + RAY_WAVE_SELECTION_SEED_OFFSET,
+        "wave_arrival_shape": (
+            "seeded former-burst slice; paired arrivals every two seconds"
+        ),
+        "wave_moves": wave_moves,
     }
     return arrivals, moved, provenance
 
@@ -1268,6 +1352,7 @@ def _build_legacy_scenario() -> dict[str, Any]:
 def build_scenario(
     *,
     k8s_session_counts_by_wave: tuple[int, ...] | None = None,
+    ray_wave_call_counts_by_wave: tuple[int, ...] | None = None,
     background_attempt: int = 1,
 ) -> dict[str, Any]:
     """Build the early variant from the immutable original Proxim8 inputs."""
@@ -1293,6 +1378,13 @@ def build_scenario(
     ray_arrivals, moved_ray, ray_spread = _build_spread_ray_arrivals(
         source,
         background_attempt=background_attempt,
+        wave_call_counts_by_wave=ray_wave_call_counts_by_wave,
+        target_durations_s=target_durations,
+    )
+    ray_wave_counts = (
+        RAY_SURGE_CALL_COUNT_BY_WAVE
+        if ray_wave_call_counts_by_wave is None
+        else tuple(int(count) for count in ray_wave_call_counts_by_wave)
     )
     rotated_slurm, moved_slurm = _rotate_slurm_events(
         [
@@ -1313,9 +1405,11 @@ def build_scenario(
         f"({sum(counts_by_wave)} total). Each retains its original job ID, "
         "duration, node count, model identity and hardware profile. The five "
         "midnight carry-over sessions rotate to the session's 15:00 mark. "
-        "The 2,800 original day Ray calls retain their rotated arrival times; "
-        "the 7,200 former 16:35 burst calls are spread into seeded weighted "
-        f"random 5-second slots (attempt {background_attempt}). "
+        "The 2,800 original day Ray calls retain their rotated arrival times. "
+        f"A seeded slice of the 7,200 former 16:35 burst calls, {list(ray_wave_counts)}, "
+        "is routed through the same cap-admission queue at the ten wave times; "
+        "the remaining burst calls use seeded weighted random 5-second slots "
+        f"(attempt {background_attempt}). "
         "Slurm jobs retain their rotated starts and ends; a job extending "
         "past the 24-hour session boundary is split at t=86,400 s, with the "
         "post-boundary remainder outside this run recorded in provenance "
@@ -1414,6 +1508,8 @@ def build_scenario(
             "calls_by_sim_hour": ray_calls_by_hour,
         },
         "ray_calls_by_sim_hour": ray_calls_by_hour,
+        "ray_wave_call_counts_by_wave": list(ray_wave_counts),
+        "ray_wave_total_calls": sum(ray_wave_counts),
         "slurm_rotated_events": moved_slurm,
         "slurm_jobs_split_at_session_end": truncated_slurm,
         "slurm_boundary_policy": (
@@ -1441,7 +1537,7 @@ def build_scenario(
         "proposed_here": [
             "Proposed inference-session surges were tested, but no candidate met the measured queue and cap acceptance gates.",
             "Each moved K8S session keeps its source model, duration, node count and profile.",
-            "The former 7,200-call Ray burst is distributed across seeded weighted random 5-second slots; all 2,800 day calls retain their rotated source arrivals.",
+            "A seeded slice of the former 7,200-call Ray burst joins the ten cap-gated inference waves; the remainder stays in seeded weighted random 5-second slots, while all 2,800 day calls retain their rotated source arrivals.",
             "A Slurm job crossing the 24-hour boundary ends at the horizon; the remainder is not simulated.",
             "PG&E B-20 clock periods remain offset by nine hours from the site's local clock.",
         ],

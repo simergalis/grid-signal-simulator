@@ -370,8 +370,9 @@ def test_queue_variant_has_ten_measured_cap_hold_episodes(
     }
     assert measured_queue_run["held_job_ids"]
     assert measured_queue_run["held_job_ids"] <= ray_job_ids
+    assert measured_queue_run["peak_demand_mw"] <= 5.0 + 1e-6
     assert measured_queue_run["peak_grid_import_mw"] <= 5.0 + 1e-6
-    assert measured_queue_run["unserved_mwh"] >= 0.0
+    assert measured_queue_run["unserved_mwh"] == pytest.approx(0.0, abs=1e-9)
     assert measured_queue_run["arrivals_consumed"]
 
 
@@ -380,6 +381,9 @@ def test_requested_demand_tracks_cap_held_jobs(
 ) -> None:
     ticks = measured_queue_run["ticks"]
     assert ticks
+    assert measured_queue_run["peak_demand_mw"] <= 5.0 + 1e-6
+    assert measured_queue_run["peak_grid_import_mw"] <= 5.0 + 1e-6
+    assert measured_queue_run["unserved_mwh"] == pytest.approx(0.0, abs=1e-9)
     assert all(row["requested_demand_mw"] is not None for row in ticks)
     assert all(
         row["requested_demand_mw"] + 1e-6 >= row["p_demand_mw"]

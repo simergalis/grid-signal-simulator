@@ -699,9 +699,15 @@ class CoolingModule(AssetModule):
     site: SiteConfig
     _envelopes: dict[str, _LoadEnvelope] = field(default_factory=dict)
     _last_output_mw: float = 0.0
+    _last_output_by_job_mw: dict[str, float] = field(default_factory=dict)
     # Scalar-path state
     _prev_agg_mw: float = 0.0
     _synth_counter: int = 0
+
+    @property
+    def retention_seconds(self) -> float:
+        """Thermal history retention shared by pruning and admission tracking."""
+        return self.site.dt_thermal_seconds + 5.0 * self.site.tau_seconds
 
     # ------------------------------------------------------------------
     # Simulation path
@@ -856,9 +862,9 @@ class CoolingModule(AssetModule):
         pruning leaks one envelope per job per run.  Pruning happens here, once
         per tick, so the hot path is a single dict iteration.
         """
-        retention = self.site.dt_thermal_seconds + 5.0 * self.site.tau_seconds
-        lag_time = sim_time - self.site.dt_thermal_seconds
+        retention = self.retention_seconds
         total = 0.0
+        output_by_job_mw: dict[str, float] = {}
 
         for key in list(self._envelopes):
             env = self._envelopes[key]
@@ -869,17 +875,56 @@ class CoolingModule(AssetModule):
                 continue
 
             # αₖ(t): zero until dt_thermal has elapsed since onset.
-            threshold = env.onset_t + self.site.dt_thermal_seconds
-            if sim_time < threshold:
-                continue  # α_k = 0 before thermal delay expires
-            elapsed = sim_time - threshold
-            alpha_k = self.site.alpha_max * (
-                1.0 - math.exp(-elapsed / self.site.tau_seconds)
-            )
-
-            total += alpha_k * self._lagged_mw(env, lag_time)
+            contribution_mw = self._envelope_output_mw(env, sim_time)
+            total += contribution_mw
+            output_by_job_mw[key] = contribution_mw
 
         self._last_output_mw = total
+        self._last_output_by_job_mw = output_by_job_mw
+
+    def _envelope_output_mw(
+        self, env: _LoadEnvelope, sim_time: float
+    ) -> float:
+        """The same lag-and-alpha function used by advance(), for one envelope."""
+        threshold = env.onset_t + self.site.dt_thermal_seconds
+        if sim_time < threshold:
+            return 0.0
+        elapsed = sim_time - threshold
+        alpha_k = self.site.alpha_max * (
+            1.0 - math.exp(-elapsed / self.site.tau_seconds)
+        )
+        return alpha_k * self._lagged_mw(
+            env, sim_time - self.site.dt_thermal_seconds
+        )
+
+    def future_peak_output_mw(
+        self, job_id: str, sim_time: float, dt_seconds: float
+    ) -> float:
+        """Peak cooling still possible for an ended job's retained envelope.
+
+        Future probes use the same envelope function as advance(); the cursor
+        is restored afterward so this observation cannot move physics forward.
+        """
+        env = self._envelopes.get(job_id)
+        if env is None:
+            return 0.0
+        peak_mw = self._last_output_by_job_mw.get(job_id, 0.0)
+        if env.end_t is None:
+            return peak_mw
+
+        cursor_before = env._cursor_abs
+        future_time = sim_time + dt_seconds
+        final_lag_time = env.end_t + self.site.dt_thermal_seconds
+        try:
+            while future_time <= final_lag_time:
+                peak_mw = max(
+                    peak_mw,
+                    self._envelope_output_mw(env, future_time),
+                )
+                future_time += dt_seconds
+        finally:
+            env._cursor_abs = cursor_before
+        return peak_mw
 
     def output_mw(self) -> float:
         return self._last_output_mw

@@ -518,6 +518,37 @@ class SimulationState:
         ):
             _cohort_keys_before_end = list(gpu._job_cohorts.get(signal.job_id, []))
         new_unmapped = gpu.apply_signal(signal)
+        if signal.event_type in (
+            WorkloadEventType.STARTING,
+            WorkloadEventType.RUNNING,
+            WorkloadEventType.SCALE,
+        ):
+            _signal_scheduler = (
+                signal.scheduler_type.value
+                if hasattr(signal.scheduler_type, "value")
+                else signal.scheduler_type
+            )
+            for _agent in self.kube_agents:
+                if (
+                    not _agent.config.grid_cap_admission_enabled
+                    or not _agent._facility_admissions_this_tick
+                    or _agent.config.cluster_id != signal.cluster_id
+                    or _agent.config.scheduler_type != _signal_scheduler
+                    or (
+                        _agent.config.tenant_id is not None
+                        and signal.tenant_id is not None
+                        and _agent.config.tenant_id != signal.tenant_id
+                    )
+                ):
+                    continue
+                _cohort_key = gpu._last_scale_cohort_key or signal.job_id
+                _cohort_nodes = sum(
+                    module._node_counts.get(_cohort_key, 0)
+                    for module in self.gpu_modules
+                )
+                _agent.bind_facility_admissions_to_cohort(
+                    _cohort_key, _cohort_nodes
+                )
         if signal.event_type == WorkloadEventType.STARTING:
             # Instrumentation only: preserve the event timestamp before any
             # GPU ramp advances.  This does not alter the staging call below.
@@ -1376,6 +1407,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # 2. Cooling term (lagged)
         state.cooling.advance(sim_time, dt_seconds)
         p_cooling_demand_mw = state.cooling.output_mw()
+
+    if _demand_replay is None:
+        for _agent in state.kube_agents:
+            _ended_cohorts = _agent.facility_admission_ended_cohort_keys(
+                sim_time
+            )
+            _future_cooling_peak_by_job_mw = {
+                job_id: state.cooling.future_peak_output_mw(
+                    job_id, sim_time, dt_seconds
+                )
+                for job_id in _ended_cohorts
+            }
+            _agent.update_facility_admission_realization(
+                compute_by_job_mw=_per_job_draws,
+                cooling_by_job_mw=state.cooling._last_output_by_job_mw,
+                future_cooling_peak_by_job_mw=(
+                    _future_cooling_peak_by_job_mw
+                ),
+                sim_time=sim_time,
+                cooling_retention_s=state.cooling.retention_seconds,
+            )
 
     # Single demand-entry point: GPU compute + measured non-GPU IT + cooling.
     p_demand_mw = (
@@ -3261,6 +3313,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             agent.config.grid_cap_admission_enabled
             for agent in state.kube_agents
         )
+        _facility_admission_pending_mw = (
+            sum(
+                agent.facility_admission_unrealized_mw
+                for agent in state.kube_agents
+            )
+            if _grid_cap_admission_enabled
+            else 0.0
+        )
         state._kube_grid_state = KubeGridState(
             p_dispatch_required_mw=net_demand_mw,
             bess_soc_fraction=(
@@ -3285,6 +3345,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 )
                 else None
             ),
+            facility_admission_pending_mw=_facility_admission_pending_mw,
         )
 
     # ── Collect stochastic-step fields for TickResult ─────────────────────────

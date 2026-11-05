@@ -43,8 +43,7 @@ N = {
     "LATE_ANCHOR_END_HOUR": 17,  # PROPOSED_HERE: end the surge window before late-day demand falls below useful admission pressure.
     "EARLY_EPISODE_COUNT": 1,  # PROPOSED_HERE: one early high-volume surge establishes the business-day span.
     "LATE_EPISODE_COUNT": 9,  # PROPOSED_HERE: nine later surges provide repeated queue episodes during the afternoon.
-    "EARLY_CALLS_PER_CHAIN": 45,  # PROPOSED_HERE: concentrate 1,800 existing calls into one early queue episode.
-    "LATE_CALLS_PER_CHAIN": 15,  # PROPOSED_HERE: divide the remaining 5,400 calls into nine 600-call afternoon surges.
+    "CALLS_PER_CHAIN_BY_EPISODE": (45, 15, 15, 15, 15, 15, 15, 15, 15, 15),  # PROPOSED_HERE: restore the seeded 1,800-call morning wave plus nine 600-call business-day waves for fixed-gate remeasurement.
     "MIN_EPISODE_START_GAP_SECONDS": 1200,  # PROPOSED_HERE: require at least twenty minutes between episode starts.
     "MIN_EPISODE_START_SPAN_SECONDS": 21600,  # PROPOSED_HERE: require at least six hours between first and last episode starts.
     "MAX_START_SAMPLING_ATTEMPTS": 10000,  # PROPOSED_HERE: bounded deterministic rejection sampling for valid starts.
@@ -298,11 +297,8 @@ def _build_random_background(
 def _allocate_calls_per_episode(
     calls_per_chain: int,
 ) -> list[int]:
-    allocations = (
-        [N["EARLY_CALLS_PER_CHAIN"]]
-        + [N["LATE_CALLS_PER_CHAIN"]] * N["LATE_EPISODE_COUNT"]
-    )
-    if sum(allocations) != calls_per_chain:
+    allocations = list(N["CALLS_PER_CHAIN_BY_EPISODE"])
+    if len(allocations) != N["TEN"] or sum(allocations) != calls_per_chain:
         raise ValueError("the seeded episode allocation must preserve each source chain")
     return allocations
 

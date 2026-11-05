@@ -60,6 +60,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Simulator workflow ownership](simulator-workflow-ownership.md) — the FastAPI simulator is served by the GridSignal web workflow; the similarly named API-server workflow is a separate Node service.
 - [Ray Phase 1 contracts](ray-phase1-contracts.md) — nested Ray identity and resource ownership are defined before lifecycle or scheduling behavior.
 - [Infrastructure admission boundary](infrastructure-admission-boundary.md) — admission grants complete infrastructure allocations; Pod placement and Ray lifecycle remain separate downstream phases.
+- [Facility-cap admission reservations](facility-cap-admission-reservations.md) — preserve admitted-but-unrealized GPU and cooling load across ticks; release with realized draw.
 - [Ray cluster readiness boundary](ray-cluster-readiness-boundary.md) — lifecycle consumes admitted allocations and exposes ready logical capacity; task scheduling and autoscaling remain later phases.
 - [Ray Phase 4 execution](ray-phase4-execution.md) — READY-only logical scheduling; placement-group reservations are not double-counted and spillback preserves requested identity.
 - [Ray Phase 5 autoscaling](ray-phase5-autoscaling.md) — KubeRay demand feeds Kubernetes admission with delayed scaling, power rejection, and fixed Slurm boundaries.
