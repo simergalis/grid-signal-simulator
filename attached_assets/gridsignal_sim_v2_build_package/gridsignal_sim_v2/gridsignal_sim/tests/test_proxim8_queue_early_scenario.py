@@ -30,6 +30,9 @@ OLD_QUEUE_PATH = (
     PACKAGE_ROOT / "config" / "scenarios" / "proxim8-5mw-24h-queue.json"
 )
 OLD_QUEUE_TEST_PATH = PACKAGE_ROOT / "tests" / "test_proxim8_queue_scenario.py"
+BUSINESS_QUEUE_PATH = OLD_QUEUE_PATH
+DAY_SECONDS = 86400
+ROTATION_SECONDS = 9 * 3600
 PINNED_CLOCK = 1792454400.0
 SEED = 20261102
 TICK_SECONDS = TICK_INTERVAL_SIM_SECONDS
@@ -44,10 +47,10 @@ EXPECTED_SOURCE_HASHES = {
         "dc8fb9c04534b4d0bd03f7181d9f03f353adfa2b295f6f96d42e906115f1c685"
     ),
     "proxim8-5mw-24h-queue.json": (
-        "b993ff13ec6607e7cee6839f9b761d61a95eecf267c888ced8f233cf03415775"
+        "436e5e555ee2d6671be2562463a935466832ad256935486b913bffd4ca67d9ed"
     ),
     "test_proxim8_queue_scenario.py": (
-        "3257909adc7e53560e6cd716799359dd628e9efa3d31982d333b44c684713944"
+        "a1e535b03e5872b4c736a30843b63680b4e5afaa4624ed0c51b5ae34656e1273"
     ),
 }
 
@@ -73,6 +76,19 @@ def _source_pairs(raw: dict, scheduler: str) -> dict[str, tuple[dict, float]]:
         )
         for event in _source_events(raw, scheduler, "starting")
     }
+
+
+def _scheduled_arrivals(raw: dict, scheduler: str) -> dict[str, dict]:
+    return {
+        arrival["job_id"]: arrival
+        for cluster in raw["kube_clusters"]
+        if cluster.get("scheduler_type") == scheduler
+        for arrival in cluster["scheduled_arrivals"]
+    }
+
+
+def _rotated_time(timestamp_s: float) -> float:
+    return float((float(timestamp_s) - ROTATION_SECONDS) % DAY_SECONDS)
 
 
 def _is_cap_held(job) -> bool:
@@ -217,12 +233,19 @@ def _measure_run() -> dict:
 
 def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
     raw = json.loads(SCENARIO_PATH.read_text(encoding="utf-8"))
-    source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
+    original = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
+    source = json.loads(BUSINESS_QUEUE_PATH.read_text(encoding="utf-8"))
     spec = ScenarioSpec.model_validate(raw)
     clusters = {cluster.scheduler_type: cluster for cluster in spec.kube_clusters}
     provenance = raw["provenance_proxim8_queue_early"]
-    moved_k8s = {item["job_id"]: item for item in provenance["moved_k8s_jobs"]}
+    moved_k8s = {
+        item["job_id"]: item for item in provenance["k8s_rotated_arrivals"]
+    }
     moved_ray = {item["job_id"]: item for item in provenance["moved_ray_calls"]}
+    rotated_background = {
+        item["job_id"]: item
+        for item in provenance["ray_background_rotation"]["rotated_calls"]
+    }
 
     assert spec.end_sim_time == 86400
     assert spec.grid_import_limit_mw == 5.0
@@ -238,18 +261,17 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
     assert SCENARIO_ID in server_module.SCENARIO_IDS
     assert study_class_for_scenario(SCENARIO_ID) == STUDY_CLASS_SCENARIO_JSON
     assert build_seeded_store().get(SCENARIO_ID) is not None
-    assert "DR-2026-11-03-PROXIM8-QUEUE" in spec.description
-    assert "00:15" in spec.description and "hourly through 09:15" in spec.description
+    assert "DR-2026-11-05-PROXIM8-EARLY-0900" in spec.description
+    assert "session starts at local 09:00" in spec.description
+    assert "offset from local time by nine hours" in spec.description
     assert provenance["seed"] == SEED
-    assert provenance["k8s_counts_by_wave"] == [
-        130, 120, 100, 110, 110, 89, 89, 79, 89, 79
-    ]
-    assert provenance["k8s_moved_count"] == 995
-    assert provenance["ray_moved_count"] == 7200
-    assert provenance["moved_job_count"] == 8195
-    assert len(moved_k8s) == 995
+    assert len(moved_k8s) == 1000
+    assert provenance["k8s_rotated_count"] == 1000
+    assert provenance["ray_wave_call_count"] == 7200
     assert len(moved_ray) == 7200
-    assert len(provenance["wave_start_times_s"]) == 10
+    assert len(rotated_background) == 2800
+    assert provenance["moved_job_count"] == 11010
+    assert len(provenance["wave_start_times_sim_seconds"]) == 10
 
     source_slurm = [
         event for event in source["workload_events"]
@@ -259,42 +281,85 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
         event for event in raw["workload_events"]
         if event.get("scheduler_type") == "SLURM"
     ]
-    assert actual_slurm == source_slurm
+    source_starts = {
+        event["job_id"]: event
+        for event in source_slurm
+        if event["event_type"] == "starting"
+    }
+    actual_starts = {
+        event["job_id"]: event
+        for event in actual_slurm
+        if event["event_type"] == "starting"
+    }
+    assert set(actual_starts) == set(source_starts)
+    assert all(
+        actual_starts[job_id]["timestamp"] == _rotated_time(event["timestamp"])
+        for job_id, event in source_starts.items()
+    )
+    source_ends = {
+        event["job_id"]: event
+        for event in source_slurm
+        if event["event_type"] == "job_end"
+    }
+    actual_ends = {
+        event["job_id"]: event
+        for event in actual_slurm
+        if event["event_type"] == "job_end"
+    }
+    for job_id, event in source_ends.items():
+        expected_end = _rotated_time(event["timestamp"])
+        expected_start = _rotated_time(source_starts[job_id]["timestamp"])
+        if expected_end <= expected_start:
+            expected_end += DAY_SECONDS
+        if expected_end >= DAY_SECONDS:
+            assert job_id not in actual_ends
+        else:
+            assert actual_ends[job_id]["timestamp"] == expected_end
 
-    wave_starts = provenance["wave_start_times_s"]
+    wave_starts = provenance["wave_start_times_sim_seconds"]
     assert wave_starts == [900 + index * 3600 for index in range(10)]
-    for scheduler, moved in (("K8S", moved_k8s), ("RAY", moved_ray)):
-        expected = _source_pairs(source, scheduler)
+    assert provenance["wave_start_times_local"] == [
+        f"{hour:02d}:15" for hour in range(9, 19)
+    ]
+    expected_k8s = _scheduled_arrivals(source, "K8S")
+    expected_ray = _scheduled_arrivals(source, "RAY")
+    for scheduler, expected, moved in (
+        ("K8S", expected_k8s, moved_k8s),
+        ("RAY", expected_ray, {**moved_ray, **rotated_background}),
+    ):
         arrivals = {
             item.job_id: item for item in clusters[scheduler].scheduled_arrivals
         }
         assert set(arrivals) == set(expected)
-        for job_id, (event, duration_s) in expected.items():
+        for job_id, event in expected.items():
             actual = arrivals[job_id]
-            original_time = float(event["timestamp"])
-            assert actual.duration_s == duration_s
+            original_time = float(event["arrival_time_s"])
+            assert actual.duration_s == event["duration_s"]
             assert actual.node_count == event["node_count"]
             assert actual.hardware_profile_id == event["hardware_profile_id"]
-            if job_id in moved:
-                move = moved[job_id]
-                assert move["original_time_s"] == original_time
-                assert move["new_time_s"] == actual.arrival_time_s
-            else:
-                assert actual.arrival_time_s == original_time
+            move = moved[job_id]
+            assert move["original_time_s"] == original_time
+            assert move["new_time_s"] == actual.arrival_time_s
+            if scheduler == "K8S" or job_id in rotated_background:
+                assert actual.arrival_time_s == _rotated_time(original_time)
 
-    midnight_ids = {
-        event["job_id"]
-        for event in _source_events(source, "K8S", "starting")
-        if float(event["timestamp"]) == 0.0
+    carryover_ids = {
+        job_id for job_id, event in expected_k8s.items()
+        if float(event["arrival_time_s"]) == 0.0
     }
-    assert len(midnight_ids) == 5
+    assert len(carryover_ids) == 5
     assert all(
-        next(arrival for arrival in clusters["K8S"].scheduled_arrivals
-             if arrival.job_id == job_id).arrival_time_s == 0.0
-        for job_id in midnight_ids
+        clusters["K8S"].scheduled_arrivals[
+            next(
+                index
+                for index, arrival in enumerate(clusters["K8S"].scheduled_arrivals)
+                if arrival.job_id == job_id
+            )
+        ].arrival_time_s == 15 * 3600
+        for job_id in carryover_ids
     )
 
-    # The original queue-stress scenario must remain at its b28dcc4 bytes.
+    # Original Proxim8 files and the business-day scenario remain unchanged.
     for path, expected_name in (
         (SOURCE_PATH, "proxim8-5mw-24h.json"),
         (SOURCE_GENERATOR_PATH, "generate_scenario.py"),
@@ -319,11 +384,19 @@ def test_queue_early_has_ten_measured_held_episodes(
     episodes = result["episodes"]
     assert len(episodes) == 10, episodes
     assert all(60 <= episode["duration_s"] <= 420 for episode in episodes)
+    durations = {episode["duration_s"] for episode in episodes}
+    assert len(durations) >= 6, durations
+    assert min(durations) <= 120
+    assert max(durations) >= 300
     assert all(episode["peak_queue_depth"] >= 5 for episode in episodes)
     assert all(episode["schedulers"] == ["RAY"] for episode in episodes)
+    assert 15 * 60 <= episodes[0]["start_time_s"] <= 20 * 60
+    assert episodes[-1]["start_time_s"] - episodes[0]["start_time_s"] >= 8 * 3600
     assert all(
-        episodes[index + 1]["start_time_s"]
-        - episodes[index]["start_time_s"] >= 3600
+        3540
+        <= episodes[index + 1]["start_time_s"]
+        - episodes[index]["start_time_s"]
+        <= 3660
         for index in range(len(episodes) - 1)
     )
     assert all(
@@ -344,6 +417,20 @@ def test_queue_early_has_ten_measured_held_episodes(
     assert all(
         row["requested_mw"] + 1e-6 >= row["demand_mw"]
         for row in result["ticks"]
+    )
+    for episode in episodes:
+        episode_ticks = [
+            row for row in result["ticks"]
+            if episode["start_time_s"] <= row["time_s"] < episode["end_time_s"]
+        ]
+        assert any(row["requested_mw"] > 5.0 for row in episode_ticks), episode
+    assert all(
+        row["requested_mw"] <= 5.0 + 1e-6
+        for row in result["ticks"]
+        if not any(
+            episode["start_time_s"] <= row["time_s"] < episode["end_time_s"]
+            for episode in episodes
+        )
     )
 
 

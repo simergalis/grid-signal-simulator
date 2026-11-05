@@ -48,6 +48,8 @@ interface StrandedAvailable {
   peak_demand_mw: number
   utilisation_of_cap_pct: number
   minutes_above_cap: number
+  minutes_requested_above_cap?: number | null
+  peak_requested_demand_mw?: number | null
   above_cap_mwh: number
   above_cap_bess_mwh: number
   above_cap_unserved_mwh: number
@@ -282,10 +284,6 @@ function clock(seconds: number): string {
 }
 
 function SummaryTable({ data, live }: { data: StrandedAvailable; live: boolean }) {
-  const requestedValues = data.series
-    .map(row => row.requested_demand_max_mw)
-    .filter((value): value is number => value != null)
-  const hasRequestedDemand = requestedValues.length > 0
   const rows: [string, string][] = [
     ['Energy consumed', `${fmt(data.energy_consumed_mwh)} MWh`],
     ['Energy available at the cap', `${fmt(data.energy_available_mwh)} MWh`],
@@ -298,13 +296,16 @@ function SummaryTable({ data, live }: { data: StrandedAvailable; live: boolean }
     ['Recoverable energy', `${fmt(data.recoverable_mwh)} MWh · ${fmt(data.recoverable_pct_of_cap)}% of cap`],
     ['Scarce minutes', `${data.scarce_minutes} / ${data.scarce_episodes.length} episodes`],
   ]
-  if (hasRequestedDemand) {
+  if (
+    data.minutes_requested_above_cap != null &&
+    data.peak_requested_demand_mw != null
+  ) {
     rows.push(
       [
         'Minutes requested demand exceeded the cap',
-        String(requestedValues.filter(value => value > data.p_avail_mw).length),
+        String(data.minutes_requested_above_cap),
       ],
-      ['Peak requested demand', `${fmt(Math.max(...requestedValues))} MW`],
+      ['Peak requested demand', `${fmt(data.peak_requested_demand_mw)} MW`],
     )
   }
 
@@ -612,7 +613,7 @@ export function StrandedPowerPanel({ runId, scenario, live = false, paused = fal
       samples: [
         {
           seconds: latestTick.sim_time_seconds,
-          demand_mw: Math.max(0, latestTick.p_demand_mw),
+          demand_mw: latestTick.p_demand_mw,
         },
         ...projection.points.map(point => ({
           seconds: latestTick.sim_time_seconds + point.minutesFromNow * 60,

@@ -3213,6 +3213,8 @@ class StrandedAvailableResponse(BaseModel):
     peak_demand_mw: float
     utilisation_of_cap_pct: float
     minutes_above_cap: int
+    minutes_requested_above_cap: int | None = None
+    peak_requested_demand_mw: float | None = None
     above_cap_mwh: float
     above_cap_bess_mwh: float
     above_cap_unserved_mwh: float

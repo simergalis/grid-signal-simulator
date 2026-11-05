@@ -1030,21 +1030,6 @@ async def get_run_stranded(
     )
     if result.get("available") is False:
         return StrandedUnavailableResponse(**result)
-    requested_by_minute: dict[int, float] = {}
-    for row in tick_dicts:
-        requested = row.get("requested_demand_mw")
-        if requested is None:
-            continue
-        minute = int(float(row["sim_time_seconds"]) // 60)
-        requested_by_minute[minute] = max(
-            requested_by_minute.get(minute, float("-inf")),
-            float(requested),
-        )
-    if requested_by_minute:
-        for minute_row in result["series"]:
-            minute = minute_row["minute"]
-            if minute in requested_by_minute:
-                minute_row["requested_demand_max_mw"] = requested_by_minute[minute]
     return StrandedAvailableResponse(available=True, **result)
 
 

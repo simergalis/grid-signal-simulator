@@ -31,6 +31,18 @@ def _wait_for_completed(client: TestClient, run_id: str, timeout_s: float = 20.0
     raise AssertionError(f"short run {run_id} did not complete within {timeout_s}s")
 
 
+def _without_none(value):
+    if isinstance(value, dict):
+        return {
+            key: _without_none(item)
+            for key, item in value.items()
+            if item is not None
+        }
+    if isinstance(value, list):
+        return [_without_none(item) for item in value]
+    return value
+
+
 def _short_s11b_run(client: TestClient):
     response = client.post(
         "/runs",
@@ -60,7 +72,7 @@ def test_tc_str_09_rest_endpoint_matches_shared_compute_stranded_on_short_run(cl
         tick_seconds=5.0,
     )
     expected["available"] = True
-    assert actual == expected
+    assert actual == _without_none(expected)
     assert actual["series"]
     assert actual["p_avail_mw"] == 60.0
     assert actual["reserve_policy"] == "fixed_3mw"
@@ -117,9 +129,10 @@ def test_active_stranded_endpoint_returns_live_snapshot_from_run_sink(client):
         tick_seconds=5.0,
     )
     expected["available"] = True
-    expected["series"][0]["requested_demand_max_mw"] = 31.0
     assert response.json() == expected
     assert response.json()["series"]
+    assert response.json()["peak_requested_demand_mw"] == 31.0
+    assert response.json()["minutes_requested_above_cap"] == 0
 
 
 class _CompletedOnlyManager:
@@ -172,6 +185,20 @@ def test_tc_str_05_scenario_without_cap_returns_unavailable_without_numeric_valu
     assert not any(
         isinstance(value, (int, float)) and not isinstance(value, bool)
         for value in response.json().values()
+    )
+
+
+def test_requested_demand_summary_is_null_when_ticks_have_no_requested_value(client):
+    _install_completed_fixture(client, 60.0)
+
+    response = client.get("/runs/fixture-run/stranded")
+
+    assert response.status_code == 200
+    assert response.json().get("minutes_requested_above_cap") is None
+    assert response.json().get("peak_requested_demand_mw") is None
+    assert all(
+        row.get("requested_demand_max_mw") is None
+        for row in response.json()["series"]
     )
 
 

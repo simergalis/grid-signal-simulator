@@ -52,8 +52,11 @@ def compute_stranded(
     else:
         reserve_mw = 0.20 * available
 
-    buckets: dict[int, list[tuple[float, float, float]]] = defaultdict(list)
+    buckets: dict[
+        int, list[tuple[float, float, float, float | None]]
+    ] = defaultdict(list)
     demand_values: list[float] = []
+    requested_values: list[float] = []
     energy_consumed_mwh = 0.0
     row_count = 0
     for row in tick_rows:
@@ -62,18 +65,27 @@ def compute_stranded(
             demand = float(row["p_total_mw"])
             bess_output = float(row["bess_output_mw"])
             unserved = float(row["p_unserved_mw"])
+            requested_raw = row.get("requested_demand_mw")
+            requested = (
+                float(requested_raw) if requested_raw is not None else None
+            )
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError(
                 "each tick requires numeric sim_time_seconds, p_total_mw, "
                 "bess_output_mw, and p_unserved_mw"
             ) from error
-        if not all(math.isfinite(value) for value in (
-            timestamp, demand, bess_output, unserved
-        )):
+        numeric_values = [timestamp, demand, bess_output, unserved]
+        if requested is not None:
+            numeric_values.append(requested)
+        if not all(math.isfinite(value) for value in numeric_values):
             raise ValueError("tick inputs must be finite numbers")
         minute = math.floor(timestamp / 60.0)
-        buckets[minute].append((demand, max(0.0, bess_output), unserved))
+        buckets[minute].append(
+            (demand, max(0.0, bess_output), unserved, requested)
+        )
         demand_values.append(demand)
+        if requested is not None:
+            requested_values.append(requested)
         energy_consumed_mwh += demand * interval / 3600.0
         row_count += 1
 
@@ -95,6 +107,12 @@ def compute_stranded(
         # above-cap split remains defined by excess less positive BESS output.
         unserved_mean = sum(value[2] for value in values) / count
         del unserved_mean
+        minute_requested = [
+            value[3] for value in values if value[3] is not None
+        ]
+        requested_max = (
+            max(minute_requested) if minute_requested else None
+        )
 
         consumed = min(demand_mean, available)
         stranded = available - consumed
@@ -113,6 +131,7 @@ def compute_stranded(
                 "t_start_s": minute * 60,
                 "demand_mean_mw": demand_mean,
                 "demand_max_mw": demand_max,
+                "requested_demand_max_mw": requested_max,
                 "consumed_mw": consumed,
                 "reserve_held_mw": reserve_held,
                 "recoverable_mw": recoverable,
@@ -199,6 +218,18 @@ def compute_stranded(
         "utilisation_of_cap_pct": utilization_pct,
         "minutes_above_cap": sum(
             row["demand_mean_mw"] > available for row in minute_rows
+        ),
+        "minutes_requested_above_cap": (
+            sum(
+                row["requested_demand_max_mw"] is not None
+                and row["requested_demand_max_mw"] > available
+                for row in minute_rows
+            )
+            if requested_values
+            else None
+        ),
+        "peak_requested_demand_mw": (
+            max(requested_values) if requested_values else None
         ),
         "above_cap_mwh": above_cap_mwh,
         "above_cap_bess_mwh": above_cap_bess_mwh,

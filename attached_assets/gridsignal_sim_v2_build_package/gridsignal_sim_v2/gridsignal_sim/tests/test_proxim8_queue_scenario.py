@@ -76,6 +76,10 @@ def test_queue_variant_is_separate_registered_and_preserves_source_jobs() -> Non
     moved_jobs = {
         item["job_id"]: item for item in provenance["moved_jobs"]
     }
+    background_moves = {
+        item["job_id"]: item
+        for item in provenance["background_agentic_randomization"]["calls"]
+    }
 
     assert spec.end_sim_time == 86400
     assert spec.grid_import_limit_mw == 5.0
@@ -97,6 +101,8 @@ def test_queue_variant_is_separate_registered_and_preserves_source_jobs() -> Non
         "DR-2026-11-03-PROXIM8-QUEUE"
     )
     assert len(moved_jobs) == 7200
+    assert len(background_moves) == 2800
+    assert provenance["background_agentic_randomization"]["call_count"] == 2800
     assert provenance["moved_call_count"] == 7200
     targets = provenance["episode_targets"]
     assert all(
@@ -143,6 +149,8 @@ def test_queue_variant_is_separate_registered_and_preserves_source_jobs() -> Non
         if event["job_id"].startswith("ray-agentic-call-burst-")
     }
     assert set(moved_jobs) == expected_moved_ids
+    assert not (set(moved_jobs) & set(background_moves))
+    assert len(set(moved_jobs) | set(background_moves)) == 10000
     for scheduler in ("K8S", "RAY"):
         expected = _source_job_pairs(source, scheduler)
         arrivals = {
@@ -161,8 +169,21 @@ def test_queue_variant_is_separate_registered_and_preserves_source_jobs() -> Non
                 assert moved["original_time_s"] == original_time
                 assert moved["new_time_s"] == actual.arrival_time_s
                 assert 9 * 3600 <= actual.arrival_time_s < 18 * 3600
+            elif scheduler == "RAY":
+                moved = background_moves[job_id]
+                assert moved["original_time_s"] == original_time
+                assert moved["new_time_s"] == actual.arrival_time_s
             else:
                 assert actual.arrival_time_s == original_time
+
+    ray_arrivals = [
+        arrival.arrival_time_s
+        for arrival in clusters["RAY"].scheduled_arrivals
+    ]
+    ray_hours = {
+        int(arrival_time // 3600) for arrival_time in ray_arrivals
+    }
+    assert len(ray_hours) >= 20
 
     midnight_arrivals = [
         arrival

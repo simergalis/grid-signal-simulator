@@ -23,23 +23,23 @@ OUTPUT_PATH = SCENARIO_DIR / "proxim8-5mw-24h-queue-early.json"
 SESSION_START_LOCAL_HOUR = 9
 # PROPOSED_HERE: convert the 09:00 local start to seconds for circular rotation.
 SESSION_START_OFFSET_S = SESSION_START_LOCAL_HOUR * 3600
-# PROPOSED_HERE: a 15-minute warm-up precedes the first local 09:15 stress wave.
+# PROPOSED_HERE: the first local 09:15 wave follows a 15-minute warm-up.
 FIRST_LOCAL_WAVE_OFFSET_S = 900
 # PROPOSED_HERE: waves remain one hour apart through local 18:15.
 LOCAL_WAVE_INTERVAL_S = 3600
-# PROPOSED_HERE: each wave's 40 source chains use this many calls per chain.
-RAY_CALLS_PER_CHAIN_BY_WAVE = (18, 18, 18, 18, 18, 18, 18, 18, 18, 18)
-# PROPOSED_HERE: paired arrivals preserve short agentic-call spacing within waves.
-RAY_PAIR_SPACING_BY_WAVE_S = (2, 2, 2, 2, 2, 2, 2, 2, 2, 2)
+# PROPOSED_HERE: calibrated counts keep the total at 180 calls per chain.
+RAY_CALLS_PER_CHAIN_BY_WAVE = (24, 24, 24, 24, 24, 8, 13, 9, 6, 24)
+# PROPOSED_HERE: per-wave interarrival gaps shape concurrent queue pressure.
+RAY_INTERARRIVAL_BY_WAVE_S = (1, 1, 1, 1, 1, 2, 2, 2, 2, 1)
 
 # PROPOSED_HERE: preserve the approved deterministic Proxim8 seed.
 SEED = 20261102
 # PROPOSED_HERE: ten early queue waves provide hourly stress points.
 WAVE_COUNT = 10
-# PROPOSED_HERE: the first queue wave begins fifteen minutes after midnight.
-FIRST_WAVE_START_S = 900
-# PROPOSED_HERE: hourly starts match the user's requested spacing.
-WAVE_INTERVAL_S = 3600
+# PROPOSED_HERE: the first wave begins 15 minutes after the 09:00 session start.
+FIRST_WAVE_START_S = FIRST_LOCAL_WAVE_OFFSET_S
+# PROPOSED_HERE: hourly starts match the approved local schedule.
+WAVE_INTERVAL_S = LOCAL_WAVE_INTERVAL_S
 # PROPOSED_HERE: a ten-minute lead lets K8S demand rise before each Ray wave.
 K8S_LEAD_WINDOW_S = 600
 # PROPOSED_HERE: front-load existing K8S sessions before the early waves so
@@ -295,7 +295,7 @@ def _build_early_ray_arrivals(
         RAY_CALLS_PER_CHAIN_BY_WAVE
     ) != RAY_CALLS_PER_CHAIN_TOTAL:
         raise ValueError("per-wave call allocation must total 180 calls per chain")
-    if len(RAY_PAIR_SPACING_BY_WAVE_S) != WAVE_COUNT:
+    if len(RAY_INTERARRIVAL_BY_WAVE_S) != WAVE_COUNT:
         raise ValueError("each wave requires a within-wave spacing value")
 
     arrivals: list[dict[str, Any]] = []
@@ -304,7 +304,7 @@ def _build_early_ray_arrivals(
     for wave_index in range(WAVE_COUNT):
         wave_start_s = FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
         count_per_chain = RAY_CALLS_PER_CHAIN_BY_WAVE[wave_index]
-        pair_spacing_s = RAY_PAIR_SPACING_BY_WAVE_S[wave_index]
+        interarrival_s = RAY_INTERARRIVAL_BY_WAVE_S[wave_index]
         for chain_id, chain_arrivals in wave_chains.items():
             start_index = sum(RAY_CALLS_PER_CHAIN_BY_WAVE[:wave_index])
             wave_arrivals = chain_arrivals[
@@ -315,7 +315,7 @@ def _build_early_ray_arrivals(
             for position, event in enumerate(wave_arrivals):
                 original_time_s = float(event["arrival_time_s"])
                 new_time_s = float(
-                    wave_start_s + (position // 2) * pair_spacing_s
+                    wave_start_s + position * interarrival_s
                 )
                 arrivals.append({**event, "arrival_time_s": new_time_s})
                 moved_wave.append({
@@ -327,7 +327,7 @@ def _build_early_ray_arrivals(
                     "hardware_profile_id": event["hardware_profile_id"],
                     "wave_number": wave_index + 1,
                     "wave_target_duration_s": target_durations[wave_index],
-                    "wave_pair_spacing_s": pair_spacing_s,
+                    "wave_interarrival_s": interarrival_s,
                 })
 
     for event in background:
@@ -832,7 +832,7 @@ def build_scenario() -> dict[str, Any]:
             calls * RAY_SOURCE_CHAIN_COUNT
             for calls in RAY_CALLS_PER_CHAIN_BY_WAVE
         ],
-        "ray_pair_spacing_by_wave_s": list(RAY_PAIR_SPACING_BY_WAVE_S),
+        "ray_interarrival_by_wave_s": list(RAY_INTERARRIVAL_BY_WAVE_S),
         "ray_wave_call_count": len(moved_ray),
         "ray_background_rotation": background_provenance,
         "k8s_rotated_count": len(moved_k8s),
@@ -841,9 +841,12 @@ def build_scenario() -> dict[str, Any]:
         "moved_ray_calls": moved_ray,
         "moved_job_count": (
             len(moved_k8s)
-            + len(moved_slurm)
             + len(moved_ray)
             + len(background_provenance["rotated_calls"])
+            + sum(
+                item["event_type"] == "starting"
+                for item in moved_slurm
+            )
         ),
         "proposed_here": [
             "Session local start 09:00; all original-day inputs are rotated by nine hours.",
@@ -870,10 +873,7 @@ def main() -> None:
             f"{len(cluster['scheduled_arrivals'])}"
         )
     provenance = scenario["provenance_proxim8_queue_early"]
-    print(
-        f"Wave targets: {provenance['target_durations_seconds']}; "
-        f"K8S counts: {provenance['k8s_counts_by_wave']}"
-    )
+    print(f"Wave targets: {provenance['target_durations_seconds']}")
     print(f"Ray calls per chain by wave: {provenance['ray_calls_per_chain_by_wave']}")
     print(f"Rotated background counts per hour: {provenance['ray_background_rotation']['rotated_hourly_call_counts']}")
 

@@ -23,6 +23,8 @@ const availableResponse = {
   peak_demand_mw: 12,
   utilisation_of_cap_pct: 10,
   minutes_above_cap: 0,
+  minutes_requested_above_cap: 17,
+  peak_requested_demand_mw: 42.5,
   above_cap_mwh: 0,
   above_cap_bess_mwh: 0,
   above_cap_unserved_mwh: 0,
@@ -94,7 +96,8 @@ describe('StrandedPowerPanel', () => {
     )
     expect(screen.getByText('Minutes requested demand exceeded the cap')).toBeInTheDocument()
     expect(screen.getByText('Peak requested demand')).toBeInTheDocument()
-    expect(screen.getByText('13.0 MW')).toBeInTheDocument()
+    expect(screen.getByText('17')).toBeInTheDocument()
+    expect(screen.getByText('42.5 MW')).toBeInTheDocument()
     const legend = screen.getByTestId('stranded-chart-legend')
     expect(legend).toHaveAttribute('data-order', 'top-to-bottom')
     fireEvent.change(screen.getByLabelText('Reserve policy'), {
@@ -154,6 +157,8 @@ describe('StrandedPowerPanel', () => {
       ok: true,
       json: async () => ({
         ...availableResponse,
+        minutes_requested_above_cap: null,
+        peak_requested_demand_mw: null,
         series: [minuteWithoutRequested],
       }),
     })
