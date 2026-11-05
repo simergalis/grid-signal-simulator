@@ -60,6 +60,7 @@ S11_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11_mit_supercloud_2021-08-11_bchydro"
 S11B_SUPERCLOUD_REPLAY_SCENARIO_ID = "S11b_mit_supercloud_2021-08-11_bchydro_60mw"
 PROXIM8_SCENARIO_ID = "proxim8-5mw-24h"
 PROXIM8_QUEUE_SCENARIO_ID = "proxim8-5mw-24h-queue"
+PROXIM8_QUEUE_EARLY_SCENARIO_ID = "proxim8-5mw-24h-queue-early"
 STUDY_CLASS_SUPERCLOUD_REPLAY = "supercloud_replay"
 STUDY_CLASS_SCENARIO_JSON = "scenario_json"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
@@ -96,7 +97,11 @@ def study_class_for_scenario(scenario_id: str) -> str:
         S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
     ):
         return STUDY_CLASS_SUPERCLOUD_REPLAY
-    if scenario_id in (PROXIM8_SCENARIO_ID, PROXIM8_QUEUE_SCENARIO_ID):
+    if scenario_id in (
+        PROXIM8_SCENARIO_ID,
+        PROXIM8_QUEUE_SCENARIO_ID,
+        PROXIM8_QUEUE_EARLY_SCENARIO_ID,
+    ):
         return STUDY_CLASS_SCENARIO_JSON
     raise UnsupportedScenarioError(
         scenario_id=scenario_id,
@@ -108,6 +113,7 @@ def study_class_for_scenario(scenario_id: str) -> str:
             S11B_SUPERCLOUD_REPLAY_SCENARIO_ID,
             PROXIM8_SCENARIO_ID,
             PROXIM8_QUEUE_SCENARIO_ID,
+            PROXIM8_QUEUE_EARLY_SCENARIO_ID,
         ],
     )
 
@@ -166,7 +172,10 @@ def make_study_run_identity(
         identity_parameters["workload_events_sha256"] = (
             _canonical_workload_events_sha256(spec)
         )
-    elif scenario_id == PROXIM8_QUEUE_SCENARIO_ID:
+    elif scenario_id in (
+        PROXIM8_QUEUE_SCENARIO_ID,
+        PROXIM8_QUEUE_EARLY_SCENARIO_ID,
+    ):
         # The scheduled queue timeline and gate contract define admissions,
         # so they participate in cache identity before any run/probe lookup.
         identity_parameters["kube_schedule_sha256"] = (
