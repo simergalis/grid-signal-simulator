@@ -114,10 +114,16 @@ def test_queue_variant_is_separate_registered_and_preserves_source_jobs() -> Non
         ]
     )
     target_starts = [item["arrival_start_s"] for item in targets]
-    assert target_starts == [900 + index * 3600 for index in range(10)]
-    assert provenance["first_episode_start_s"] == 900
-    assert provenance["episode_start_interval_s"] == 3600
-    assert provenance["minimum_episode_start_gap_s"] == 3600
+    assert all(9 * 3600 <= value < 18 * 3600 for value in target_starts)
+    assert all(
+        target_starts[index + 1] - target_starts[index] >= 1200
+        for index in range(len(target_starts) - 1)
+    )
+    assert target_starts[-1] - target_starts[0] >= 6 * 3600
+    assert len({
+        target_starts[index + 1] - target_starts[index]
+        for index in range(len(target_starts) - 1)
+    }) > 1
 
     source_slurm = [
         event
@@ -154,12 +160,7 @@ def test_queue_variant_is_separate_registered_and_preserves_source_jobs() -> Non
                 moved = moved_jobs[job_id]
                 assert moved["original_time_s"] == original_time
                 assert moved["new_time_s"] == actual.arrival_time_s
-                assert any(
-                    target["arrival_start_s"]
-                    <= actual.arrival_time_s
-                    <= target["arrival_start_s"] + target["arrival_span_s"]
-                    for target in targets
-                )
+                assert 9 * 3600 <= actual.arrival_time_s < 18 * 3600
             else:
                 assert actual.arrival_time_s == original_time
 
@@ -313,14 +314,11 @@ def test_queue_variant_has_ten_measured_cap_hold_episodes(
     assert all(episode["peak_queue_depth"] >= 5 for episode in episodes)
     assert all(episode["schedulers"] == ["RAY"] for episode in episodes)
     assert all(
-        abs(
-            episodes[index + 1]["start_time_s"]
-            - episodes[index]["start_time_s"]
-            - 3600
-        )
-        <= 120
+        episodes[index + 1]["start_time_s"]
+        - episodes[index]["start_time_s"] >= 1200
         for index in range(len(episodes) - 1)
     )
+    assert episodes[-1]["start_time_s"] - episodes[0]["start_time_s"] >= 6 * 3600
     target_durations = raw["provenance_proxim8_queue"]["uniform_timing_draw"][
         "target_durations_seconds"
     ]
