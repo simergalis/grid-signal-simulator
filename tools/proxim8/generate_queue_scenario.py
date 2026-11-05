@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import random
 import time
+import argparse
 from copy import deepcopy
 from pathlib import Path
 
@@ -53,12 +54,35 @@ N = {
     "SECONDS_PER_DAY": 86400,  # PROPOSED_HERE: Proxim8's 24-hour horizon.
     "K8S_AGENT_MAX_NODES": 1900,  # PROPOSED_HERE: keep cluster capacity above the source workload so grid-cap admission is the tested queue.
     "RAY_AGENT_MAX_NODES": 1900,  # PROPOSED_HERE: let the grid-cap gate, not a 128-node scheduler ceiling, create the intended Ray queue.
+    "BACKGROUND_CALL_COUNT": 2800,  # PROPOSED_HERE: randomize only the non-wave Ray calls.
+    "BACKGROUND_CHAIN_COUNT": 28,  # PROPOSED_HERE: retain a useful number of independent background chains.
+    "BACKGROUND_MIN_CHAIN_LENGTH": 5,  # PROPOSED_HERE: avoid negligible agentic chains.
+    "BACKGROUND_MAX_CHAIN_LENGTH": 200,  # PROPOSED_HERE: cap each background chain at about two hundred calls.
+    "BACKGROUND_MIN_GAP_SECONDS": 1,  # PROPOSED_HERE: allow tightly spaced API calls within a chain.
+    "BACKGROUND_MAX_GAP_SECONDS": 10,  # PROPOSED_HERE: keep calls in a chain within a short agentic burst.
+    "BACKGROUND_ATTEMPT": 1,  # PROPOSED_HERE: initial deterministic background draw; increment after rejected telemetry.
+    "BACKGROUND_SEED_OFFSET": 310000,  # PROPOSED_HERE: isolate background draws from the existing wave schedule.
+    "HOURS_PER_DAY": 24,  # PROPOSED_HERE: require background calls throughout every hour of the day.
     "JSON_INDENT": 2,  # PROPOSED_HERE: match scenario JSON formatting.
 }
+
+# PROPOSED_HERE: relative hourly weights keep a thin overnight tail, lighter
+# morning/evening activity, and the heaviest background traffic during business
+# hours; weighted sampling without replacement also guarantees an arrival in
+# every hour.
+BACKGROUND_HOUR_WEIGHTS = (
+    0.02, 0.02, 0.02, 0.02, 0.03, 0.05,
+    0.10, 0.18, 0.35, 0.65, 0.90, 1.00,
+    1.05, 1.10, 1.15, 1.20, 1.20, 1.10,
+    0.85, 0.60, 0.35, 0.18, 0.08, 0.04,
+)
 
 SCENARIO_ID = "proxim8-5mw-24h-queue"
 RAY_SURGE_PREFIX = "ray-agentic-call-burst-"
 DECISION_RECORD = "DR-2026-11-03-PROXIM8-QUEUE (PROPOSED_HERE)"
+AGENTIC_RANDOMIZATION_RECORD = (
+    "DR-2026-11-04-PROXIM8-AGENTIC-RANDOM (PROPOSED_HERE)"
+)
 SURGE_METHOD = (
     "The former 16:35 Ray burst is rescheduled as one concentrated early "
     "chain wave and nine seeded afternoon call-chain waves. Starts are sampled "
@@ -68,6 +92,11 @@ SURGE_METHOD = (
     "independently; the test reports measured cap-held durations from telemetry. "
     "All moved calls retain their IDs, durations, node counts, profiles and "
     "model names."
+)
+BACKGROUND_METHOD = (
+    "The 2,800 non-wave Ray calls are regrouped into seeded chains of "
+    "5–200 calls with randomized 1–10 second gaps. Chain starts use a "
+    "business-day weighted hourly distribution with a thin overnight tail."
 )
 
 
@@ -122,6 +151,148 @@ def _ray_chain_groups(ray_surge: list[dict]) -> dict[str, list[dict]]:
             )
         )
     return dict(sorted(groups.items(), key=lambda item: int(item[N["ZERO"]])))
+
+
+def _random_chain_lengths(rng: random.Random) -> list[int]:
+    remaining = N["BACKGROUND_CALL_COUNT"]
+    lengths: list[int] = []
+    for index in range(N["BACKGROUND_CHAIN_COUNT"]):
+        slots_after = N["BACKGROUND_CHAIN_COUNT"] - index - N["ONE"]
+        minimum = max(
+            N["BACKGROUND_MIN_CHAIN_LENGTH"],
+            remaining - N["BACKGROUND_MAX_CHAIN_LENGTH"] * slots_after,
+        )
+        maximum = min(
+            N["BACKGROUND_MAX_CHAIN_LENGTH"],
+            remaining - N["BACKGROUND_MIN_CHAIN_LENGTH"] * slots_after,
+        )
+        length = remaining if slots_after == N["ZERO"] else rng.randint(
+            minimum, maximum
+        )
+        lengths.append(length)
+        remaining -= length
+    if remaining != N["ZERO"] or sum(lengths) != N["BACKGROUND_CALL_COUNT"]:
+        raise ValueError("background chain partition does not preserve call count")
+    if not all(
+        N["BACKGROUND_MIN_CHAIN_LENGTH"]
+        <= length
+        <= N["BACKGROUND_MAX_CHAIN_LENGTH"]
+        for length in lengths
+    ):
+        raise ValueError("background chain length is outside the proposed range")
+    return lengths
+
+
+def _weighted_chain_hours(rng: random.Random) -> list[int]:
+    if len(BACKGROUND_HOUR_WEIGHTS) != N["HOURS_PER_DAY"]:
+        raise ValueError("one background weight is required for each hour")
+    available = list(range(N["HOURS_PER_DAY"]))
+    chosen: list[int] = []
+    for _ in range(N["HOURS_PER_DAY"]):
+        weights = [BACKGROUND_HOUR_WEIGHTS[hour] for hour in available]
+        hour = rng.choices(available, weights=weights, k=N["ONE"])[N["ZERO"]]
+        chosen.append(hour)
+        available.remove(hour)
+    for _ in range(N["BACKGROUND_CHAIN_COUNT"] - N["HOURS_PER_DAY"]):
+        chosen.append(
+            rng.choices(
+                range(N["HOURS_PER_DAY"]),
+                weights=BACKGROUND_HOUR_WEIGHTS,
+                k=N["ONE"],
+            )[N["ZERO"]]
+        )
+    return chosen
+
+
+def _build_random_background(
+    events: list[dict],
+    end_times: dict,
+    *,
+    attempt_number: int,
+) -> tuple[list[dict], dict]:
+    if len(events) != N["BACKGROUND_CALL_COUNT"]:
+        raise ValueError(
+            f"expected {N['BACKGROUND_CALL_COUNT']} non-wave Ray calls"
+        )
+    if attempt_number < N["ONE"]:
+        raise ValueError("background attempt numbers are one-based")
+
+    attempt_seed = (
+        N["SEED"] + N["BACKGROUND_SEED_OFFSET"] + attempt_number
+    )
+    rng = random.Random(attempt_seed)
+    lengths = _random_chain_lengths(rng)
+    chain_hours = _weighted_chain_hours(rng)
+    ordered_events = sorted(
+        events,
+        key=lambda event: (float(event["timestamp"]), event["job_id"]),
+    )
+    arrivals: list[dict] = []
+    moved_calls: list[dict] = []
+    hourly_counts = [N["ZERO"]] * N["HOURS_PER_DAY"]
+    cursor = N["ZERO"]
+
+    for chain_index, (chain_length, hour) in enumerate(
+        zip(lengths, chain_hours),
+        start=N["ONE"],
+    ):
+        chain_events = ordered_events[cursor : cursor + chain_length]
+        cursor += chain_length
+        gaps = [
+            rng.randint(
+                N["BACKGROUND_MIN_GAP_SECONDS"],
+                N["BACKGROUND_MAX_GAP_SECONDS"],
+            )
+            for _ in range(chain_length - N["ONE"])
+        ]
+        offsets = [N["ZERO"]]
+        for gap in gaps:
+            offsets.append(offsets[-N["ONE"]] + gap)
+        latest_start_offset = (
+            N["SECONDS_PER_HOUR"] - N["ONE"] - offsets[-N["ONE"]]
+        )
+        chain_start_s = (
+            hour * N["SECONDS_PER_HOUR"]
+            + rng.randint(N["ZERO"], latest_start_offset)
+        )
+        chain_id = f"ray-agentic-background-{chain_index:02d}"
+
+        for position, (event, offset) in enumerate(
+            zip(chain_events, offsets),
+            start=N["ONE"],
+        ):
+            original_s = float(event["timestamp"])
+            arrival_s = float(chain_start_s + offset)
+            arrivals.append(_scheduled_arrival(event, end_times, arrival_s))
+            moved_calls.append(
+                {
+                    "job_id": event["job_id"],
+                    "original_time_s": original_s,
+                    "new_time_s": arrival_s,
+                    "chain_id": chain_id,
+                    "chain_position": position,
+                    "chain_length": chain_length,
+                    "gap_before_s": (
+                        N["ZERO"] if position == N["ONE"] else gaps[position - 2]
+                    ),
+                }
+            )
+            hourly_counts[int(arrival_s // N["SECONDS_PER_HOUR"])] += N["ONE"]
+
+    if cursor != len(ordered_events):
+        raise ValueError("background chains did not consume every source call")
+    if any(count == N["ZERO"] for count in hourly_counts):
+        raise ValueError("background draw must include every hour")
+    return arrivals, {
+        "seed": attempt_seed,
+        "attempt_number": attempt_number,
+        "rejected_attempt_count": attempt_number - N["ONE"],
+        "call_count": len(moved_calls),
+        "chain_lengths": lengths,
+        "hourly_weights": list(BACKGROUND_HOUR_WEIGHTS),
+        "hourly_call_counts": hourly_counts,
+        "calls": sorted(moved_calls, key=lambda item: item["job_id"]),
+    }
 
 
 def _allocate_calls_per_episode(
@@ -203,7 +374,17 @@ def _sample_episode_starts(
     raise ValueError("could not draw ten spread, non-even episode starts")
 
 
-def build_scenario(source: dict, template: dict) -> dict:
+def build_scenario(
+    source: dict,
+    template: dict,
+    *,
+    background_attempt: int | None = None,
+) -> dict:
+    attempt_number = (
+        N["BACKGROUND_ATTEMPT"]
+        if background_attempt is None
+        else background_attempt
+    )
     end_times = _end_times(source)
     slurm_starts = _start_events(source, "SLURM")
     k8s_starts = _start_events(source, "K8S")
@@ -313,13 +494,15 @@ def build_scenario(source: dict, template: dict) -> dict:
         )
 
     moved_ids = {item["job_id"] for item in moved_jobs}
-    for event in ray_starts:
-        if event["job_id"] not in moved_ids:
-            ray_arrivals.append(
-                _scheduled_arrival(
-                    event, end_times, float(event["timestamp"])
-                )
-            )
+    background_source_events = [
+        event for event in ray_starts if event["job_id"] not in moved_ids
+    ]
+    background_arrivals, background_provenance = _build_random_background(
+        background_source_events,
+        end_times,
+        attempt_number=attempt_number,
+    )
+    ray_arrivals.extend(background_arrivals)
     k8s_arrivals = [
         _scheduled_arrival(event, end_times, float(event["timestamp"]))
         for event in k8s_starts
@@ -352,10 +535,14 @@ def build_scenario(source: dict, template: dict) -> dict:
         + "\n\nQueue-stress variant. "
         + SURGE_METHOD
         + f" Seed {N['SEED']}; {len(moved_jobs):,} moved Ray calls. "
+        + BACKGROUND_METHOD
+        + f" Randomization attempt {attempt_number}; "
+        + f"{background_provenance['call_count']:,} background calls recorded."
         + "Seeded episode targets (local start / seconds): "
         + seeded_target_summary
         + ". "
         + f"{DECISION_RECORD}."
+        + f" {AGENTIC_RANDOMIZATION_RECORD}."
     )
     scenario["workload_events"] = [
         event
@@ -366,7 +553,10 @@ def build_scenario(source: dict, template: dict) -> dict:
     scenario["provenance_proxim8_queue"] = {
         "seed": N["SEED"],
         "decision_record": DECISION_RECORD,
+        "agentic_randomization_record": AGENTIC_RANDOMIZATION_RECORD,
         "surge_method": SURGE_METHOD,
+        "background_method": BACKGROUND_METHOD,
+        "background_agentic_randomization": background_provenance,
         "uniform_timing_draw": {
             "minimum_seconds": N["MIN_TARGET_DURATION_SECONDS"],
             "maximum_seconds": N["MAX_TARGET_DURATION_SECONDS"],
@@ -394,15 +584,29 @@ def build_scenario(source: dict, template: dict) -> dict:
             "Uniform target durations are comparison targets; actual held durations are verified from simulation telemetry.",
             "Each original Ray call chain retains its call order; calls are released in pairs every two seconds within each episode.",
             "K8S and RAY node inventories are set above source demand so the grid-cap rule, not scheduler inventory, produces the held queues.",
+            "Background chain lengths and gaps are seeded; the hourly weights create business-day traffic and retain a thin overnight tail.",
+            "Background attempt numbers identify the deterministic re-draw used when a candidate produces extra held episodes.",
         ],
     }
     return scenario
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--background-attempt",
+        type=int,
+        default=N["BACKGROUND_ATTEMPT"],
+        help="one-based deterministic background draw attempt",
+    )
+    args = parser.parse_args()
     source = _read_json(SOURCE_PATH)
     template = _read_json(OUTPUT_PATH)
-    scenario = build_scenario(source, template)
+    scenario = build_scenario(
+        source,
+        template,
+        background_attempt=args.background_attempt,
+    )
     OUTPUT_PATH.write_text(
         json.dumps(scenario, indent=N["JSON_INDENT"], ensure_ascii=False) + "\n",
         encoding="utf-8",
@@ -428,6 +632,19 @@ def main() -> None:
                 "episode_targets": scenario[
                     "provenance_proxim8_queue"
                 ]["episode_targets"],
+                "background_attempt": scenario[
+                    "provenance_proxim8_queue"
+                ]["background_agentic_randomization"]["attempt_number"],
+                "background_rejected_attempts": scenario[
+                    "provenance_proxim8_queue"
+                ]["background_agentic_randomization"][
+                    "rejected_attempt_count"
+                ],
+                "ray_calls_per_hour": scenario[
+                    "provenance_proxim8_queue"
+                ]["background_agentic_randomization"][
+                    "hourly_call_counts"
+                ],
                 "output": str(OUTPUT_PATH),
             },
             indent=N["JSON_INDENT"],

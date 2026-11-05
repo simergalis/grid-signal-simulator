@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import argparse
 import json
 import random
 from pathlib import Path
@@ -26,19 +27,66 @@ FIRST_WAVE_START_S = 900
 WAVE_INTERVAL_S = 3600
 # PROPOSED_HERE: arrivals are staged over ten minutes immediately before each wave.
 K8S_LEAD_WINDOW_S = 600
-# PROPOSED_HERE: the allocation redistributes all 995 non-midnight sessions while
-# balancing measured 60-second minimum episodes under the accepted lower baseline.
-K8S_COUNTS_BY_WAVE = (130, 120, 100, 110, 110, 89, 89, 79, 89, 79)
 # PROPOSED_HERE: all forty source Ray chains contribute eighteen existing calls
 # to each wave; no call is added, removed, or rewritten.
 RAY_CALLS_PER_CHAIN_PER_WAVE = 18
 # PROPOSED_HERE: pairs of calls arrive two seconds apart inside each wave.
 RAY_PAIR_SPACING_S = 2
+# PROPOSED_HERE: preserve at least eighty staged K8S sessions before each
+# existing Ray wave while leaving the remaining sessions for a seeded high-load wave.
+K8S_BASE_COUNT_PER_WAVE = 80
+# PROPOSED_HERE: use a separate random stream so duration draws cannot alter
+# the established hourly wave starts or background-chain draws.
+WAVE_TARGET_SEED_OFFSET = 52000
+# PROPOSED_HERE: target episodes cover the requested one-to-seven-minute range.
+MIN_WAVE_TARGET_S = 60
+MAX_WAVE_TARGET_S = 420
+# PROPOSED_HERE: target values are on the simulator's five-second tick grid.
+WAVE_TARGET_STEP_S = 5
+# PROPOSED_HERE: at least one target is short and one is five minutes or longer.
+SHORT_WAVE_TARGET_CEILING_S = 120
+LONG_WAVE_TARGET_FLOOR_S = 300
+# PROPOSED_HERE: require enough distinct targets to prevent near-identical waves.
+MIN_DISTINCT_WAVE_TARGETS = 6
+# PROPOSED_HERE: bound deterministic redraws while finding qualifying targets.
+MAX_WAVE_TARGET_DRAW_ATTEMPTS = 1000
+# PROPOSED_HERE: keep the approved seed but isolate background randomness.
+BACKGROUND_SEED_OFFSET = 310000
+# PROPOSED_HERE: start with the first deterministic draw; later attempts are
+# recorded when an earlier candidate creates an extra cap-held episode.
+BACKGROUND_ATTEMPT = 1
+# PROPOSED_HERE: retain 28 chains while randomizing their individual lengths.
+BACKGROUND_CHAIN_COUNT = 28
+# PROPOSED_HERE: each randomized background chain contains five to two hundred calls.
+BACKGROUND_MIN_CHAIN_LENGTH = 5
+BACKGROUND_MAX_CHAIN_LENGTH = 200
+# PROPOSED_HERE: calls within a background chain are one to ten seconds apart.
+BACKGROUND_MIN_GAP_S = 1
+BACKGROUND_MAX_GAP_S = 10
+# PROPOSED_HERE: all 24 hours receive at least one weighted background chain.
+HOURS_PER_DAY = 24
+# PROPOSED_HERE: unitless weights create a thin overnight tail, lighter shoulder
+# hours, and the heaviest random chain starts during the business day.
+BACKGROUND_HOUR_WEIGHTS = (
+    0.02, 0.02, 0.02, 0.02, 0.03, 0.05,
+    0.10, 0.18, 0.35, 0.65, 0.90, 1.00,
+    1.05, 1.10, 1.15, 1.20, 1.20, 1.10,
+    0.85, 0.60, 0.35, 0.18, 0.08, 0.04,
+)
+# PROPOSED_HERE: preserve the scenario's approved scheduler workload totals.
 EXPECTED_K8S_COUNT = 1000
 EXPECTED_RAY_COUNT = 10000
 EXPECTED_RAY_BURST_COUNT = 7200
 EXPECTED_SLURM_COUNT = 10
+# PROPOSED_HERE: preserve five continuous-inference sessions at midnight.
+MIDNIGHT_CARRY_OVER_K8S_COUNT = 5
+# PROPOSED_HERE: the source Ray wave consists of forty reusable chains.
+RAY_SOURCE_CHAIN_COUNT = 40
+# PROPOSED_HERE: scheduled arrivals align to the simulator's five-second tick.
 TICK_SECONDS = 5
+# PROPOSED_HERE: hourly placement and a 24-hour simulation use these units.
+SECONDS_PER_HOUR = 3600
+SECONDS_PER_DAY = 86400
 RAY_BURST_PREFIX = "ray-agentic-call-burst-"
 
 
@@ -93,9 +141,167 @@ def _provenance_move(
     }
 
 
+def _draw_wave_targets() -> list[int]:
+    rng = random.Random(SEED + WAVE_TARGET_SEED_OFFSET)
+    for _ in range(MAX_WAVE_TARGET_DRAW_ATTEMPTS):
+        targets = [
+            rng.randrange(
+                MIN_WAVE_TARGET_S,
+                MAX_WAVE_TARGET_S + WAVE_TARGET_STEP_S,
+                WAVE_TARGET_STEP_S,
+            )
+            for _ in range(WAVE_COUNT)
+        ]
+        if (
+            min(targets) <= SHORT_WAVE_TARGET_CEILING_S
+            and max(targets) >= LONG_WAVE_TARGET_FLOOR_S
+            and len(set(targets)) >= MIN_DISTINCT_WAVE_TARGETS
+        ):
+            return targets
+    raise ValueError("could not draw qualifying varied early-wave targets")
+
+
+def _k8s_counts_for_targets(targets: list[int]) -> tuple[int, ...]:
+    movable_count = EXPECTED_K8S_COUNT - MIDNIGHT_CARRY_OVER_K8S_COUNT
+    base_total = K8S_BASE_COUNT_PER_WAVE * WAVE_COUNT
+    distributable = movable_count - base_total
+    peak_target_index = max(range(WAVE_COUNT), key=targets.__getitem__)
+    counts_list = [K8S_BASE_COUNT_PER_WAVE] * WAVE_COUNT
+    counts_list[peak_target_index] += distributable
+    counts = tuple(counts_list)
+    if sum(counts) != movable_count:
+        raise ValueError("target-based K8S allocation changed the session count")
+    return counts
+
+
+def _random_chain_lengths(rng: random.Random) -> list[int]:
+    remaining = EXPECTED_RAY_COUNT - EXPECTED_RAY_BURST_COUNT
+    lengths: list[int] = []
+    for index in range(BACKGROUND_CHAIN_COUNT):
+        slots_after = BACKGROUND_CHAIN_COUNT - index - 1
+        minimum = max(
+            BACKGROUND_MIN_CHAIN_LENGTH,
+            remaining - BACKGROUND_MAX_CHAIN_LENGTH * slots_after,
+        )
+        maximum = min(
+            BACKGROUND_MAX_CHAIN_LENGTH,
+            remaining - BACKGROUND_MIN_CHAIN_LENGTH * slots_after,
+        )
+        length = remaining if slots_after == 0 else rng.randint(minimum, maximum)
+        lengths.append(length)
+        remaining -= length
+    if remaining != 0 or sum(lengths) != EXPECTED_RAY_COUNT - EXPECTED_RAY_BURST_COUNT:
+        raise ValueError("background chain partition changed the Ray call count")
+    if not all(
+        BACKGROUND_MIN_CHAIN_LENGTH <= length <= BACKGROUND_MAX_CHAIN_LENGTH
+        for length in lengths
+    ):
+        raise ValueError("background chain length is outside the proposed range")
+    return lengths
+
+
+def _weighted_chain_hours(rng: random.Random) -> list[int]:
+    if len(BACKGROUND_HOUR_WEIGHTS) != HOURS_PER_DAY:
+        raise ValueError("one background weight is required for each hour")
+    available = list(range(HOURS_PER_DAY))
+    chosen: list[int] = []
+    for _ in range(HOURS_PER_DAY):
+        weights = [BACKGROUND_HOUR_WEIGHTS[hour] for hour in available]
+        hour = rng.choices(available, weights=weights, k=1)[0]
+        chosen.append(hour)
+        available.remove(hour)
+    for _ in range(BACKGROUND_CHAIN_COUNT - HOURS_PER_DAY):
+        chosen.append(
+            rng.choices(
+                range(HOURS_PER_DAY),
+                weights=BACKGROUND_HOUR_WEIGHTS,
+                k=1,
+            )[0]
+        )
+    return chosen
+
+
+def _build_random_background(
+    events: list[dict[str, Any]],
+    ends: dict[str, float],
+    *,
+    attempt_number: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    expected_background_count = EXPECTED_RAY_COUNT - EXPECTED_RAY_BURST_COUNT
+    if len(events) != expected_background_count:
+        raise ValueError("unexpected non-wave Ray call count")
+    if attempt_number < 1:
+        raise ValueError("background attempt numbers are one-based")
+    attempt_seed = SEED + BACKGROUND_SEED_OFFSET + attempt_number
+    rng = random.Random(attempt_seed)
+    lengths = _random_chain_lengths(rng)
+    hours = _weighted_chain_hours(rng)
+    ordered = sorted(
+        events,
+        key=lambda event: (float(event["timestamp"]), event["job_id"]),
+    )
+    cursor = 0
+    arrivals: list[dict[str, Any]] = []
+    moved_calls: list[dict[str, Any]] = []
+    hourly_counts = [0] * HOURS_PER_DAY
+
+    for chain_index, (length, hour) in enumerate(zip(lengths, hours), start=1):
+        chain_events = ordered[cursor : cursor + length]
+        cursor += length
+        gaps = [
+            rng.randint(BACKGROUND_MIN_GAP_S, BACKGROUND_MAX_GAP_S)
+            for _ in range(length - 1)
+        ]
+        offsets = [0]
+        for gap in gaps:
+            offsets.append(offsets[-1] + gap)
+        latest_start_offset = SECONDS_PER_HOUR - 1 - offsets[-1]
+        chain_start_s = hour * SECONDS_PER_HOUR + rng.randint(
+            0, latest_start_offset
+        )
+        chain_id = f"ray-agentic-background-{chain_index:02d}"
+        for position, (event, offset) in enumerate(
+            zip(chain_events, offsets),
+            start=1,
+        ):
+            original_time_s = float(event["timestamp"])
+            new_time_s = float(chain_start_s + offset)
+            arrivals.append(
+                _scheduled_arrival(
+                    event,
+                    original_time_s=original_time_s,
+                    arrival_time_s=new_time_s,
+                    end_time_s=ends[event["job_id"]],
+                )
+            )
+            moved_calls.append({
+                "job_id": event["job_id"],
+                "original_time_s": original_time_s,
+                "new_time_s": new_time_s,
+                "chain_id": chain_id,
+                "chain_position": position,
+                "chain_length": length,
+                "gap_before_s": 0 if position == 1 else gaps[position - 2],
+            })
+            hourly_counts[int(new_time_s // SECONDS_PER_HOUR)] += 1
+    if cursor != len(ordered) or any(count == 0 for count in hourly_counts):
+        raise ValueError("background draw did not cover all calls and hours")
+    return arrivals, {
+        "seed": attempt_seed,
+        "attempt_number": attempt_number,
+        "rejected_attempt_count": attempt_number - 1,
+        "call_count": len(moved_calls),
+        "chain_lengths": lengths,
+        "hourly_weights": list(BACKGROUND_HOUR_WEIGHTS),
+        "hourly_call_counts": hourly_counts,
+        "calls": sorted(moved_calls, key=lambda item: item["job_id"]),
+    }
+
+
 def _build_k8s_arrivals(
     source: dict[str, Any],
     rng: random.Random,
+    counts_by_wave: tuple[int, ...],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     starts = _start_events(source, "K8S")
     ends = _end_times(source, "K8S")
@@ -107,16 +313,16 @@ def _build_k8s_arrivals(
     ]
     if len(starts) != EXPECTED_K8S_COUNT:
         raise ValueError(f"expected {EXPECTED_K8S_COUNT} K8S starts")
-    if len(carry_over) != 5:
+    if len(carry_over) != MIDNIGHT_CARRY_OVER_K8S_COUNT:
         raise ValueError("expected exactly five midnight carry-over sessions")
-    if sum(K8S_COUNTS_BY_WAVE) != len(movable):
+    if sum(counts_by_wave) != len(movable):
         raise ValueError("K8S wave allocations must cover every movable session")
 
     rng.shuffle(movable)
     arrivals: list[dict[str, Any]] = []
     moved: list[dict[str, Any]] = []
     cursor = 0
-    for wave_index, wave_count in enumerate(K8S_COUNTS_BY_WAVE):
+    for wave_index, wave_count in enumerate(counts_by_wave):
         wave_start = FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
         window_start = wave_start - K8S_LEAD_WINDOW_S
         wave_events = movable[cursor : cursor + wave_count]
@@ -166,7 +372,9 @@ def _build_k8s_arrivals(
 
 def _build_ray_arrivals(
     source: dict[str, Any],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    *,
+    background_attempt: int,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     starts = _start_events(source, "RAY")
     ends = _end_times(source, "RAY")
     chains: dict[str, list[dict[str, Any]]] = {}
@@ -178,7 +386,10 @@ def _build_ray_arrivals(
     for events in chains.values():
         events.sort(key=lambda event: int(event["job_id"].rsplit("-", 1)[1]))
 
-    if len(starts) != EXPECTED_RAY_COUNT or len(chains) != 40:
+    if (
+        len(starts) != EXPECTED_RAY_COUNT
+        or len(chains) != RAY_SOURCE_CHAIN_COUNT
+    ):
         raise ValueError("unexpected Ray source count or burst-chain count")
     if sum(map(len, chains.values())) != EXPECTED_RAY_BURST_COUNT:
         raise ValueError("unexpected number of source Ray burst calls")
@@ -221,31 +432,44 @@ def _build_ray_arrivals(
                 moved_ids.add(event["job_id"])
             cursors[chain_id] += RAY_CALLS_PER_CHAIN_PER_WAVE
 
-    for event in starts:
-        if event["job_id"] in moved_ids:
-            continue
-        original_time_s = float(event["timestamp"])
-        arrivals.append(
-            _scheduled_arrival(
-                event,
-                original_time_s=original_time_s,
-                arrival_time_s=original_time_s,
-                end_time_s=ends[event["job_id"]],
-            )
-        )
+    background_events = [
+        event for event in starts if event["job_id"] not in moved_ids
+    ]
+    background_arrivals, background_provenance = _build_random_background(
+        background_events,
+        ends,
+        attempt_number=background_attempt,
+    )
+    arrivals.extend(background_arrivals)
     if len(moved) != EXPECTED_RAY_BURST_COUNT:
         raise ValueError("not all original Ray burst calls were moved")
     arrivals.sort(key=lambda row: (row["arrival_time_s"], row["job_id"]))
     moved.sort(key=lambda row: row["job_id"])
-    return arrivals, moved
+    return arrivals, moved, background_provenance
 
 
-def build_scenario() -> dict[str, Any]:
+def build_scenario(*, background_attempt: int | None = None) -> dict[str, Any]:
+    attempt_number = (
+        BACKGROUND_ATTEMPT if background_attempt is None else background_attempt
+    )
     source = json.loads(SOURCE_PATH.read_text(encoding="utf-8"))
     template = json.loads(QUEUE_TEMPLATE_PATH.read_text(encoding="utf-8"))
+    if source.get("end_sim_time") != SECONDS_PER_DAY:
+        raise ValueError("the source Proxim8 scenario is not a 24-hour run")
+    if len(_start_events(source, "SLURM")) != EXPECTED_SLURM_COUNT:
+        raise ValueError("the source Slurm count changed unexpectedly")
     rng = random.Random(SEED)
-    k8s_arrivals, moved_k8s = _build_k8s_arrivals(source, rng)
-    ray_arrivals, moved_ray = _build_ray_arrivals(source)
+    target_durations = _draw_wave_targets()
+    k8s_counts = _k8s_counts_for_targets(target_durations)
+    k8s_arrivals, moved_k8s = _build_k8s_arrivals(
+        source,
+        rng,
+        k8s_counts,
+    )
+    ray_arrivals, moved_ray, background_provenance = _build_ray_arrivals(
+        source,
+        background_attempt=attempt_number,
+    )
 
     scenario = copy.deepcopy(template)
     scenario["name"] = "Proxim8 — queue-stress early"
@@ -254,17 +478,21 @@ def build_scenario() -> dict[str, Any]:
         + "\n\nQueue-stress early variant: ten Ray waves begin at 00:15, "
         "then hourly through 09:15. All 7,200 calls from the original "
         "16:35 Ray burst are redistributed across the waves; all other Ray "
-        "calls remain at their source times. The 995 non-midnight K8S "
-        "sessions are moved into ten-minute pre-wave windows and retain "
+        "calls are regenerated as seeded random chains across all 24 hours. "
+        "The 995 non-midnight K8S sessions are moved into ten-minute "
+        "pre-wave windows, with per-wave counts set by seeded duration "
+        "targets, and retain "
         "their original IDs, models, durations, node counts and profiles; "
         "the five midnight carry-over sessions remain at 00:00. The approved "
-        "lower pre-wave target is intentional: with the fixed 1,000-session "
-        "count and source durations, pre-wave demand remains below the "
-        "5.0 MW cap, while requested demand exceeds the cap during each "
-        "Ray wave and the admission gate holds jobs. DR-2026-11-03-PROXIM8-"
-        "QUEUE (PROPOSED_HERE): early hourly waves and the seeded K8S "
-        "reallocation are a separate scenario; no engine, admission, "
-        "physics, cooling or dispatch behavior changes."
+        "lower pre-wave target is intentional: K8S sessions provide varied "
+        "background levels while remaining below the 5.0 MW cap. "
+        "DR-2026-11-03-PROXIM8-QUEUE (PROPOSED_HERE): early hourly waves and "
+        "the seeded K8S reallocation are a separate scenario; no engine, "
+        "admission, physics, cooling or dispatch behavior changes. "
+        "DR-2026-11-04-PROXIM8-AGENTIC-RANDOM (PROPOSED_HERE): non-wave "
+        "agentic calls use seeded weighted-hour chains with 5–200 calls and "
+        "1–10 second gaps; wave starts remain hourly and duration targets "
+        "are seeded per wave."
     )
     scenario["workload_events"] = [
         event
@@ -285,12 +513,24 @@ def build_scenario() -> dict[str, Any]:
         "seed": SEED,
         "decision_record": "DR-2026-11-03-PROXIM8-QUEUE (PROPOSED_HERE)",
         "surge_method": (
-            "Keep the source K8S/Ray jobs and their physical attributes. "
-            "Move the 995 non-midnight K8S sessions into ten-minute windows "
-            "before hourly Ray waves; spread the original 7,200-call Ray "
+            "Keep source job identities and physical attributes. Move the "
+            "995 non-midnight K8S sessions into ten-minute windows before "
+            "hourly Ray waves; distribute those K8S arrivals by seeded "
+            "per-wave duration targets. Spread the original 7,200-call Ray "
             "burst evenly as 18 sequential calls from each of 40 chains "
-            "per wave. Other Ray arrivals and the five midnight K8S "
-            "carry-over sessions retain their source arrival times."
+            "per wave. Other Ray arrival times are regenerated as seeded "
+            "weighted-hour background chains; five midnight K8S carry-over "
+            "sessions retain their source arrival times."
+        ),
+        "agentic_randomization_record": (
+            "DR-2026-11-04-PROXIM8-AGENTIC-RANDOM (PROPOSED_HERE)"
+        ),
+        "background_method": (
+            "The 2,800 non-wave Ray calls are regrouped into 28 seeded chains "
+            "of 5–200 calls, with randomized 1–10 second gaps and weighted "
+            "start hours. A thin overnight tail and all-hour coverage are "
+            "retained; chain lengths, gaps and every old/new timestamp are "
+            "recorded below."
         ),
         "first_wave_start_s": FIRST_WAVE_START_S,
         "wave_interval_s": WAVE_INTERVAL_S,
@@ -301,7 +541,10 @@ def build_scenario() -> dict[str, Any]:
         ],
         "k8s_lead_window_s": K8S_LEAD_WINDOW_S,
         "k8s_moved_count": len(moved_k8s),
-        "k8s_counts_by_wave": list(K8S_COUNTS_BY_WAVE),
+        "k8s_counts_by_wave": list(k8s_counts),
+        "target_durations_seconds": target_durations,
+        "target_seed": SEED + WAVE_TARGET_SEED_OFFSET,
+        "target_draw_attempt_limit": MAX_WAVE_TARGET_DRAW_ATTEMPTS,
         "ray_moved_count": len(moved_ray),
         "ray_calls_per_chain_per_wave": RAY_CALLS_PER_CHAIN_PER_WAVE,
         "ray_chain_count": len({
@@ -310,6 +553,7 @@ def build_scenario() -> dict[str, Any]:
             if event["job_id"].startswith(RAY_BURST_PREFIX)
         }),
         "moved_job_count": len(moved_k8s) + len(moved_ray),
+        "background_agentic_randomization": background_provenance,
         "moved_k8s_jobs": moved_k8s,
         "moved_ray_calls": moved_ray,
         "proposed_here": [
@@ -318,13 +562,24 @@ def build_scenario() -> dict[str, Any]:
             "Ten-minute K8S lead window: staged background before each wave.",
             "18 Ray calls per source chain per wave: preserves all 7,200 calls.",
             "Lower pre-wave demand target: approved by user to preserve counts and durations.",
+            "Seeded target durations determine the K8S sessions staged before each wave; all 995 movable sessions are retained.",
+            "Seeded weighted-hour background chains randomize only non-wave Ray arrival times; job IDs and physical attributes are unchanged.",
+            "The recorded background attempt is the accepted deterministic redraw after checking held-queue telemetry.",
         ],
     }
     return scenario
 
 
 def main() -> None:
-    scenario = build_scenario()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--background-attempt",
+        type=int,
+        default=BACKGROUND_ATTEMPT,
+        help="one-based deterministic background draw attempt",
+    )
+    args = parser.parse_args()
+    scenario = build_scenario(background_attempt=args.background_attempt)
     OUTPUT_PATH.write_text(
         json.dumps(scenario, ensure_ascii=False, indent=2, allow_nan=False)
         + "\n",
@@ -336,6 +591,17 @@ def main() -> None:
             f"{cluster['scheduler_type']} arrivals: "
             f"{len(cluster['scheduled_arrivals'])}"
         )
+    provenance = scenario["provenance_proxim8_queue_early"]
+    print(
+        f"Wave targets: {provenance['target_durations_seconds']}; "
+        f"K8S counts: {provenance['k8s_counts_by_wave']}"
+    )
+    print(
+        f"Background attempt "
+        f"{provenance['background_agentic_randomization']['attempt_number']}; "
+        f"Ray calls per hour: "
+        f"{provenance['background_agentic_randomization']['hourly_call_counts']}"
+    )
 
 
 if __name__ == "__main__":
