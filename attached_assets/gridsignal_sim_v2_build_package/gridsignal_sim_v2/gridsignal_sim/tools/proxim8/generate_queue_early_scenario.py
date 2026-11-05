@@ -27,88 +27,40 @@ SESSION_START_OFFSET_S = SESSION_START_LOCAL_HOUR * 3600
 FIRST_LOCAL_WAVE_OFFSET_S = 900
 # PROPOSED_HERE: waves remain one hour apart through local 18:15.
 LOCAL_WAVE_INTERVAL_S = 3600
-# PROPOSED_HERE: the closest 12-iteration allocation keeps all 7,200 original
-# wave calls; it produces five in-range episodes but cannot meet all ten floors.
-RAY_CALLS_PER_CHAIN_BY_WAVE = (34, 15, 15, 15, 15, 5, 15, 15, 15, 36)
-# PROPOSED_HERE: simultaneous arrivals maximize cap pressure within each wave;
-# the fixed 7,200-call budget still leaves five episodes shorter than 60 s.
+# PROPOSED_HERE: borrow at most 1,500 of the 2,800 background calls to enlarge
+# the wave pool while retaining a background call in every rotated hour.
+BORROWED_BACKGROUND_CALL_COUNT = 1500
+# PROPOSED_HERE: isolate the seeded background-call selection from all workload draws.
+BORROWED_BACKGROUND_SEED_OFFSET = 730000
+# PROPOSED_HERE: the wave pool contains 7,200 original calls plus the borrowed subset.
+EXPECTED_RAY_WAVE_CALL_COUNT = 8700
+# PROPOSED_HERE: forty synchronized source chains define one wave-arrival batch.
+RAY_WAVE_BATCH_SIZE = 40
+# PROPOSED_HERE: iteration 6 was the closest trial that retained ten episodes
+# and a 300-second episode while satisfying the fixed 8,700-call budget.
+RAY_CALL_COUNT_BY_WAVE = (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000)
+# PROPOSED_HERE: no inter-batch delay preserves the strongest cap pressure found.
 RAY_INTERARRIVAL_BY_WAVE_S = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-
-# PROPOSED_HERE: retain every measured candidate from the bounded 12-run
-# calibration so the unmet duration constraint and count tradeoffs are auditable.
-CALIBRATION_ITERATION_LOG = (
-    {
-        "iteration": 1,
-        "calls_per_chain": (24, 24, 24, 24, 24, 8, 13, 9, 6, 24),
-        "interarrival_s": (0.5, 0.5, 0.5, 0.5, 0.5, 2, 2, 2, 0.5, 0.5),
-        "measured_duration_s": (35, 35, 40, 40, 50, 85, 315, 70, 25, 35),
-    },
-    {
-        "iteration": 2,
-        "calls_per_chain": (24, 24, 24, 24, 24, 8, 13, 9, 6, 24),
-        "interarrival_s": (2,) * 10,
-        "measured_duration_s": (20, 25, 35, 35, 45, 85, 315, 70, 25, 35),
-    },
-    {
-        "iteration": 3,
-        "calls_per_chain": (24, 24, 24, 24, 24, 8, 13, 9, 6, 24),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (40, 45, 45, 45, 55, 85, 315, 65, 25, 35),
-    },
-    {
-        "iteration": 4,
-        "calls_per_chain": (18,) * 10,
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (25, 30, 30, 30, 40, 225, 450, 150, 105, 25),
-    },
-    {
-        "iteration": 5,
-        "calls_per_chain": (26, 26, 26, 26, 26, 8, 5, 8, 15, 14),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (45, 45, 50, 50, 60, 85, 100, 55, 85, 15),
-    },
-    {
-        "iteration": 6,
-        "calls_per_chain": (30, 30, 30, 30, 30, 6, 6, 6, 6, 6),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (50, 55, 60, 60, 70, 60, 125, 40, 25, 5),
-    },
-    {
-        "iteration": 7,
-        "calls_per_chain": (16, 16, 16, 16, 16, 16, 16, 16, 12, 40),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (20, 25, 25, 25, 30, 195, 395, 130, 65, 80),
-    },
-    {
-        "iteration": 8,
-        "calls_per_chain": (24, 24, 24, 24, 24, 5, 5, 5, 5, 40),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (40, 45, 45, 45, 55, 50, 100, 30, 20, 80),
-    },
-    {
-        "iteration": 9,
-        "calls_per_chain": (15, 15, 15, 15, 15, 15, 15, 15, 28, 32),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (20, 25, 25, 25, 30, 180, 370, 120, 175, 55),
-    },
-    {
-        "iteration": 10,
-        "calls_per_chain": (14, 15, 15, 15, 15, 15, 15, 15, 25, 36),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (20, 25, 25, 25, 30, 180, 370, 120, 150, 70),
-    },
-    {
-        "iteration": 11,
-        "calls_per_chain": (34, 15, 15, 15, 15, 5, 5, 15, 25, 36),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (60, 25, 25, 25, 30, 50, 100, 120, 150, 70),
-    },
-    {
-        "iteration": 12,
-        "calls_per_chain": (34, 15, 15, 15, 15, 5, 15, 15, 15, 36),
-        "interarrival_s": (0,) * 10,
-        "measured_duration_s": (60, 25, 25, 25, 30, 50, 370, 120, 85, 70),
-    },
+# PROPOSED_HERE: one initial batch reproduces the synchronized no-gap calibration.
+RAY_IMMEDIATE_BATCH_COUNT_BY_WAVE = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+# PROPOSED_HERE: the calibration is bounded to twelve complete deterministic day runs.
+CALIBRATION_MAX_ITERATIONS = 12
+# PROPOSED_HERE: seeded duration targets span the requested short-to-long range.
+CALIBRATION_TARGET_DURATIONS_S = (255, 270, 95, 345, 380, 240, 330, 245, 365, 100)
+# PROPOSED_HERE: preserve every measured trial so the infeasible count tradeoff is auditable.
+CALIBRATION_ITERATION_LOG: tuple[dict[str, Any], ...] = (
+    {"iteration": 1, "calls_by_wave": (1360, 1280, 1200, 1200, 1200, 240, 120, 320, 440, 1340), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 70, 60, 50, 55, 55, 60)},
+    {"iteration": 2, "calls_by_wave": (1300, 1200, 1100, 1100, 1100, 200, 600, 250, 350, 1500), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (55, 55, 50, 55, 65, 50, 370, 45, 45, 70)},
+    {"iteration": 3, "calls_by_wave": (1284, 1204, 1124, 1124, 1124, 220, 600, 300, 420, 1300), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (55, 370, 55, 45)},
+    {"iteration": 4, "calls_by_wave": (1300, 1220, 1160, 1160, 1160, 220, 600, 300, 420, 1160), "interarrival_s_by_wave": (1, 1, 1, 1, 1, 1, 0, 1, 1, 1), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (50, 55, 50, 55, 65, 55, 370, 55, 55, 45)},
+    {"iteration": 5, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 240, 600, 320, 440, 1060), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 55, 60, 370, 55, 55, 45)},
+    {"iteration": 6, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 55, 55, 340, 65, 70, 40)},
+    {"iteration": 7, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (2, 2, 2, 2, 2, 2, 0, 2, 2, 2), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (45, 40, 50, 50, 45, 55, 340, 70, 70, 35)},
+    {"iteration": 8, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0.5, 0.5, 0.5), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (55, 55, 55, 55, 55, 55, 340, 70, 70, 40)},
+    {"iteration": 9, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (8, 8, 8, 8, 8, 8, 14, 8, 8, 8), "measured_episode_durations_s": (15, 15, 20, 20, 20, 55, 340, 65, 70, 5)},
+    {"iteration": 10, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (15, 15, 15, 15, 15, 8, 14, 8, 8, 15), "measured_episode_durations_s": (30, 40, 40, 45, 55, 55, 340, 65, 70, 30)},
+    {"iteration": 11, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 500, 320, 360, 480, 1000), "interarrival_s_by_wave": (0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "immediate_batches_by_wave": (1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "measured_episode_durations_s": (60, 60, 60, 60, 55, 145, 180, 65, 65, 40)},
+    {"iteration": 12, "calls_by_wave": (1360, 1280, 1200, 1200, 1000, 220, 560, 360, 520, 1000), "interarrival_s_by_wave": (5, 5, 5, 5, 5, 5, 0, 5, 5, 5), "immediate_batches_by_wave": (20, 20, 20, 20, 20, 6, 14, 8, 8, 20), "measured_episode_durations_s": (50, 60, 60, 60, 55, 55, 340, 65, 70, 40)},
 )
 
 # PROPOSED_HERE: preserve the approved deterministic Proxim8 seed.
@@ -343,6 +295,80 @@ def _rotate_slurm_events(
     return rotated, moves
 
 
+def _borrow_background_calls(
+    background: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    if len(background) != EXPECTED_RAY_COUNT - EXPECTED_RAY_BURST_COUNT:
+        raise ValueError("expected exactly 2,800 random background calls")
+
+    remaining_by_hour = [0] * HOURS_PER_DAY
+    for event in background:
+        hour = int(
+            _rotate_daily_time(float(event["arrival_time_s"])) // SECONDS_PER_HOUR
+        )
+        remaining_by_hour[hour] += 1
+    initial_by_hour = list(remaining_by_hour)
+    rng = random.Random(SEED + BORROWED_BACKGROUND_SEED_OFFSET)
+    randomized = sorted(background, key=lambda event: rng.random())
+    borrowed: list[dict[str, Any]] = []
+    for event in randomized:
+        if len(borrowed) == BORROWED_BACKGROUND_CALL_COUNT:
+            break
+        hour = int(
+            _rotate_daily_time(float(event["arrival_time_s"])) // SECONDS_PER_HOUR
+        )
+        # Preserve at least one random background arrival in every represented hour.
+        if remaining_by_hour[hour] > 1:
+            borrowed.append(event)
+            remaining_by_hour[hour] -= 1
+
+    if len(borrowed) != BORROWED_BACKGROUND_CALL_COUNT:
+        raise ValueError(
+            "not enough background calls to borrow while preserving hourly coverage"
+        )
+    borrowed_ids = {str(event["job_id"]) for event in borrowed}
+    remaining = [
+        event for event in background if str(event["job_id"]) not in borrowed_ids
+    ]
+    borrowed_by_hour = [
+        initial_by_hour[hour] - remaining_by_hour[hour]
+        for hour in range(HOURS_PER_DAY)
+    ]
+    remaining_by_hour_actual = [
+        sum(
+            int(
+                _rotate_daily_time(float(event["arrival_time_s"]))
+                // SECONDS_PER_HOUR
+            )
+            == hour
+            for event in remaining
+        )
+        for hour in range(HOURS_PER_DAY)
+    ]
+    if sum(count > 0 for count in remaining_by_hour_actual) < 20:
+        raise ValueError("remaining background calls must cover at least 20 hours")
+
+    borrowed.sort(key=lambda event: str(event["job_id"]))
+    remaining.sort(
+        key=lambda event: (
+            float(event["arrival_time_s"]),
+            str(event["job_id"]),
+        )
+    )
+    return borrowed, remaining, {
+        "selection_seed": SEED + BORROWED_BACKGROUND_SEED_OFFSET,
+        "selection_method": (
+            "seeded random ordering across rotated hours, accepting a call only "
+            "while at least one background call remains in its hour"
+        ),
+        "original_background_call_count": len(background),
+        "borrowed_call_count": len(borrowed),
+        "borrowed_hourly_call_counts": borrowed_by_hour,
+        "remaining_background_call_count": len(remaining),
+        "remaining_hourly_call_counts": remaining_by_hour_actual,
+    }
+
+
 def _build_early_ray_arrivals(
     business_scenario: dict[str, Any],
     *,
@@ -353,63 +379,81 @@ def _build_early_ray_arrivals(
         if cluster.get("scheduler_type") == "RAY"
     )
     source_arrivals = ray_cluster["scheduled_arrivals"]
-    wave_chains: dict[str, list[dict[str, Any]]] = {}
-    background = []
+    original_wave_calls: list[dict[str, Any]] = []
+    background: list[dict[str, Any]] = []
     for arrival in source_arrivals:
-        job_id = str(arrival["job_id"])
-        if job_id.startswith(RAY_BURST_PREFIX):
-            chain_id, _ = job_id[len(RAY_BURST_PREFIX):].split("-", 1)
-            wave_chains.setdefault(chain_id, []).append(arrival)
+        if str(arrival["job_id"]).startswith(RAY_BURST_PREFIX):
+            original_wave_calls.append(arrival)
         else:
             background.append(arrival)
-    for arrivals in wave_chains.values():
-        arrivals.sort(key=lambda row: int(row["job_id"].rsplit("-", 1)[1]))
-    if len(wave_chains) != RAY_SOURCE_CHAIN_COUNT or sum(
-        len(arrivals) for arrivals in wave_chains.values()
-    ) != EXPECTED_RAY_BURST_COUNT:
-        raise ValueError("business-day queue must contain 40 chains and 7,200 wave calls")
-    if len(background) != EXPECTED_RAY_COUNT - EXPECTED_RAY_BURST_COUNT:
-        raise ValueError("business-day queue must contain 2,800 background calls")
-    if len(RAY_CALLS_PER_CHAIN_BY_WAVE) != WAVE_COUNT or sum(
-        RAY_CALLS_PER_CHAIN_BY_WAVE
-    ) != RAY_CALLS_PER_CHAIN_TOTAL:
-        raise ValueError("per-wave call allocation must total 180 calls per chain")
+    original_wave_calls.sort(key=lambda row: str(row["job_id"]))
+    if len(original_wave_calls) != EXPECTED_RAY_BURST_COUNT:
+        raise ValueError("business-day queue must contain 7,200 original wave calls")
+
+    borrowed, remaining_background, borrowing = _borrow_background_calls(background)
+    if len(RAY_CALL_COUNT_BY_WAVE) != WAVE_COUNT or sum(
+        RAY_CALL_COUNT_BY_WAVE
+    ) != EXPECTED_RAY_WAVE_CALL_COUNT:
+        raise ValueError("per-wave allocation must total 8,700 calls")
     if len(RAY_INTERARRIVAL_BY_WAVE_S) != WAVE_COUNT:
         raise ValueError("each wave requires a within-wave spacing value")
+    if len(RAY_IMMEDIATE_BATCH_COUNT_BY_WAVE) != WAVE_COUNT:
+        raise ValueError("each wave requires an initial synchronized-batch count")
+
+    # Interleave the original burst calls and seeded borrowers so borrowers
+    # contribute to waves throughout the day instead of being placed at the end.
+    wave_pool: list[tuple[dict[str, Any], str]] = []
+    for index in range(max(len(original_wave_calls), len(borrowed))):
+        if index < len(original_wave_calls):
+            wave_pool.append((original_wave_calls[index], "original_wave"))
+        if index < len(borrowed):
+            wave_pool.append((borrowed[index], "borrowed_background"))
 
     arrivals: list[dict[str, Any]] = []
     moved_wave: list[dict[str, Any]] = []
-    background_rotations: list[dict[str, Any]] = []
+    borrowed_records: list[dict[str, Any]] = []
+    cursor = 0
     for wave_index in range(WAVE_COUNT):
         wave_start_s = FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
-        count_per_chain = RAY_CALLS_PER_CHAIN_BY_WAVE[wave_index]
+        wave_call_count = RAY_CALL_COUNT_BY_WAVE[wave_index]
         interarrival_s = RAY_INTERARRIVAL_BY_WAVE_S[wave_index]
-        for chain_id, chain_arrivals in wave_chains.items():
-            start_index = sum(RAY_CALLS_PER_CHAIN_BY_WAVE[:wave_index])
-            wave_arrivals = chain_arrivals[
-                start_index : start_index + count_per_chain
-            ]
-            if len(wave_arrivals) != count_per_chain:
-                raise ValueError(f"incomplete source Ray chain {chain_id}")
-            for position, event in enumerate(wave_arrivals):
-                original_time_s = float(event["arrival_time_s"])
-                new_time_s = float(
-                    wave_start_s + position * interarrival_s
-                )
-                arrivals.append({**event, "arrival_time_s": new_time_s})
-                moved_wave.append({
-                    "job_id": event["job_id"],
-                    "original_time_s": original_time_s,
-                    "new_time_s": new_time_s,
-                    "duration_s": float(event["duration_s"]),
-                    "node_count": int(event["node_count"]),
-                    "hardware_profile_id": event["hardware_profile_id"],
-                    "wave_number": wave_index + 1,
-                    "wave_target_duration_s": target_durations[wave_index],
-                    "wave_interarrival_s": interarrival_s,
-                })
+        immediate_batches = RAY_IMMEDIATE_BATCH_COUNT_BY_WAVE[wave_index]
+        wave_jobs = wave_pool[cursor : cursor + wave_call_count]
+        if len(wave_jobs) != wave_call_count:
+            raise ValueError(f"incomplete Ray wave {wave_index + 1}")
+        for position, (event, source_kind) in enumerate(wave_jobs):
+            original_time_s = float(event["arrival_time_s"])
+            rotated_time_s = _rotate_daily_time(original_time_s)
+            batch_index = position // RAY_WAVE_BATCH_SIZE
+            new_time_s = float(
+                wave_start_s
+                + max(0, batch_index - immediate_batches + 1) * interarrival_s
+            )
+            arrivals.append({**event, "arrival_time_s": new_time_s})
+            move = {
+                "job_id": event["job_id"],
+                "source_kind": source_kind,
+                "original_time_s": original_time_s,
+                "new_time_s": new_time_s,
+                "duration_s": float(event["duration_s"]),
+                "node_count": int(event["node_count"]),
+                "hardware_profile_id": event["hardware_profile_id"],
+                "wave_number": wave_index + 1,
+                "wave_target_duration_s": target_durations[wave_index],
+                "wave_interarrival_s": interarrival_s,
+                "wave_immediate_batches": immediate_batches,
+            }
+            if source_kind == "borrowed_background":
+                move["rotated_background_time_s"] = rotated_time_s
+                borrowed_records.append(move.copy())
+            moved_wave.append(move)
+        cursor += wave_call_count
 
-    for event in background:
+    if cursor != len(wave_pool):
+        raise ValueError("wave allocation did not consume the complete Ray pool")
+
+    background_rotations: list[dict[str, Any]] = []
+    for event in remaining_background:
         original_time_s = float(event["arrival_time_s"])
         new_time_s = _rotate_daily_time(original_time_s)
         arrivals.append({**event, "arrival_time_s": new_time_s})
@@ -421,23 +465,27 @@ def _build_early_ray_arrivals(
     arrivals.sort(key=lambda row: (row["arrival_time_s"], row["job_id"]))
     moved_wave.sort(key=lambda row: row["job_id"])
     background_rotations.sort(key=lambda row: row["job_id"])
-    background_provenance = copy.deepcopy(
+    source_draw = copy.deepcopy(
         business_scenario["provenance_proxim8_queue"][
             "background_agentic_randomization"
         ]
     )
-    return arrivals, moved_wave, {
-        "source_draw": background_provenance,
+    remaining_hourly_counts = [
+        sum(
+            int(move["new_time_s"] // SECONDS_PER_HOUR) == hour
+            for move in background_rotations
+        )
+        for hour in range(HOURS_PER_DAY)
+    ]
+    background_provenance = {
+        "source_draw": source_draw,
+        **borrowing,
         "rotated_call_count": len(background_rotations),
-        "rotated_hourly_call_counts": [
-            sum(
-                int(move["new_time_s"] // SECONDS_PER_HOUR) == hour
-                for move in background_rotations
-            )
-            for hour in range(HOURS_PER_DAY)
-        ],
+        "rotated_hourly_call_counts": remaining_hourly_counts,
+        "borrowed_calls": borrowed_records,
         "rotated_calls": background_rotations,
     }
+    return arrivals, moved_wave, background_provenance
 
 
 def _draw_wave_targets() -> list[int]:
@@ -829,6 +877,8 @@ def build_scenario() -> dict[str, Any]:
         raise ValueError("the source Slurm count changed unexpectedly")
 
     target_durations = _draw_wave_targets()
+    if tuple(target_durations) != CALIBRATION_TARGET_DURATIONS_S:
+        raise ValueError("seeded duration targets differ from the recorded calibration")
     k8s_cluster = next(
         cluster for cluster in business["kube_clusters"]
         if cluster.get("scheduler_type") == "K8S"
@@ -851,16 +901,21 @@ def build_scenario() -> dict[str, Any]:
         + "\n\nQueue-stress early variant (DR-2026-11-05-PROXIM8-EARLY-0900, "
         "PROPOSED_HERE): the session starts at local 09:00. The complete "
         "business-day timeline is rotated by nine hours: Slurm and K8S keep "
-        "their original local arrival times, the 2,800 seeded random Ray "
-        "background calls are unchanged except for that rotation, and the "
-        "building non-GPU load curve is rotated by the same amount. The five "
+        "their original local arrival times. Of the 2,800 seeded random Ray "
+        "background calls, 1,500 are selected across the rotated day and moved "
+        "into the wave pool; 1,300 remain random background arrivals, with "
+        "calls left in every hour. The building non-GPU load curve is rotated "
+        "by the same amount. The five "
         "K8S midnight carry-over sessions therefore appear at the session's "
-        "15:00 mark. The 7,200 former Ray burst calls form ten stress waves at "
+        "15:00 mark. The 7,200 former Ray burst calls plus 1,500 borrowed "
+        "background calls form ten stress waves at "
         "local 09:15, 10:15, and hourly through 18:15. The engine has no "
         "session-start-hour field: PG&E B-20 TOU periods still use simulated "
         "hours from midnight, so tariff periods are offset from local time by "
         "nine hours in this variant (PROPOSED_HERE). No physics, admission, "
-        "cooling, dispatch, or engine behavior is changed."
+        "cooling, dispatch, or engine behavior is changed. The 12-trial "
+        "calibration did not meet the 60-second minimum on every wave; the "
+        "best trial is diagnostic only and is not acceptance-ready."
     )
     scenario["non_gpu_load_profile_mw"] = _rotate_daily_profile(
         baseline["non_gpu_load_profile_mw"]
@@ -906,33 +961,53 @@ def build_scenario() -> dict[str, Any]:
         ],
         "target_durations_seconds": target_durations,
         "target_seed": SEED + WAVE_TARGET_SEED_OFFSET,
-        "ray_calls_per_chain_by_wave": list(RAY_CALLS_PER_CHAIN_BY_WAVE),
-        "ray_call_count_by_wave": [
-            calls * RAY_SOURCE_CHAIN_COUNT
-            for calls in RAY_CALLS_PER_CHAIN_BY_WAVE
-        ],
+        "original_ray_wave_call_count": EXPECTED_RAY_BURST_COUNT,
+        "borrowed_background_call_count": BORROWED_BACKGROUND_CALL_COUNT,
+        "ray_call_count_by_wave": list(RAY_CALL_COUNT_BY_WAVE),
         "ray_interarrival_by_wave_s": list(RAY_INTERARRIVAL_BY_WAVE_S),
-        "calibration_status": (
-            "stopped_after_12_iterations: fixed_7200_call_budget_did_not_put_"
-            "all_10_measured_episodes_in_60_to_420_seconds"
+        "ray_immediate_batch_count_by_wave": list(
+            RAY_IMMEDIATE_BATCH_COUNT_BY_WAVE
         ),
-        "selected_calibration_iteration": 12,
+        "calibration_max_iterations": CALIBRATION_MAX_ITERATIONS,
+        "calibration_status": (
+            "infeasible_after_12_trials: best_trial_6_has_three_episodes_"
+            "below_60_seconds"
+        ),
+        "selected_calibration_iteration": 6,
         "calibration_iteration_log": [
             {
                 "iteration": entry["iteration"],
-                "calls_per_chain_by_wave": list(entry["calls_per_chain"]),
-                "calls_by_wave": [
-                    calls * RAY_SOURCE_CHAIN_COUNT
-                    for calls in entry["calls_per_chain"]
-                ],
-                "interarrival_s_by_wave": list(entry["interarrival_s"]),
-                "measured_duration_s_by_wave": list(
-                    entry["measured_duration_s"]
+                "calls_by_wave": list(entry["calls_by_wave"]),
+                "interarrival_s_by_wave": list(entry["interarrival_s_by_wave"]),
+                "immediate_batches_by_wave": list(
+                    entry["immediate_batches_by_wave"]
+                ),
+                "measured_episode_durations_s": list(
+                    entry["measured_episode_durations_s"]
                 ),
             }
             for entry in CALIBRATION_ITERATION_LOG
         ],
+        "best_trial_episode_summary": {
+            "measured_durations_s": [60, 60, 60, 60, 55, 55, 340, 65, 70, 40],
+            "peak_held_jobs": [1128, 1065, 992, 995, 823, 182, 536, 306, 443, 796],
+            "peak_requested_demand_mw": [
+                22.328, 21.367, 20.236, 20.284, 17.622,
+                7.770, 13.460, 9.691, 11.831, 14.513,
+            ],
+            "peak_drawn_demand_mw": [
+                4.400, 4.441, 4.470, 4.470, 4.543,
+                4.880, 4.941, 4.822, 4.786, 4.249,
+            ],
+        },
         "ray_wave_call_count": len(moved_ray),
+        "ray_calls_by_sim_hour": [
+            sum(
+                int(float(event["arrival_time_s"]) // SECONDS_PER_HOUR) == hour
+                for event in ray_arrivals
+            )
+            for hour in range(HOURS_PER_DAY)
+        ],
         "ray_background_rotation": background_provenance,
         "k8s_rotated_count": len(moved_k8s),
         "k8s_rotated_arrivals": moved_k8s,
@@ -951,8 +1026,8 @@ def build_scenario() -> dict[str, Any]:
             "Session local start 09:00; all original-day inputs are rotated by nine hours.",
             "The five midnight K8S carry-over sessions rotate to the following-night position.",
             "Ten Ray wave starts are 09:15 through 18:15 local, one hour apart.",
-            "The 7,200 former Ray burst calls are allocated by per-wave chain counts and spacing.",
-            "The best measured 12-iteration allocation has five episodes in the requested duration band; five remain short, so the acceptance criterion is unmet.",
+            "Exactly 1,500 background Ray calls are selected by a separate seeded draw and moved into the ten waves; remaining background calls stay spread across at least 20 hours.",
+            "The 7,200 original wave calls plus borrowed background calls are allocated by per-wave counts and within-wave spacing.",
             "PG&E B-20 uses sim time from midnight, so its periods are offset by nine hours from local time.",
         ],
     }
@@ -974,7 +1049,6 @@ def main() -> None:
         )
     provenance = scenario["provenance_proxim8_queue_early"]
     print(f"Wave targets: {provenance['target_durations_seconds']}")
-    print(f"Ray calls per chain by wave: {provenance['ray_calls_per_chain_by_wave']}")
     print(f"Ray calls by wave: {provenance['ray_call_count_by_wave']}")
     print(f"Calibration status: {provenance['calibration_status']}")
     print(

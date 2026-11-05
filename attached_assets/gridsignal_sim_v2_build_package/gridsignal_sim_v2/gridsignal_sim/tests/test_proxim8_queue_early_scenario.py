@@ -242,9 +242,13 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
         item["job_id"]: item for item in provenance["k8s_rotated_arrivals"]
     }
     moved_ray = {item["job_id"]: item for item in provenance["moved_ray_calls"]}
+    ray_background = provenance["ray_background_rotation"]
+    borrowed_background = {
+        item["job_id"]: item for item in ray_background["borrowed_calls"]
+    }
     rotated_background = {
         item["job_id"]: item
-        for item in provenance["ray_background_rotation"]["rotated_calls"]
+        for item in ray_background["rotated_calls"]
     }
 
     assert spec.end_sim_time == 86400
@@ -267,9 +271,23 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
     assert provenance["seed"] == SEED
     assert len(moved_k8s) == 1000
     assert provenance["k8s_rotated_count"] == 1000
-    assert provenance["ray_wave_call_count"] == 7200
-    assert len(moved_ray) == 7200
-    assert len(rotated_background) == 2800
+    assert provenance["original_ray_wave_call_count"] == 7200
+    assert provenance["borrowed_background_call_count"] == 1500
+    assert provenance["ray_wave_call_count"] == 8700
+    assert len(moved_ray) == 8700
+    assert len(borrowed_background) == 1500
+    assert len(rotated_background) == 1300
+    assert ray_background["borrowed_call_count"] == 1500
+    assert ray_background["remaining_background_call_count"] == 1300
+    assert sum(ray_background["rotated_hourly_call_counts"]) == 1300
+    assert sum(
+        calls > 0 for calls in ray_background["rotated_hourly_call_counts"]
+    ) >= 20
+    assert {
+        job_id
+        for job_id, move in moved_ray.items()
+        if move["source_kind"] == "borrowed_background"
+    } == set(borrowed_background)
     assert provenance["moved_job_count"] == 11010
     assert len(provenance["wave_start_times_sim_seconds"]) == 10
 
@@ -342,6 +360,11 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
             assert move["new_time_s"] == actual.arrival_time_s
             if scheduler == "K8S" or job_id in rotated_background:
                 assert actual.arrival_time_s == _rotated_time(original_time)
+            if job_id in borrowed_background:
+                assert move["rotated_background_time_s"] == _rotated_time(
+                    original_time
+                )
+                assert borrowed_background[job_id]["new_time_s"] == actual.arrival_time_s
 
     carryover_ids = {
         job_id for job_id, event in expected_k8s.items()
