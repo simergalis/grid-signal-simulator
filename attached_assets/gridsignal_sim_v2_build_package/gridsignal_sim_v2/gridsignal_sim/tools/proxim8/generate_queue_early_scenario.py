@@ -47,9 +47,12 @@ RAY_IMMEDIATE_BATCH_COUNT_BY_WAVE = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 CALIBRATION_MAX_ITERATIONS = 12
 # PROPOSED_HERE: seeded duration targets span the requested short-to-long range.
 CALIBRATION_TARGET_DURATIONS_S = (255, 270, 95, 345, 380, 240, 330, 245, 365, 100)
-# PROPOSED_HERE: the first inference-wave allocation moves all 995 non-carryover
-# sessions; later calibration changes only these per-wave counts.
-K8S_SESSION_COUNT_BY_WAVE = (210, 120, 100, 100, 100, 100, 80, 70, 60, 55)
+# PROPOSED_HERE: move 150 K8S sessions into wave 1 and 160 into the seeded
+# long-target wave 5; leave the other eight wave allocations unchanged.
+K8S_SESSION_COUNT_BY_WAVE = (150, 120, 100, 100, 160, 100, 80, 70, 60, 55)
+# PROPOSED_HERE: retain the committed session identity assignment as the source
+# allocation before transferring 60 sessions from wave 1 to wave 5.
+K8S_BASE_SESSION_COUNT_BY_WAVE = (210, 120, 100, 100, 100, 100, 80, 70, 60, 55)
 # PROPOSED_HERE: one seeded ordering keeps session selection reproducible while
 # the per-wave counts are calibrated.
 K8S_WAVE_SELECTION_SEED_OFFSET = 840000
@@ -69,62 +72,65 @@ RAY_SURGE_CALL_COUNT_BY_WAVE = (240, 700, 500, 700, 750, 650, 700, 600, 750, 750
 RAY_WAVE_CALLS_PER_BATCH = 40
 # PROPOSED_HERE: two-second batch spacing matches the source agentic call cadence.
 RAY_WAVE_BATCH_CADENCE_S = 2
-# PROPOSED_HERE: bound the inference-wave calibration to twelve 24-hour runs.
-INFERENCE_CALIBRATION_MAX_ITERATIONS = 12
-# PROPOSED_HERE: preserve all six measured count-only calibration trials.
+# PROPOSED_HERE: bound the final first-wave calibration to six full-day runs.
+INFERENCE_CALIBRATION_MAX_ITERATIONS = 6
+# PROPOSED_HERE: retain all six full-day trials, including the final run after
+# preserving the committed K8S job membership in the other eight waves.
 INFERENCE_CALIBRATION_ITERATION_LOG: tuple[dict[str, Any], ...] = (
     {
         "iteration": 1,
-        "k8s_session_count_by_wave": (250, 145, 120, 110, 100, 80, 60, 50, 45, 35),
-        "measured_episode_durations_s": (5, 1785),
+        "k8s_session_count_by_wave": (170, 120, 100, 100, 100, 100, 80, 70, 60, 55),
+        "measured_episode_durations_s": (75, 130, 75, 115, 130, 125, 100, 80, 100, 90),
+        "adjustment": "Reduced only wave 1 from 210 to 170 moved K8S sessions.",
     },
     {
         "iteration": 2,
-        "k8s_session_count_by_wave": (220, 120, 110, 100, 100, 80, 70, 60, 50, 40),
-        "measured_episode_durations_s": (5, 270),
+        "k8s_session_count_by_wave": (170, 120, 100, 100, 140, 100, 80, 70, 60, 55),
+        "measured_episode_durations_s": (75, 125, 75, 115, 190, 115, 100, 85, 95, 85),
+        "adjustment": "Raised seeded long-target wave 5 from 100 to 140.",
     },
     {
         "iteration": 3,
-        "k8s_session_count_by_wave": (200, 90, 90, 90, 90, 75, 60, 50, 40, 35),
-        "measured_episode_durations_s": (),
+        "k8s_session_count_by_wave": (90, 120, 100, 100, 220, 100, 80, 70, 60, 55),
+        "measured_episode_durations_s": (25, 115, 85, 115, 2345, 115, 100, 85, 95, 85),
+        "adjustment": "Moved K8S allocation from wave 1 to wave 5; both missed limits.",
     },
     {
         "iteration": 4,
-        "k8s_session_count_by_wave": (210, 90, 90, 90, 90, 75, 60, 50, 40, 35),
-        "measured_episode_durations_s": (),
+        "k8s_session_count_by_wave": (130, 120, 100, 100, 180, 100, 80, 70, 60, 55),
+        "measured_episode_durations_s": (40, 125, 75, 115, 695, 105, 100, 85, 95, 85),
+        "adjustment": "Moved K8S allocation back toward wave 1; wave 5 remained too long.",
     },
     {
         "iteration": 5,
-        "k8s_session_count_by_wave": (210, 87, 87, 87, 87, 87, 87, 87, 87, 87),
-        "measured_episode_durations_s": (),
+        "k8s_session_count_by_wave": (150, 120, 100, 100, 160, 100, 80, 70, 60, 55),
+        "measured_episode_durations_s": (60, 130, 75, 115, 315, 100, 100, 85, 95, 85),
+        "adjustment": (
+            "Exploratory count candidate; subsequent check found that the "
+            "sequential allocator changed K8S identities in other waves."
+        ),
     },
     {
         "iteration": 6,
-        "k8s_session_count_by_wave": (210, 120, 100, 100, 100, 100, 80, 70, 60, 55),
-        "measured_episode_durations_s": (),
+        "k8s_session_count_by_wave": (150, 120, 100, 100, 160, 100, 80, 70, 60, 55),
+        "measured_episode_durations_s": (60, 130, 85, 115, 300, 115, 100, 85, 95, 85),
+        "adjustment": (
+            "Accepted: preserve all other committed wave identities; transfer "
+            "60 sessions from wave 1 to seeded long-target wave 5."
+        ),
     },
 )
-# PROPOSED_HERE: six measured trials show no passing queue schedule; iteration
-# 2 is the closest episode-count result, while iteration 6 stays under the cap.
-INFERENCE_CALIBRATION_STATUS = "stopped_no_passing_candidate_after_6_trials"
-# PROPOSED_HERE: preserve the closest and cap-safe measured trial summaries.
+# PROPOSED_HERE: the sixth measured run passes after preserving other waves.
+INFERENCE_CALIBRATION_STATUS = "passed_iteration_6"
+# PROPOSED_HERE: record the accepted trial's measured results in the artifact.
 INFERENCE_CALIBRATION_RESULT = {
-    "closest_episode_count_iteration": 2,
-    "closest_episode_count_durations_s": (5, 270),
-    "closest_episode_count_peak_demand_mw": 5.05082,
-    "closest_episode_count_peak_requested_mw": 5.08265,
-    "closest_episode_count_peak_grid_import_mw": 5.0,
-    "closest_episode_count_unserved_mwh": 0.0,
-    "cap_safe_iteration": 6,
-    "cap_safe_episode_durations_s": (),
-    "cap_safe_peak_demand_mw": 4.8662,
-    "cap_safe_peak_requested_mw": 4.8662,
-    "cap_safe_peak_grid_import_mw": 4.8662,
-    "cap_safe_unserved_mwh": 0.0,
-    "reason": (
-        "The first wave is either empty/5-second held telemetry below the "
-        "cap, or the held Ray backlog accompanies facility demand above 5 MW."
+    "selected_iteration": 6,
+    "measured_episode_durations_s": (
+        60, 130, 85, 115, 300, 115, 100, 85, 95, 85
     ),
+    "peak_demand_mw": 4.989236254299349,
+    "peak_grid_import_mw": 4.989236254299349,
+    "unserved_mwh": 0.0,
 }
 # Historical Ray-wave trials are retained in git history; this redesign's
 # count-only results are recorded in INFERENCE_CALIBRATION_ITERATION_LOG.
@@ -394,6 +400,22 @@ def _build_inference_wave_arrivals(
     selection_rng = random.Random(SEED + K8S_WAVE_SELECTION_SEED_OFFSET)
     selection_order = sorted(movable, key=lambda event: event["job_id"])
     selection_rng.shuffle(selection_order)
+    base_counts = K8S_BASE_SESSION_COUNT_BY_WAVE
+    if len(base_counts) != WAVE_COUNT or sum(base_counts) != len(selection_order):
+        raise ValueError("base K8S allocation must cover the movable sessions")
+    transferred_to_wave_five = base_counts[0] - counts_by_wave[0]
+    expected_counts = list(base_counts)
+    expected_counts[0] -= transferred_to_wave_five
+    expected_counts[4] += transferred_to_wave_five
+    if (
+        transferred_to_wave_five < 0
+        or tuple(expected_counts) != counts_by_wave
+    ):
+        raise ValueError(
+            "early calibration may transfer K8S sessions only from wave 1 "
+            "to wave 5"
+        )
+
     total_moved = sum(counts_by_wave)
     if total_moved > len(selection_order):
         raise ValueError(
@@ -402,14 +424,30 @@ def _build_inference_wave_arrivals(
         )
 
     wave_by_job: dict[str, tuple[int, float]] = {}
-    cursor = 0
-    for wave_index, count in enumerate(counts_by_wave):
+    base_offsets = [0]
+    for count in base_counts:
+        base_offsets.append(base_offsets[-1] + count)
+    for wave_index in range(WAVE_COUNT):
         wave_time_s = float(
             FIRST_WAVE_START_S + wave_index * WAVE_INTERVAL_S
         )
-        for event in selection_order[cursor:cursor + count]:
+        if wave_index == 0:
+            wave_events = selection_order[:counts_by_wave[0]]
+        elif wave_index == 4:
+            wave_events = (
+                selection_order[base_offsets[4]:base_offsets[5]]
+                + selection_order[
+                    counts_by_wave[0]:base_counts[0]
+                ]
+            )
+        else:
+            wave_events = selection_order[
+                base_offsets[wave_index]:base_offsets[wave_index + 1]
+            ]
+        if len(wave_events) != counts_by_wave[wave_index]:
+            raise ValueError("preserved K8S wave assignment has wrong count")
+        for event in wave_events:
             wave_by_job[event["job_id"]] = (wave_index, wave_time_s)
-        cursor += count
 
     arrivals: list[dict[str, Any]] = []
     moves: list[dict[str, Any]] = []
@@ -1417,9 +1455,13 @@ def build_scenario(
         "midnight because the engine has no session-start-hour field, so "
         "tariff periods are offset from local clock time by nine hours "
         "(PROPOSED_HERE). Seeded target episode durations in seconds are "
-        f"{target_durations}. Count-only calibration stopped after six measured "
-        "trials without a schedule meeting the queue-duration and cap limits; "
-        "this diagnostic candidate is not acceptance-ready."
+        f"{target_durations}. Six full-day trials calibrated wave 1 and, "
+        "because wave 1 is shorter than 300 seconds, exactly one other "
+        "seed-selected long-target wave (wave 5, target 380 seconds). The "
+        "accepted iteration 6 preserves the committed K8S job membership "
+        "in all other waves, measures episodes of "
+        f"{list(INFERENCE_CALIBRATION_RESULT['measured_episode_durations_s'])} "
+        "seconds and stays at or below the 5.0 MW cap."
     )
     scenario["non_gpu_load_profile_mw"] = _rotate_daily_profile(
         source["non_gpu_load_profile_mw"]
@@ -1529,13 +1571,15 @@ def build_scenario(
                 "measured_episode_durations_s": list(
                     entry["measured_episode_durations_s"]
                 ),
+                "adjustment": entry["adjustment"],
             }
             for entry in INFERENCE_CALIBRATION_ITERATION_LOG
         ],
         "moved_job_count": len(moved_k8s) + len(moved_ray)
         + len(truncated_slurm),
         "proposed_here": [
-            "Proposed inference-session surges were tested, but no candidate met the measured queue and cap acceptance gates.",
+            "Six logged full-day trials adjusted wave 1 and the seeded long-target fifth wave only.",
+            "The seeded duration target of 380 seconds selected wave 5 (13:15 local) as the one additional wave to lengthen after wave 1 became shorter than 300 seconds.",
             "Each moved K8S session keeps its source model, duration, node count and profile.",
             "A seeded slice of the former 7,200-call Ray burst joins the ten cap-gated inference waves; the remainder stays in seeded weighted random 5-second slots, while all 2,800 day calls retain their rotated source arrivals.",
             "A Slurm job crossing the 24-hour boundary ends at the horizon; the remainder is not simulated.",

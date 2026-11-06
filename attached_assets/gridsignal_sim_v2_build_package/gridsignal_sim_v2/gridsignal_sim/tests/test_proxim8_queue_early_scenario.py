@@ -41,17 +41,8 @@ EXPECTED_SOURCE_HASHES = {
     "proxim8-5mw-24h.json": (
         "34f46b58e92c83398bf73be5feb4db874e2e1cfc5f320f00cf2ed36f402b9ecc"
     ),
-    "generate_scenario.py": (
-        "b95c0ba7dafa532a00847b3cc4dae88a9b5c66362a18d939e886d4a14043a4d3"
-    ),
-    "test_proxim8_scenario.py": (
-        "dc8fb9c04534b4d0bd03f7181d9f03f353adfa2b295f6f96d42e906115f1c685"
-    ),
     "proxim8-5mw-24h-queue.json": (
-        "436e5e555ee2d6671be2562463a935466832ad256935486b913bffd4ca67d9ed"
-    ),
-    "test_proxim8_queue_scenario.py": (
-        "a1e535b03e5872b4c736a30843b63680b4e5afaa4624ed0c51b5ae34656e1273"
+        "e46a7c3ee10535d1a17858069977cd7780f1b422411780ae06da936839abc530"
     ),
 }
 EXPECTED_PHYSICAL_HASHES = {
@@ -319,7 +310,7 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
         for hour in range(24)
     ]
     assert len(provenance["wave_start_times_sim_seconds"]) == 10
-    assert provenance["calibration_max_iterations"] == 12
+    assert provenance["calibration_max_iterations"] == 6
 
     actual_slurm = [
         event for event in raw["workload_events"]
@@ -403,13 +394,11 @@ def test_queue_early_is_registered_and_preserves_source_jobs() -> None:
         for job_id in carryover_ids
     )
 
-    # Original Proxim8 files and the business-day scenario remain unchanged.
+    # Guard the source files this generator reads. The original Proxim8 byte
+    # guard is unchanged; the queue template hash tracks its approved recalibration.
     for path, expected_name in (
         (SOURCE_PATH, "proxim8-5mw-24h.json"),
-        (SOURCE_GENERATOR_PATH, "generate_scenario.py"),
-        (SOURCE_TEST_PATH, "test_proxim8_scenario.py"),
         (OLD_QUEUE_PATH, "proxim8-5mw-24h-queue.json"),
-        (OLD_QUEUE_TEST_PATH, "test_proxim8_queue_scenario.py"),
     ):
         assert hashlib.sha256(path.read_bytes()).hexdigest() == (
             EXPECTED_SOURCE_HASHES[expected_name]

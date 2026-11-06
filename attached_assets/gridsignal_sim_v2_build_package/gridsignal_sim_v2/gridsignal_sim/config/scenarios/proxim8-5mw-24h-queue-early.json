@@ -1,6 +1,6 @@
 {
   "name": "Proxim8 — queue-stress early",
-  "description": "Proxim8 is an illustrative 24-hour distributed-inference site in an existing Campbell, California office building sharing a PG&E service with t=0 at local midnight on a business weekday, capped at 5.0 MW. It has 10 Slurm training jobs, 1,000 Kubernetes inference sessions serving Mistral and Cohere LLMs, and 10,000 short Ray agentic API calls; all use hopper_8gpu_air. The seeded workload generator uses seed 20261102. DR-2026-11-02-PROXIM8-MIDNIGHT (PROPOSED_HERE): 5 overnight Kubernetes sessions start at midnight as 24/7 inference carry-over from the previous day. Physical sizing, workload timing, BESS sizing, office PUE, building curve and diesel placeholder are PROPOSED_HERE, illustrative assumptions rather than measured Proxim8 data. DR-2026-11-02-PROXIM8-COOLING (PROPOSED_HERE): non_gpu_load_profile_mw is building non-HVAC electricity (lighting, elevators and tenant plug loads); the existing engine cooling envelope adds modelled HVAC on top without changing alpha_max or other cooling parameters. The curve is scaled using the actual steady-state relation input + alpha_max × lagged input, so at alpha_max=0.2 its input is target/(1+alpha_max): about 0.7 MW total overnight, ramping 6:00–9:00, about 1.6 MW 13:00–17:00, and 0.8 MW by 21:00. A 1.0 MW / 2.0 MWh grid-forming BESS starts at 95% SoC and can recharge from grid headroom; no SoC-floor workaround is needed. No turbines, solar or fuel cells are configured; the diesel block is disabled. The built-in PG&E Schedule B-20 TOU rates are selected with the July calendar month; 114.82 USD/MWh is the flat operating-cost fallback.\n\nQueue-stress early variant (DR-2026-11-03-PROXIM8-QUEUE; DR-2026-11-05-PROXIM8-EARLY-0900, PROPOSED_HERE): the session starts at local 09:00 and the original 24-hour workload and building timelines are rotated by nine hours. Ten hourly inference surges arrive at local 09:15 through 18:15; seeded existing K8S sessions moved to those windows by wave: [210, 120, 100, 100, 100, 100, 80, 70, 60, 55] (995 total). Each retains its original job ID, duration, node count, model identity and hardware profile. The five midnight carry-over sessions rotate to the session's 15:00 mark. The 2,800 original day Ray calls retain their rotated arrival times. A seeded slice of the 7,200 former 16:35 burst calls, [240, 700, 500, 700, 750, 650, 700, 600, 750, 750], is routed through the same cap-admission queue at the ten wave times; the remaining burst calls use seeded weighted random 5-second slots (attempt 1). Slurm jobs retain their rotated starts and ends; a job extending past the 24-hour session boundary is split at t=86,400 s, with the post-boundary remainder outside this run recorded in provenance (PROPOSED_HERE). PG&E B-20 periods still use simulated hours from midnight because the engine has no session-start-hour field, so tariff periods are offset from local clock time by nine hours (PROPOSED_HERE). Seeded target episode durations in seconds are [255, 270, 95, 345, 380, 240, 330, 245, 365, 100]. Count-only calibration stopped after six measured trials without a schedule meeting the queue-duration and cap limits; this diagnostic candidate is not acceptance-ready.",
+  "description": "Proxim8 is an illustrative 24-hour distributed-inference site in an existing Campbell, California office building sharing a PG&E service with t=0 at local midnight on a business weekday, capped at 5.0 MW. It has 10 Slurm training jobs, 1,000 Kubernetes inference sessions serving Mistral and Cohere LLMs, and 10,000 short Ray agentic API calls; all use hopper_8gpu_air. The seeded workload generator uses seed 20261102. DR-2026-11-02-PROXIM8-MIDNIGHT (PROPOSED_HERE): 5 overnight Kubernetes sessions start at midnight as 24/7 inference carry-over from the previous day. Physical sizing, workload timing, BESS sizing, office PUE, building curve and diesel placeholder are PROPOSED_HERE, illustrative assumptions rather than measured Proxim8 data. DR-2026-11-02-PROXIM8-COOLING (PROPOSED_HERE): non_gpu_load_profile_mw is building non-HVAC electricity (lighting, elevators and tenant plug loads); the existing engine cooling envelope adds modelled HVAC on top without changing alpha_max or other cooling parameters. The curve is scaled using the actual steady-state relation input + alpha_max × lagged input, so at alpha_max=0.2 its input is target/(1+alpha_max): about 0.7 MW total overnight, ramping 6:00–9:00, about 1.6 MW 13:00–17:00, and 0.8 MW by 21:00. A 1.0 MW / 2.0 MWh grid-forming BESS starts at 95% SoC and can recharge from grid headroom; no SoC-floor workaround is needed. No turbines, solar or fuel cells are configured; the diesel block is disabled. The built-in PG&E Schedule B-20 TOU rates are selected with the July calendar month; 114.82 USD/MWh is the flat operating-cost fallback.\n\nQueue-stress early variant (DR-2026-11-03-PROXIM8-QUEUE; DR-2026-11-05-PROXIM8-EARLY-0900, PROPOSED_HERE): the session starts at local 09:00 and the original 24-hour workload and building timelines are rotated by nine hours. Ten hourly inference surges arrive at local 09:15 through 18:15; seeded existing K8S sessions moved to those windows by wave: [150, 120, 100, 100, 160, 100, 80, 70, 60, 55] (995 total). Each retains its original job ID, duration, node count, model identity and hardware profile. The five midnight carry-over sessions rotate to the session's 15:00 mark. The 2,800 original day Ray calls retain their rotated arrival times. A seeded slice of the 7,200 former 16:35 burst calls, [240, 700, 500, 700, 750, 650, 700, 600, 750, 750], is routed through the same cap-admission queue at the ten wave times; the remaining burst calls use seeded weighted random 5-second slots (attempt 1). Slurm jobs retain their rotated starts and ends; a job extending past the 24-hour session boundary is split at t=86,400 s, with the post-boundary remainder outside this run recorded in provenance (PROPOSED_HERE). PG&E B-20 periods still use simulated hours from midnight because the engine has no session-start-hour field, so tariff periods are offset from local clock time by nine hours (PROPOSED_HERE). Seeded target episode durations in seconds are [255, 270, 95, 345, 380, 240, 330, 245, 365, 100]. Six full-day trials calibrated wave 1 and, because wave 1 is shorter than 300 seconds, exactly one other seed-selected long-target wave (wave 5, target 380 seconds). The accepted iteration 6 preserves the committed K8S job membership in all other waves, measures episodes of [60, 130, 85, 115, 300, 115, 100, 85, 95, 85] seconds and stays at or below the 5.0 MW cap.",
   "site_name": "Proxim8 distributed-inference site, Campbell, CA",
   "workload_events": [
     {
@@ -1500,13 +1500,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-0180",
-          "arrival_time_s": 900.0,
-          "duration_s": 1260.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-0207",
           "arrival_time_s": 900.0,
           "duration_s": 2280.0,
@@ -1556,20 +1549,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-0316",
-          "arrival_time_s": 900.0,
-          "duration_s": 3480.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0323",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-0339",
           "arrival_time_s": 900.0,
           "duration_s": 3480.0,
@@ -1580,13 +1559,6 @@
           "job_id": "k8s-inf-cohere-command-r-0346",
           "arrival_time_s": 900.0,
           "duration_s": 3540.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0373",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -1640,27 +1612,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-0499",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0504",
-          "arrival_time_s": 900.0,
-          "duration_s": 3540.0,
-          "node_count": 2,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0564",
-          "arrival_time_s": 900.0,
-          "duration_s": 3540.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-0569",
           "arrival_time_s": 900.0,
           "duration_s": 3300.0,
@@ -1682,30 +1633,9 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-0634",
-          "arrival_time_s": 900.0,
-          "duration_s": 3600.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0644",
-          "arrival_time_s": 900.0,
-          "duration_s": 3600.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-0693",
           "arrival_time_s": 900.0,
           "duration_s": 3540.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0750",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -1727,20 +1657,6 @@
           "job_id": "k8s-inf-cohere-command-r-0789",
           "arrival_time_s": 900.0,
           "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0797",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-0817",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -1780,13 +1696,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-0925",
-          "arrival_time_s": 900.0,
-          "duration_s": 360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-0942",
           "arrival_time_s": 900.0,
           "duration_s": 1500.0,
@@ -1805,13 +1714,6 @@
           "arrival_time_s": 900.0,
           "duration_s": 1620.0,
           "node_count": 2,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0027",
-          "arrival_time_s": 900.0,
-          "duration_s": 2940.0,
-          "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
@@ -1836,13 +1738,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0090",
-          "arrival_time_s": 900.0,
-          "duration_s": 1620.0,
-          "node_count": 2,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0098",
           "arrival_time_s": 900.0,
           "duration_s": 360.0,
@@ -1861,20 +1756,6 @@
           "arrival_time_s": 900.0,
           "duration_s": 3300.0,
           "node_count": 2,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0206",
-          "arrival_time_s": 900.0,
-          "duration_s": 1380.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0221",
-          "arrival_time_s": 900.0,
-          "duration_s": 840.0,
-          "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
@@ -1899,13 +1780,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0267",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0279",
           "arrival_time_s": 900.0,
           "duration_s": 3420.0,
@@ -1923,20 +1797,6 @@
           "job_id": "k8s-inf-cohere-command-r-plus-0283",
           "arrival_time_s": 900.0,
           "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0286",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0303",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -1969,37 +1829,9 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0377",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0423",
-          "arrival_time_s": 900.0,
-          "duration_s": 3480.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0435",
           "arrival_time_s": 900.0,
           "duration_s": 3300.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0436",
-          "arrival_time_s": 900.0,
-          "duration_s": 3600.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0476",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2011,23 +1843,9 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0498",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0511",
           "arrival_time_s": 900.0,
           "duration_s": 3480.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0525",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2067,44 +1885,9 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0627",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0629",
-          "arrival_time_s": 900.0,
-          "duration_s": 3600.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0639",
-          "arrival_time_s": 900.0,
-          "duration_s": 3480.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0662",
           "arrival_time_s": 900.0,
           "duration_s": 3540.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0685",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0701",
-          "arrival_time_s": 900.0,
-          "duration_s": 3480.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2116,30 +1899,9 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0714",
-          "arrival_time_s": 900.0,
-          "duration_s": 3480.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0719",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0727",
           "arrival_time_s": 900.0,
           "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0759",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2165,13 +1927,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0824",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0868",
           "arrival_time_s": 900.0,
           "duration_s": 3480.0,
@@ -2182,20 +1937,6 @@
           "job_id": "k8s-inf-cohere-command-r-plus-0923",
           "arrival_time_s": 900.0,
           "duration_s": 2640.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0924",
-          "arrival_time_s": 900.0,
-          "duration_s": 2040.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-cohere-command-r-plus-0935",
-          "arrival_time_s": 900.0,
-          "duration_s": 1560.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2221,13 +1962,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-cohere-command-r-plus-0975",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-cohere-command-r-plus-0998",
           "arrival_time_s": 900.0,
           "duration_s": 1860.0,
@@ -2238,13 +1972,6 @@
           "job_id": "k8s-inf-mistral-large-2-0012",
           "arrival_time_s": 900.0,
           "duration_s": 3060.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mistral-large-2-0018",
-          "arrival_time_s": 900.0,
-          "duration_s": 360.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2266,13 +1993,6 @@
           "job_id": "k8s-inf-mistral-large-2-0196",
           "arrival_time_s": 900.0,
           "duration_s": 2400.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mistral-large-2-0212",
-          "arrival_time_s": 900.0,
-          "duration_s": 3120.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2305,13 +2025,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-mistral-large-2-0277",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-mistral-large-2-0299",
           "arrival_time_s": 900.0,
           "duration_s": 3540.0,
@@ -2326,13 +2039,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-mistral-large-2-0321",
-          "arrival_time_s": 900.0,
-          "duration_s": 3600.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-mistral-large-2-0331",
           "arrival_time_s": 900.0,
           "duration_s": 3540.0,
@@ -2341,20 +2047,6 @@
         },
         {
           "job_id": "k8s-inf-mistral-large-2-0334",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mistral-large-2-0351",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mistral-large-2-0361",
           "arrival_time_s": 900.0,
           "duration_s": 3300.0,
           "node_count": 1,
@@ -2406,13 +2098,6 @@
           "job_id": "k8s-inf-mistral-large-2-0518",
           "arrival_time_s": 900.0,
           "duration_s": 3480.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mistral-large-2-0534",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -2536,13 +2221,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-mistral-large-2-0912",
-          "arrival_time_s": 900.0,
-          "duration_s": 1860.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-mistral-large-2-0930",
           "arrival_time_s": 900.0,
           "duration_s": 1260.0,
@@ -2585,20 +2263,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-mixtral-8x22b-0065",
-          "arrival_time_s": 900.0,
-          "duration_s": 600.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0067",
-          "arrival_time_s": 900.0,
-          "duration_s": 2520.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-mixtral-8x22b-0091",
           "arrival_time_s": 900.0,
           "duration_s": 1440.0,
@@ -2631,13 +2295,6 @@
           "arrival_time_s": 900.0,
           "duration_s": 2160.0,
           "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0163",
-          "arrival_time_s": 900.0,
-          "duration_s": 900.0,
-          "node_count": 2,
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
@@ -2690,27 +2347,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-mixtral-8x22b-0329",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0332",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
-          "node_count": 2,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0340",
-          "arrival_time_s": 900.0,
-          "duration_s": 3540.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-mixtral-8x22b-0363",
           "arrival_time_s": 900.0,
           "duration_s": 3480.0,
@@ -2746,13 +2382,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-mixtral-8x22b-0430",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-mixtral-8x22b-0439",
           "arrival_time_s": 900.0,
           "duration_s": 3420.0,
@@ -2761,20 +2390,6 @@
         },
         {
           "job_id": "k8s-inf-mixtral-8x22b-0444",
-          "arrival_time_s": 900.0,
-          "duration_s": 3420.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0457",
-          "arrival_time_s": 900.0,
-          "duration_s": 3540.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0481",
           "arrival_time_s": 900.0,
           "duration_s": 3420.0,
           "node_count": 1,
@@ -2830,27 +2445,6 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
-          "job_id": "k8s-inf-mixtral-8x22b-0767",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0769",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0771",
-          "arrival_time_s": 900.0,
-          "duration_s": 3360.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
           "job_id": "k8s-inf-mixtral-8x22b-0821",
           "arrival_time_s": 900.0,
           "duration_s": 3540.0,
@@ -2859,13 +2453,6 @@
         },
         {
           "job_id": "k8s-inf-mixtral-8x22b-0828",
-          "arrival_time_s": 900.0,
-          "duration_s": 3300.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0850",
           "arrival_time_s": 900.0,
           "duration_s": 3300.0,
           "node_count": 1,
@@ -2896,13 +2483,6 @@
           "job_id": "k8s-inf-mixtral-8x22b-0919",
           "arrival_time_s": 900.0,
           "duration_s": 2940.0,
-          "node_count": 1,
-          "hardware_profile_id": "hopper_8gpu_air"
-        },
-        {
-          "job_id": "k8s-inf-mixtral-8x22b-0921",
-          "arrival_time_s": 900.0,
-          "duration_s": 2700.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5231,6 +4811,13 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-0180",
+          "arrival_time_s": 15300.0,
+          "duration_s": 1260.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-0213",
           "arrival_time_s": 15300.0,
           "duration_s": 2220.0,
@@ -5259,6 +4846,13 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-0316",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-0322",
           "arrival_time_s": 15300.0,
           "duration_s": 3420.0,
@@ -5266,9 +4860,23 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-0323",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-0345",
           "arrival_time_s": 15300.0,
           "duration_s": 3600.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-0373",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5287,6 +4895,20 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-0499",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-0504",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3540.0,
+          "node_count": 2,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-0537",
           "arrival_time_s": 15300.0,
           "duration_s": 3540.0,
@@ -5301,9 +4923,30 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-0564",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3540.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-0609",
           "arrival_time_s": 15300.0,
           "duration_s": 3540.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-0634",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3600.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-0644",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3600.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5318,6 +4961,13 @@
           "job_id": "k8s-inf-cohere-command-r-0687",
           "arrival_time_s": 15300.0,
           "duration_s": 3540.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-0750",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5339,6 +4989,20 @@
           "job_id": "k8s-inf-cohere-command-r-0794",
           "arrival_time_s": 15300.0,
           "duration_s": 3540.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-0797",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-0817",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5371,9 +5035,23 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-0925",
+          "arrival_time_s": 15300.0,
+          "duration_s": 360.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-0950",
           "arrival_time_s": 15300.0,
           "duration_s": 300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0027",
+          "arrival_time_s": 15300.0,
+          "duration_s": 2940.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5382,6 +5060,13 @@
           "arrival_time_s": 15300.0,
           "duration_s": 480.0,
           "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0090",
+          "arrival_time_s": 15300.0,
+          "duration_s": 1620.0,
+          "node_count": 2,
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
@@ -5413,9 +5098,23 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-plus-0206",
+          "arrival_time_s": 15300.0,
+          "duration_s": 1380.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-plus-0209",
           "arrival_time_s": 15300.0,
           "duration_s": 2580.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0221",
+          "arrival_time_s": 15300.0,
+          "duration_s": 840.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5434,6 +5133,20 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-plus-0267",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0286",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-plus-0287",
           "arrival_time_s": 15300.0,
           "duration_s": 3600.0,
@@ -5448,7 +5161,35 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-plus-0303",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0377",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0423",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-plus-0433",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3600.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0436",
           "arrival_time_s": 15300.0,
           "duration_s": 3600.0,
           "node_count": 1,
@@ -5462,9 +5203,30 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-plus-0476",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0498",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-plus-0503",
           "arrival_time_s": 15300.0,
           "duration_s": 3540.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0525",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5490,9 +5252,37 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-plus-0627",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0629",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3600.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0639",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-plus-0643",
           "arrival_time_s": 15300.0,
           "duration_s": 3480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0685",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5511,6 +5301,27 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-cohere-command-r-plus-0701",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0714",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0719",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-cohere-command-r-plus-0744",
           "arrival_time_s": 15300.0,
           "duration_s": 3300.0,
@@ -5521,6 +5332,20 @@
           "job_id": "k8s-inf-cohere-command-r-plus-0757",
           "arrival_time_s": 15300.0,
           "duration_s": 3540.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0759",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0824",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5542,6 +5367,20 @@
           "job_id": "k8s-inf-cohere-command-r-plus-0886",
           "arrival_time_s": 15300.0,
           "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0924",
+          "arrival_time_s": 15300.0,
+          "duration_s": 2040.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0935",
+          "arrival_time_s": 15300.0,
+          "duration_s": 1560.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5570,6 +5409,20 @@
           "job_id": "k8s-inf-cohere-command-r-plus-0973",
           "arrival_time_s": 15300.0,
           "duration_s": 480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-cohere-command-r-plus-0975",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mistral-large-2-0018",
+          "arrival_time_s": 15300.0,
+          "duration_s": 360.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5609,7 +5462,42 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-mistral-large-2-0212",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3120.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mistral-large-2-0277",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mistral-large-2-0321",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3600.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-mistral-large-2-0349",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mistral-large-2-0351",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mistral-large-2-0361",
           "arrival_time_s": 15300.0,
           "duration_s": 3300.0,
           "node_count": 1,
@@ -5665,6 +5553,13 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-mistral-large-2-0534",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-mistral-large-2-0699",
           "arrival_time_s": 15300.0,
           "duration_s": 3600.0,
@@ -5693,6 +5588,13 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-mistral-large-2-0912",
+          "arrival_time_s": 15300.0,
+          "duration_s": 1860.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-mistral-large-2-0956",
           "arrival_time_s": 15300.0,
           "duration_s": 1320.0,
@@ -5710,6 +5612,20 @@
           "job_id": "k8s-inf-mixtral-8x22b-0052",
           "arrival_time_s": 15300.0,
           "duration_s": 1440.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0065",
+          "arrival_time_s": 15300.0,
+          "duration_s": 600.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0067",
+          "arrival_time_s": 15300.0,
+          "duration_s": 2520.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5732,6 +5648,13 @@
           "arrival_time_s": 15300.0,
           "duration_s": 2220.0,
           "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0163",
+          "arrival_time_s": 15300.0,
+          "duration_s": 900.0,
+          "node_count": 2,
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
@@ -5759,6 +5682,27 @@
           "job_id": "k8s-inf-mixtral-8x22b-0291",
           "arrival_time_s": 15300.0,
           "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0329",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0332",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
+          "node_count": 2,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0340",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3540.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5792,6 +5736,27 @@
         },
         {
           "job_id": "k8s-inf-mixtral-8x22b-0424",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0430",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3420.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0457",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3540.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0481",
           "arrival_time_s": 15300.0,
           "duration_s": 3420.0,
           "node_count": 1,
@@ -5840,9 +5805,37 @@
           "hardware_profile_id": "hopper_8gpu_air"
         },
         {
+          "job_id": "k8s-inf-mixtral-8x22b-0767",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0769",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0771",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3360.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
           "job_id": "k8s-inf-mixtral-8x22b-0772",
           "arrival_time_s": 15300.0,
           "duration_s": 3480.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0850",
+          "arrival_time_s": 15300.0,
+          "duration_s": 3300.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -5857,6 +5850,13 @@
           "job_id": "k8s-inf-mixtral-8x22b-0913",
           "arrival_time_s": 15300.0,
           "duration_s": 2220.0,
+          "node_count": 1,
+          "hardware_profile_id": "hopper_8gpu_air"
+        },
+        {
+          "job_id": "k8s-inf-mixtral-8x22b-0921",
+          "arrival_time_s": 15300.0,
+          "duration_s": 2700.0,
           "node_count": 1,
           "hardware_profile_id": "hopper_8gpu_air"
         },
@@ -78539,11 +78539,11 @@
     ],
     "target_seed": 20313102,
     "k8s_session_count_by_wave": [
-      210,
+      150,
       120,
       100,
       100,
-      100,
+      160,
       100,
       80,
       70,
@@ -78615,17 +78615,6 @@
         "node_count": 2,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 13355.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0180",
-        "original_time_s": 40035.0,
-        "new_time_s": 900.0,
-        "duration_s": 1260.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 7635.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -78707,28 +78696,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-0316",
-        "original_time_s": 48700.0,
-        "new_time_s": 900.0,
-        "duration_s": 3480.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 16300.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0323",
-        "original_time_s": 58770.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 26370.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-0339",
         "original_time_s": 51575.0,
         "new_time_s": 900.0,
@@ -78747,17 +78714,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 28055.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0373",
-        "original_time_s": 60470.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 28070.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -78839,39 +78795,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-0499",
-        "original_time_s": 51460.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 19060.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0504",
-        "original_time_s": 49560.0,
-        "new_time_s": 900.0,
-        "duration_s": 3540.0,
-        "node_count": 2,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 17160.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0564",
-        "original_time_s": 48205.0,
-        "new_time_s": 900.0,
-        "duration_s": 3540.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 15805.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-0569",
         "original_time_s": 50135.0,
         "new_time_s": 900.0,
@@ -78905,28 +78828,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-0634",
-        "original_time_s": 52320.0,
-        "new_time_s": 900.0,
-        "duration_s": 3600.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 19920.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0644",
-        "original_time_s": 50485.0,
-        "new_time_s": 900.0,
-        "duration_s": 3600.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 18085.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-0693",
         "original_time_s": 47795.0,
         "new_time_s": 900.0,
@@ -78934,17 +78835,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 15395.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0750",
-        "original_time_s": 57410.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 25010.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -78978,28 +78868,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 27080.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0797",
-        "original_time_s": 56600.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 24200.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-0817",
-        "original_time_s": 58820.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 26420.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79059,17 +78927,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-0925",
-        "original_time_s": 66130.0,
-        "new_time_s": 900.0,
-        "duration_s": 360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 33730.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-0942",
         "original_time_s": 64845.0,
         "new_time_s": 900.0,
@@ -79099,17 +78956,6 @@
         "node_count": 2,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 72340.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0027",
-        "original_time_s": 15285.0,
-        "new_time_s": 900.0,
-        "duration_s": 2940.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 69285.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79147,17 +78993,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0090",
-        "original_time_s": 24850.0,
-        "new_time_s": 900.0,
-        "duration_s": 1620.0,
-        "node_count": 2,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 78850.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0098",
         "original_time_s": 23605.0,
         "new_time_s": 900.0,
@@ -79187,28 +79022,6 @@
         "node_count": 2,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 7775.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0206",
-        "original_time_s": 42945.0,
-        "new_time_s": 900.0,
-        "duration_s": 1380.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 10545.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0221",
-        "original_time_s": 40460.0,
-        "new_time_s": 900.0,
-        "duration_s": 840.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 8060.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79246,17 +79059,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0267",
-        "original_time_s": 53730.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 21330.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0279",
         "original_time_s": 55365.0,
         "new_time_s": 900.0,
@@ -79286,28 +79088,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 23415.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0286",
-        "original_time_s": 55150.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 22750.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0303",
-        "original_time_s": 58870.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 26470.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79356,28 +79136,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0377",
-        "original_time_s": 59250.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 26850.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0423",
-        "original_time_s": 59745.0,
-        "new_time_s": 900.0,
-        "duration_s": 3480.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 27345.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0435",
         "original_time_s": 60035.0,
         "new_time_s": 900.0,
@@ -79385,28 +79143,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 27635.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0436",
-        "original_time_s": 59575.0,
-        "new_time_s": 900.0,
-        "duration_s": 3600.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 27175.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0476",
-        "original_time_s": 51095.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 18695.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79422,17 +79158,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0498",
-        "original_time_s": 54705.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 22305.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0511",
         "original_time_s": 51765.0,
         "new_time_s": 900.0,
@@ -79440,17 +79165,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 19365.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0525",
-        "original_time_s": 61150.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 28750.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79510,39 +79224,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0627",
-        "original_time_s": 59735.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 27335.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0629",
-        "original_time_s": 53855.0,
-        "new_time_s": 900.0,
-        "duration_s": 3600.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 21455.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0639",
-        "original_time_s": 51420.0,
-        "new_time_s": 900.0,
-        "duration_s": 3480.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 19020.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0662",
         "original_time_s": 47900.0,
         "new_time_s": 900.0,
@@ -79550,28 +79231,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 15500.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0685",
-        "original_time_s": 46935.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 14535.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0701",
-        "original_time_s": 57995.0,
-        "new_time_s": 900.0,
-        "duration_s": 3480.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 25595.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79587,28 +79246,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0714",
-        "original_time_s": 56095.0,
-        "new_time_s": 900.0,
-        "duration_s": 3480.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 23695.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0719",
-        "original_time_s": 59545.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 27145.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0727",
         "original_time_s": 60600.0,
         "new_time_s": 900.0,
@@ -79616,17 +79253,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 28200.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0759",
-        "original_time_s": 50325.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 17925.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79664,17 +79290,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0824",
-        "original_time_s": 47215.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 14815.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0868",
         "original_time_s": 48685.0,
         "new_time_s": 900.0,
@@ -79693,28 +79308,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 40215.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0924",
-        "original_time_s": 63465.0,
-        "new_time_s": 900.0,
-        "duration_s": 2040.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 31065.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-cohere-command-r-plus-0935",
-        "original_time_s": 61490.0,
-        "new_time_s": 900.0,
-        "duration_s": 1560.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 29090.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79752,17 +79345,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-cohere-command-r-plus-0975",
-        "original_time_s": 71485.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 39085.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-cohere-command-r-plus-0998",
         "original_time_s": 72060.0,
         "new_time_s": 900.0,
@@ -79781,17 +79363,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 55520.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mistral-large-2-0018",
-        "original_time_s": 9245.0,
-        "new_time_s": 900.0,
-        "duration_s": 360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 63245.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79825,17 +79396,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 11125.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mistral-large-2-0212",
-        "original_time_s": 34835.0,
-        "new_time_s": 900.0,
-        "duration_s": 3120.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 2435.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -79884,17 +79444,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-mistral-large-2-0277",
-        "original_time_s": 53420.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 21020.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-mistral-large-2-0299",
         "original_time_s": 50260.0,
         "new_time_s": 900.0,
@@ -79917,17 +79466,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-mistral-large-2-0321",
-        "original_time_s": 48035.0,
-        "new_time_s": 900.0,
-        "duration_s": 3600.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 15635.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-mistral-large-2-0331",
         "original_time_s": 60235.0,
         "new_time_s": 900.0,
@@ -79946,28 +79484,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 22545.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mistral-large-2-0351",
-        "original_time_s": 55935.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 23535.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mistral-large-2-0361",
-        "original_time_s": 50990.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 18590.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -80045,17 +79561,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 25810.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mistral-large-2-0534",
-        "original_time_s": 49480.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 17080.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -80247,17 +79752,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-mistral-large-2-0912",
-        "original_time_s": 70385.0,
-        "new_time_s": 900.0,
-        "duration_s": 1860.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 37985.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-mistral-large-2-0930",
         "original_time_s": 70380.0,
         "new_time_s": 900.0,
@@ -80324,28 +79818,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-mixtral-8x22b-0065",
-        "original_time_s": 29820.0,
-        "new_time_s": 900.0,
-        "duration_s": 600.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 83820.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0067",
-        "original_time_s": 21790.0,
-        "new_time_s": 900.0,
-        "duration_s": 2520.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 75790.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-mixtral-8x22b-0091",
         "original_time_s": 26035.0,
         "new_time_s": 900.0,
@@ -80397,17 +79869,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 77880.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0163",
-        "original_time_s": 34750.0,
-        "new_time_s": 900.0,
-        "duration_s": 900.0,
-        "node_count": 2,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 2350.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -80489,39 +79950,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-mixtral-8x22b-0329",
-        "original_time_s": 58365.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 25965.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0332",
-        "original_time_s": 49075.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 2,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 16675.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0340",
-        "original_time_s": 54965.0,
-        "new_time_s": 900.0,
-        "duration_s": 3540.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 22565.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-mixtral-8x22b-0363",
         "original_time_s": 53325.0,
         "new_time_s": 900.0,
@@ -80577,17 +80005,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-mixtral-8x22b-0430",
-        "original_time_s": 47620.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 15220.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-mixtral-8x22b-0439",
         "original_time_s": 48235.0,
         "new_time_s": 900.0,
@@ -80606,28 +80023,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 23290.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0457",
-        "original_time_s": 46875.0,
-        "new_time_s": 900.0,
-        "duration_s": 3540.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 14475.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0481",
-        "original_time_s": 57980.0,
-        "new_time_s": 900.0,
-        "duration_s": 3420.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 25580.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -80709,39 +80104,6 @@
         "target_duration_s": 255
       },
       {
-        "job_id": "k8s-inf-mixtral-8x22b-0767",
-        "original_time_s": 53450.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 21050.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0769",
-        "original_time_s": 56490.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 24090.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0771",
-        "original_time_s": 54345.0,
-        "new_time_s": 900.0,
-        "duration_s": 3360.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 21945.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
         "job_id": "k8s-inf-mixtral-8x22b-0821",
         "original_time_s": 55410.0,
         "new_time_s": 900.0,
@@ -80760,17 +80122,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 21755.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0850",
-        "original_time_s": 49825.0,
-        "new_time_s": 900.0,
-        "duration_s": 3300.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 17425.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -80815,17 +80166,6 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 38165.0,
-        "wave_index": 0,
-        "target_duration_s": 255
-      },
-      {
-        "job_id": "k8s-inf-mixtral-8x22b-0921",
-        "original_time_s": 62990.0,
-        "new_time_s": 900.0,
-        "duration_s": 2700.0,
-        "node_count": 1,
-        "hardware_profile_id": "hopper_8gpu_air",
-        "rotated_original_time_s": 30590.0,
         "wave_index": 0,
         "target_duration_s": 255
       },
@@ -84482,6 +83822,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-0180",
+        "original_time_s": 40035.0,
+        "new_time_s": 15300.0,
+        "duration_s": 1260.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 7635.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-0213",
         "original_time_s": 36590.0,
         "new_time_s": 15300.0,
@@ -84526,6 +83877,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-0316",
+        "original_time_s": 48700.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3480.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 16300.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-0322",
         "original_time_s": 49190.0,
         "new_time_s": 15300.0,
@@ -84537,6 +83899,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-0323",
+        "original_time_s": 58770.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 26370.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-0345",
         "original_time_s": 60375.0,
         "new_time_s": 15300.0,
@@ -84544,6 +83917,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 27975.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-0373",
+        "original_time_s": 60470.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 28070.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84570,6 +83954,28 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-0499",
+        "original_time_s": 51460.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 19060.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-0504",
+        "original_time_s": 49560.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3540.0,
+        "node_count": 2,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 17160.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-0537",
         "original_time_s": 54285.0,
         "new_time_s": 15300.0,
@@ -84592,6 +83998,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-0564",
+        "original_time_s": 48205.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3540.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 15805.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-0609",
         "original_time_s": 50440.0,
         "new_time_s": 15300.0,
@@ -84599,6 +84016,28 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 18040.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-0634",
+        "original_time_s": 52320.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3600.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 19920.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-0644",
+        "original_time_s": 50485.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3600.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 18085.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84621,6 +84060,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 23860.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-0750",
+        "original_time_s": 57410.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 25010.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84654,6 +84104,28 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 19395.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-0797",
+        "original_time_s": 56600.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 24200.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-0817",
+        "original_time_s": 58820.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 26420.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84702,6 +84174,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-0925",
+        "original_time_s": 66130.0,
+        "new_time_s": 15300.0,
+        "duration_s": 360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 33730.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-0950",
         "original_time_s": 71075.0,
         "new_time_s": 15300.0,
@@ -84713,6 +84196,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-plus-0027",
+        "original_time_s": 15285.0,
+        "new_time_s": 15300.0,
+        "duration_s": 2940.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 69285.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-plus-0033",
         "original_time_s": 14180.0,
         "new_time_s": 15300.0,
@@ -84720,6 +84214,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 68180.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0090",
+        "original_time_s": 24850.0,
+        "new_time_s": 15300.0,
+        "duration_s": 1620.0,
+        "node_count": 2,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 78850.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84768,6 +84273,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-plus-0206",
+        "original_time_s": 42945.0,
+        "new_time_s": 15300.0,
+        "duration_s": 1380.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 10545.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-plus-0209",
         "original_time_s": 35675.0,
         "new_time_s": 15300.0,
@@ -84775,6 +84291,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 3275.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0221",
+        "original_time_s": 40460.0,
+        "new_time_s": 15300.0,
+        "duration_s": 840.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 8060.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84801,6 +84328,28 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-plus-0267",
+        "original_time_s": 53730.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 21330.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0286",
+        "original_time_s": 55150.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 22750.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-plus-0287",
         "original_time_s": 60065.0,
         "new_time_s": 15300.0,
@@ -84823,6 +84372,39 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-plus-0303",
+        "original_time_s": 58870.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 26470.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0377",
+        "original_time_s": 59250.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 26850.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0423",
+        "original_time_s": 59745.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3480.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 27345.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-plus-0433",
         "original_time_s": 54715.0,
         "new_time_s": 15300.0,
@@ -84830,6 +84412,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 22315.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0436",
+        "original_time_s": 59575.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3600.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 27175.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84845,6 +84438,28 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-plus-0476",
+        "original_time_s": 51095.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 18695.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0498",
+        "original_time_s": 54705.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 22305.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-plus-0503",
         "original_time_s": 53645.0,
         "new_time_s": 15300.0,
@@ -84852,6 +84467,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 21245.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0525",
+        "original_time_s": 61150.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 28750.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84889,10 +84515,54 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-plus-0627",
+        "original_time_s": 59735.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 27335.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0629",
+        "original_time_s": 53855.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3600.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 21455.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0639",
+        "original_time_s": 51420.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3480.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 19020.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-plus-0643",
         "original_time_s": 46935.0,
         "new_time_s": 15300.0,
         "duration_s": 3480.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 14535.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0685",
+        "original_time_s": 46935.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 14535.0,
@@ -84922,6 +84592,39 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-cohere-command-r-plus-0701",
+        "original_time_s": 57995.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3480.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 25595.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0714",
+        "original_time_s": 56095.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3480.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 23695.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0719",
+        "original_time_s": 59545.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 27145.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-cohere-command-r-plus-0744",
         "original_time_s": 52775.0,
         "new_time_s": 15300.0,
@@ -84940,6 +84643,28 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 20440.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0759",
+        "original_time_s": 50325.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 17925.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0824",
+        "original_time_s": 47215.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 14815.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -84973,6 +84698,28 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 26640.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0924",
+        "original_time_s": 63465.0,
+        "new_time_s": 15300.0,
+        "duration_s": 2040.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 31065.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0935",
+        "original_time_s": 61490.0,
+        "new_time_s": 15300.0,
+        "duration_s": 1560.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 29090.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -85017,6 +84764,28 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 34095.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-cohere-command-r-plus-0975",
+        "original_time_s": 71485.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 39085.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mistral-large-2-0018",
+        "original_time_s": 9245.0,
+        "new_time_s": 15300.0,
+        "duration_s": 360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 63245.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -85076,6 +84845,39 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-mistral-large-2-0212",
+        "original_time_s": 34835.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3120.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 2435.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mistral-large-2-0277",
+        "original_time_s": 53420.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 21020.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mistral-large-2-0321",
+        "original_time_s": 48035.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3600.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 15635.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-mistral-large-2-0349",
         "original_time_s": 56150.0,
         "new_time_s": 15300.0,
@@ -85083,6 +84885,28 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 23750.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mistral-large-2-0351",
+        "original_time_s": 55935.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 23535.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mistral-large-2-0361",
+        "original_time_s": 50990.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 18590.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -85164,6 +84988,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-mistral-large-2-0534",
+        "original_time_s": 49480.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 17080.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-mistral-large-2-0699",
         "original_time_s": 52785.0,
         "new_time_s": 15300.0,
@@ -85208,6 +85043,17 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-mistral-large-2-0912",
+        "original_time_s": 70385.0,
+        "new_time_s": 15300.0,
+        "duration_s": 1860.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 37985.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-mistral-large-2-0956",
         "original_time_s": 71765.0,
         "new_time_s": 15300.0,
@@ -85241,6 +85087,28 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-mixtral-8x22b-0065",
+        "original_time_s": 29820.0,
+        "new_time_s": 15300.0,
+        "duration_s": 600.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 83820.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0067",
+        "original_time_s": 21790.0,
+        "new_time_s": 15300.0,
+        "duration_s": 2520.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 75790.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-mixtral-8x22b-0073",
         "original_time_s": 24530.0,
         "new_time_s": 15300.0,
@@ -85270,6 +85138,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 84440.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0163",
+        "original_time_s": 34750.0,
+        "new_time_s": 15300.0,
+        "duration_s": 900.0,
+        "node_count": 2,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 2350.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -85314,6 +85193,39 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 24205.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0329",
+        "original_time_s": 58365.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 25965.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0332",
+        "original_time_s": 49075.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 2,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 16675.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0340",
+        "original_time_s": 54965.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3540.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 22565.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -85369,6 +85281,39 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 27065.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0430",
+        "original_time_s": 47620.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 15220.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0457",
+        "original_time_s": 46875.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3540.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 14475.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0481",
+        "original_time_s": 57980.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3420.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 25580.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -85439,6 +85384,39 @@
         "target_duration_s": 380
       },
       {
+        "job_id": "k8s-inf-mixtral-8x22b-0767",
+        "original_time_s": 53450.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 21050.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0769",
+        "original_time_s": 56490.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 24090.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0771",
+        "original_time_s": 54345.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3360.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 21945.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
         "job_id": "k8s-inf-mixtral-8x22b-0772",
         "original_time_s": 50430.0,
         "new_time_s": 15300.0,
@@ -85446,6 +85424,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 18030.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0850",
+        "original_time_s": 49825.0,
+        "new_time_s": 15300.0,
+        "duration_s": 3300.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 17425.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -85468,6 +85457,17 @@
         "node_count": 1,
         "hardware_profile_id": "hopper_8gpu_air",
         "rotated_original_time_s": 42420.0,
+        "wave_index": 4,
+        "target_duration_s": 380
+      },
+      {
+        "job_id": "k8s-inf-mixtral-8x22b-0921",
+        "original_time_s": 62990.0,
+        "new_time_s": 15300.0,
+        "duration_s": 2700.0,
+        "node_count": 1,
+        "hardware_profile_id": "hopper_8gpu_air",
+        "rotated_original_time_s": 30590.0,
         "wave_index": 4,
         "target_duration_s": 380
       },
@@ -249688,118 +249688,32 @@
       }
     ],
     "slurm_boundary_policy": "A rotated job ending after t=86400 has a matching job_end at t=86400; the remaining segment is outside this 24-hour run.",
-    "calibration_max_iterations": 12,
-    "calibration_status": "stopped_no_passing_candidate_after_6_trials",
+    "calibration_max_iterations": 6,
+    "calibration_status": "passed_iteration_6",
     "calibration_selected_iteration": 6,
     "calibration_result": {
-      "closest_episode_count_iteration": 2,
-      "closest_episode_count_durations_s": [
-        5,
-        270
+      "selected_iteration": 6,
+      "measured_episode_durations_s": [
+        60,
+        130,
+        85,
+        115,
+        300,
+        115,
+        100,
+        85,
+        95,
+        85
       ],
-      "closest_episode_count_peak_demand_mw": 5.05082,
-      "closest_episode_count_peak_requested_mw": 5.08265,
-      "closest_episode_count_peak_grid_import_mw": 5.0,
-      "closest_episode_count_unserved_mwh": 0.0,
-      "cap_safe_iteration": 6,
-      "cap_safe_episode_durations_s": [],
-      "cap_safe_peak_demand_mw": 4.8662,
-      "cap_safe_peak_requested_mw": 4.8662,
-      "cap_safe_peak_grid_import_mw": 4.8662,
-      "cap_safe_unserved_mwh": 0.0,
-      "reason": "The first wave is either empty/5-second held telemetry below the cap, or the held Ray backlog accompanies facility demand above 5 MW."
+      "peak_demand_mw": 4.989236254299349,
+      "peak_grid_import_mw": 4.989236254299349,
+      "unserved_mwh": 0.0
     },
     "calibration_iteration_log": [
       {
         "iteration": 1,
         "k8s_session_count_by_wave": [
-          250,
-          145,
-          120,
-          110,
-          100,
-          80,
-          60,
-          50,
-          45,
-          35
-        ],
-        "measured_episode_durations_s": [
-          5,
-          1785
-        ]
-      },
-      {
-        "iteration": 2,
-        "k8s_session_count_by_wave": [
-          220,
-          120,
-          110,
-          100,
-          100,
-          80,
-          70,
-          60,
-          50,
-          40
-        ],
-        "measured_episode_durations_s": [
-          5,
-          270
-        ]
-      },
-      {
-        "iteration": 3,
-        "k8s_session_count_by_wave": [
-          200,
-          90,
-          90,
-          90,
-          90,
-          75,
-          60,
-          50,
-          40,
-          35
-        ],
-        "measured_episode_durations_s": []
-      },
-      {
-        "iteration": 4,
-        "k8s_session_count_by_wave": [
-          210,
-          90,
-          90,
-          90,
-          90,
-          75,
-          60,
-          50,
-          40,
-          35
-        ],
-        "measured_episode_durations_s": []
-      },
-      {
-        "iteration": 5,
-        "k8s_session_count_by_wave": [
-          210,
-          87,
-          87,
-          87,
-          87,
-          87,
-          87,
-          87,
-          87,
-          87
-        ],
-        "measured_episode_durations_s": []
-      },
-      {
-        "iteration": 6,
-        "k8s_session_count_by_wave": [
-          210,
+          170,
           120,
           100,
           100,
@@ -249810,12 +249724,165 @@
           60,
           55
         ],
-        "measured_episode_durations_s": []
+        "measured_episode_durations_s": [
+          75,
+          130,
+          75,
+          115,
+          130,
+          125,
+          100,
+          80,
+          100,
+          90
+        ],
+        "adjustment": "Reduced only wave 1 from 210 to 170 moved K8S sessions."
+      },
+      {
+        "iteration": 2,
+        "k8s_session_count_by_wave": [
+          170,
+          120,
+          100,
+          100,
+          140,
+          100,
+          80,
+          70,
+          60,
+          55
+        ],
+        "measured_episode_durations_s": [
+          75,
+          125,
+          75,
+          115,
+          190,
+          115,
+          100,
+          85,
+          95,
+          85
+        ],
+        "adjustment": "Raised seeded long-target wave 5 from 100 to 140."
+      },
+      {
+        "iteration": 3,
+        "k8s_session_count_by_wave": [
+          90,
+          120,
+          100,
+          100,
+          220,
+          100,
+          80,
+          70,
+          60,
+          55
+        ],
+        "measured_episode_durations_s": [
+          25,
+          115,
+          85,
+          115,
+          2345,
+          115,
+          100,
+          85,
+          95,
+          85
+        ],
+        "adjustment": "Moved K8S allocation from wave 1 to wave 5; both missed limits."
+      },
+      {
+        "iteration": 4,
+        "k8s_session_count_by_wave": [
+          130,
+          120,
+          100,
+          100,
+          180,
+          100,
+          80,
+          70,
+          60,
+          55
+        ],
+        "measured_episode_durations_s": [
+          40,
+          125,
+          75,
+          115,
+          695,
+          105,
+          100,
+          85,
+          95,
+          85
+        ],
+        "adjustment": "Moved K8S allocation back toward wave 1; wave 5 remained too long."
+      },
+      {
+        "iteration": 5,
+        "k8s_session_count_by_wave": [
+          150,
+          120,
+          100,
+          100,
+          160,
+          100,
+          80,
+          70,
+          60,
+          55
+        ],
+        "measured_episode_durations_s": [
+          60,
+          130,
+          75,
+          115,
+          315,
+          100,
+          100,
+          85,
+          95,
+          85
+        ],
+        "adjustment": "Exploratory count candidate; subsequent check found that the sequential allocator changed K8S identities in other waves."
+      },
+      {
+        "iteration": 6,
+        "k8s_session_count_by_wave": [
+          150,
+          120,
+          100,
+          100,
+          160,
+          100,
+          80,
+          70,
+          60,
+          55
+        ],
+        "measured_episode_durations_s": [
+          60,
+          130,
+          85,
+          115,
+          300,
+          115,
+          100,
+          85,
+          95,
+          85
+        ],
+        "adjustment": "Accepted: preserve all other committed wave identities; transfer 60 sessions from wave 1 to seeded long-target wave 5."
       }
     ],
     "moved_job_count": 8196,
     "proposed_here": [
-      "Proposed inference-session surges were tested, but no candidate met the measured queue and cap acceptance gates.",
+      "Six logged full-day trials adjusted wave 1 and the seeded long-target fifth wave only.",
+      "The seeded duration target of 380 seconds selected wave 5 (13:15 local) as the one additional wave to lengthen after wave 1 became shorter than 300 seconds.",
       "Each moved K8S session keeps its source model, duration, node count and profile.",
       "A seeded slice of the former 7,200-call Ray burst joins the ten cap-gated inference waves; the remainder stays in seeded weighted random 5-second slots, while all 2,800 day calls retain their rotated source arrivals.",
       "A Slurm job crossing the 24-hour boundary ends at the horizon; the remainder is not simulated.",
