@@ -547,7 +547,14 @@ class SimulationState:
                     for module in self.gpu_modules
                 )
                 _agent.bind_facility_admissions_to_cohort(
-                    _cohort_key, _cohort_nodes
+                    _cohort_key,
+                    _cohort_nodes,
+                    aggregate_job_id=(
+                        signal.job_id
+                        if signal.job_id
+                        == f"kube-admission-{_agent.config.cluster_id or _agent.config.tenant_id}"
+                        else None
+                    ),
                 )
         if signal.event_type == WorkloadEventType.STARTING:
             # Instrumentation only: preserve the event timestamp before any
@@ -1410,8 +1417,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     if _demand_replay is None:
         for _agent in state.kube_agents:
-            _ended_cohorts = _agent.facility_admission_ended_cohort_keys(
-                sim_time
+            _ended_cohorts = (
+                _agent.facility_admission_cooling_probe_cohort_keys(
+                    sim_time, _per_job_draws
+                )
             )
             _future_cooling_peak_by_job_mw = {
                 job_id: state.cooling.future_peak_output_mw(

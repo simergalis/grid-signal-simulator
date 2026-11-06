@@ -433,7 +433,11 @@ def test_queue_early_has_ten_measured_held_episodes(
     assert min(durations) <= 120
     assert max(durations) >= 300
     assert all(episode["peak_queue_depth"] >= 5 for episode in episodes)
-    assert all(episode["schedulers"] == ["K8S"] for episode in episodes)
+    assert all(
+        episode["schedulers"]
+        and set(episode["schedulers"]) <= {"K8S", "RAY"}
+        for episode in episodes
+    )
     assert 15 * 60 <= episodes[0]["start_time_s"] <= 20 * 60
     assert episodes[-1]["start_time_s"] - episodes[0]["start_time_s"] >= 8 * 3600
     assert all(

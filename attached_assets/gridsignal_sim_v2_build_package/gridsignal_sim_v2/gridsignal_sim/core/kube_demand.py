@@ -323,6 +323,9 @@ class _FacilityAdmissionReservation:
     projected_increment_mw: float
     admitted_at: float
     ends_at: float
+    # KubeDemandAgent emits one stable aggregate job id; its scale-up child
+    # cohorts may be removed independently by aggregate scale-down.
+    aggregate_job_id: Optional[str] = None
     cohort_key: Optional[str] = None
     cohort_node_count: int = 0
     remaining_mw: float = 0.0
@@ -554,7 +557,11 @@ class KubeDemandAgent:
         )
 
     def bind_facility_admissions_to_cohort(
-        self, cohort_key: str, cohort_node_count: int
+        self,
+        cohort_key: str,
+        cohort_node_count: int,
+        *,
+        aggregate_job_id: Optional[str] = None,
     ) -> None:
         """Associate this tick's accepted jobs with their physical GPU cohort."""
         if not self._facility_admissions_this_tick:
@@ -565,18 +572,27 @@ class KubeDemandAgent:
         )
         denominator = max(accepted_nodes, cohort_node_count)
         for reservation in self._facility_admissions_this_tick:
+            reservation.aggregate_job_id = aggregate_job_id
             reservation.cohort_key = cohort_key
             reservation.cohort_node_count = denominator
         self._facility_admissions_this_tick.clear()
 
-    def facility_admission_ended_cohort_keys(
-        self, sim_time: float
+    def facility_admission_cooling_probe_cohort_keys(
+        self,
+        sim_time: float,
+        compute_by_job_mw: dict[str, float],
     ) -> set[str]:
+        """Return ended or scale-removed cohorts whose cooling tail to probe."""
+        if not self.config.grid_cap_admission_enabled:
+            return set()
         return {
             reservation.cohort_key
             for reservation in self._facility_admission_reservations
             if reservation.cohort_key is not None
-            and sim_time >= reservation.ends_at
+            and (
+                sim_time >= reservation.ends_at
+                or reservation.cohort_key not in compute_by_job_mw
+            )
         }
 
     def update_facility_admission_realization(
@@ -595,7 +611,19 @@ class KubeDemandAgent:
         for reservation in self._facility_admission_reservations:
             realized_share_mw = 0.0
             cooling_share_mw = 0.0
+            cohort_missing = False
             if reservation.cohort_key is not None:
+                cohort_missing = (
+                    reservation.cohort_key not in compute_by_job_mw
+                )
+                if reservation.aggregate_job_id is not None:
+                    expected_prefix = (
+                        f"{reservation.aggregate_job_id}-cohort-"
+                    )
+                    cohort_missing = cohort_missing or (
+                        reservation.cohort_key != reservation.aggregate_job_id
+                        and not reservation.cohort_key.startswith(expected_prefix)
+                    )
                 node_fraction = (
                     reservation.node_count
                     / max(1, reservation.cohort_node_count)
@@ -609,7 +637,7 @@ class KubeDemandAgent:
                     cooling_by_job_mw.get(reservation.cohort_key, 0.0)
                     * node_fraction
                 )
-            if sim_time >= reservation.ends_at:
+            if cohort_missing or sim_time >= reservation.ends_at:
                 future_cooling_share_mw = (
                     future_cooling_peak_by_job_mw.get(
                         reservation.cohort_key or "", cooling_share_mw
