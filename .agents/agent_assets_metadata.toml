@@ -466,3 +466,31 @@ mtime_ms = 1792600824723
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/80247f7c-d17b-40e4-9a45-44324dc68246/c2000175-6fe5-49e3-a543-6300349e20a8"
 storage_version_token = "1792600841134889"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "ngh8nhrsed6FgQ2sQskeF"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/.study-mcp-data/admission-gate-trace-compact.csv"
+type = "table"
+title = "Full admission-gate trace with reservation ages"
+description = "Corrected full-day trace at every 5-second tick for K8S and RAY, including oldest_reservation_age_s, pending/ended/missing reservation totals and counts, headroom, held count, first held increment, and drawn demand."
+logical_id = "763468f8-0e02-4ef1-ab79-44bfdf10bb3a"
+content_hash = "sha256:a26b11ee03dad8a1b73bf1b54974e30004af514dfacfdca5d960b77401ace1e8"
+size = 7740690
+mtime_ms = 1793954557073
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/763468f8-0e02-4ef1-ab79-44bfdf10bb3a/bbfb68e3-ea47-430a-8228-5e907b69d10b"
+storage_version_token = "1793954590820135"
+content_type = "text/csv"
+
+[[outputs]]
+id = "FpR-A9SBH5i_EhPiWh1IB"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/.study-mcp-data/admission-gate-long-episode-every-sixth-tick.csv"
+type = "table"
+title = "Long episodes: every sixth tick with reservation ages"
+description = "Every sixth tick (30-second cadence) for the 1,220-second and 2,780-second episodes, including oldest reservation age and headroom evidence for both schedulers."
+logical_id = "419f6d71-d308-4d56-9978-0c21d1f8d8eb"
+content_hash = "sha256:4dd0536c4ddf2afa2d0f9df7b2071b69a115d43f7acfa348e6f5be7a5cbb9495"
+size = 97784
+mtime_ms = 1793954557352
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/419f6d71-d308-4d56-9978-0c21d1f8d8eb/eae46d73-e874-4916-abb1-4364015865c7"
+storage_version_token = "1793954591591151"
+content_type = "text/csv"
