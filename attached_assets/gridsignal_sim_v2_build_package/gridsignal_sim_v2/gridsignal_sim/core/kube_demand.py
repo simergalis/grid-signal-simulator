@@ -309,9 +309,13 @@ class _ActiveJob:
     scheduler_type: str = "K8S"
 
 
-# PROPOSED_HERE: treat a one-microwatt residual as fully realized to avoid
-# retaining a reservation forever while the exponential thermal response
-# approaches its steady state asymptotically.
+# PROPOSED_HERE: release a timer reservation once 99.9% of projected load is
+# realized; the remaining 0.1% is below admission precision and avoids an
+# asymptotic thermal tail retaining a reservation indefinitely.
+FACILITY_ADMISSION_REALIZATION_FRACTION = 0.999
+
+# PROPOSED_HERE: for an ended job, treat a one-microwatt cooling-tail residual
+# as settled; this is the engine's existing thermal-retention horizon.
 FACILITY_ADMISSION_REALIZATION_TOLERANCE_MW = 1e-6
 
 
@@ -669,6 +673,12 @@ class KubeDemandAgent:
                         ),
                     ),
                 )
+                if (
+                    realized_fraction
+                    >= FACILITY_ADMISSION_REALIZATION_FRACTION
+                ):
+                    reservation.remaining_mw = 0.0
+                    continue
                 reservation.remaining_mw = max(
                     0.0,
                     reservation.projected_increment_mw
@@ -677,7 +687,9 @@ class KubeDemandAgent:
             if (
                 reservation.remaining_mw
                 <= FACILITY_ADMISSION_REALIZATION_TOLERANCE_MW
-                or sim_time > reservation.ends_at + cooling_retention_s
+                or sim_time
+                > (reservation.ended_at or reservation.ends_at)
+                + cooling_retention_s
             ):
                 continue
             remaining.append(reservation)

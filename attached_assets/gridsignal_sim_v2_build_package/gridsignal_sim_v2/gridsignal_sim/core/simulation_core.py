@@ -1050,6 +1050,71 @@ def _dispatch_dump_response_mw(surplus_mw: float, elapsed_s: float, delay_s: flo
     return surplus_mw * (1.0 if delay_s <= 0.0 else min(1.0, elapsed_s / delay_s))
 
 
+def _facility_admission_realized_fraction(
+    state: SimulationState,
+    reservation: object,
+    sim_time: float,
+    dt_seconds: float,
+) -> float:
+    """Return timer-realized facility load using the engine's ramp/cooling kernels."""
+    admitted_at = reservation.admitted_at
+    elapsed = max(0.0, sim_time - admitted_at)
+    dt = max(dt_seconds, 1e-9)
+
+    if reservation.ramp_seconds <= 0.0:
+        gpu_fraction = 1.0
+    else:
+        ramp_steps = math.floor(elapsed / dt) + 1
+        gpu_fraction = GPUModule._ramp_multiplier(
+            min(1.0, ramp_steps * dt / reservation.ramp_seconds)
+        )
+
+    alpha_max = state.site.alpha_max
+    base_compute_mw = reservation.projected_increment_mw / (1.0 + alpha_max)
+    lag_target_time = sim_time - state.site.dt_thermal_seconds
+    cooling_mw = 0.0
+    if lag_target_time >= admitted_at:
+        lag_sample_index = math.floor((lag_target_time - admitted_at) / dt)
+        lag_sample_time = admitted_at + lag_sample_index * dt
+        if reservation.ramp_seconds <= 0.0:
+            lagged_gpu_fraction = 1.0
+        else:
+            lagged_ramp_steps = lag_sample_index + 1
+            lagged_gpu_fraction = GPUModule._ramp_multiplier(
+                min(
+                    1.0,
+                    lagged_ramp_steps * dt / reservation.ramp_seconds,
+                )
+            )
+        synthetic_envelope = _LoadEnvelope(
+            onset_t=(
+                reservation.cooling_onset_t
+                if reservation.cooling_onset_t is not None
+                else admitted_at
+            ),
+            history=deque(
+                [(lag_sample_time, base_compute_mw * lagged_gpu_fraction)]
+            ),
+        )
+        # Use CoolingModule's exact lag/alpha implementation on a synthetic
+        # timer-derived load sample; no realized per-job draw lookup is involved.
+        cooling_mw = state.cooling._envelope_output_mw(
+            synthetic_envelope, sim_time
+        )
+
+    if alpha_max > 0.0 and base_compute_mw > 0.0:
+        cooling_fraction = cooling_mw / (alpha_max * base_compute_mw)
+    else:
+        cooling_fraction = 0.0
+    return min(
+        1.0,
+        max(
+            0.0,
+            (gpu_fraction + alpha_max * cooling_fraction) / (1.0 + alpha_max),
+        ),
+    )
+
+
 def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     """The fixed-order tick evaluation (Design Spec Section 5 / 10.1):
 
@@ -1457,9 +1522,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     if _demand_replay is None:
         for _agent in state.kube_agents:
+            if not _agent.config.grid_cap_admission_enabled:
+                continue
             _ended_cohorts = (
                 _agent.facility_admission_cooling_probe_cohort_keys(
-                    sim_time, _per_job_draws
+                    sim_time
                 )
             )
             _future_cooling_peak_by_job_mw = {
@@ -1468,8 +1535,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 )
                 for job_id in _ended_cohorts
             }
+            _realized_fraction_by_event = {
+                reservation.event_id: _facility_admission_realized_fraction(
+                    state, reservation, sim_time, dt_seconds
+                )
+                for reservation in _agent._facility_admission_reservations
+                if (
+                    reservation.ended_at is None
+                    and sim_time < reservation.ends_at
+                )
+            }
             _agent.update_facility_admission_realization(
-                compute_by_job_mw=_per_job_draws,
+                realized_fraction_by_event=_realized_fraction_by_event,
                 cooling_by_job_mw=state.cooling._last_output_by_job_mw,
                 future_cooling_peak_by_job_mw=(
                     _future_cooling_peak_by_job_mw

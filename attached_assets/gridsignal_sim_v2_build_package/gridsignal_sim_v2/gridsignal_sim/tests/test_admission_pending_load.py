@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 from unittest.mock import patch
 
@@ -142,11 +143,11 @@ def test_tc_adm_5_scale_down_releases_gpu_and_settled_cooling_reservations() -> 
     # Aggregate scale-down removed this cohort from the GPU draw map. The
     # remaining reservation is only the same future-cooling-minus-current tail.
     probes = agent.facility_admission_cooling_probe_cohort_keys(
-        305.0, {aggregate_job_id: 0.015}
+        305.0
     )
     assert probes == {removed_cohort_key}
     agent.update_facility_admission_realization(
-        compute_by_job_mw={aggregate_job_id: 0.015},
+        realized_fraction_by_event={},
         cooling_by_job_mw={removed_cohort_key: 0.002},
         future_cooling_peak_by_job_mw={removed_cohort_key: 0.0035},
         sim_time=305.0,
@@ -158,7 +159,7 @@ def test_tc_adm_5_scale_down_releases_gpu_and_settled_cooling_reservations() -> 
     # Once the engine's retained cooling envelope has settled, no reservation
     # survives, even though aggregate scale-down removed the GPU cohort early.
     agent.update_facility_admission_realization(
-        compute_by_job_mw={aggregate_job_id: 0.015},
+        realized_fraction_by_event={},
         cooling_by_job_mw={},
         future_cooling_peak_by_job_mw={removed_cohort_key: 0.0},
         sim_time=496.0,
@@ -170,7 +171,7 @@ def test_tc_adm_5_scale_down_releases_gpu_and_settled_cooling_reservations() -> 
 
 def test_tc_adm_5_aggregate_scale_down_does_not_strand_live_job_reservation() -> None:
     raw = json.loads(QUEUE_SCENARIO_PATH.read_text(encoding="utf-8"))
-    raw["end_sim_time"] = 600
+    raw["end_sim_time"] = 700
     raw["workload_events"] = []
     raw["non_gpu_load_profile_mw"] = []
     k8s = next(
@@ -190,7 +191,7 @@ def test_tc_adm_5_aggregate_scale_down_does_not_strand_live_job_reservation() ->
         {
             "job_id": "scale-down-still-live",
             "arrival_time_s": 10.0,
-            "duration_s": 300.0,
+            "duration_s": 600.0,
             "node_count": 1,
             "hardware_profile_id": "hopper_8gpu_air",
         },
@@ -208,22 +209,38 @@ def test_tc_adm_5_aggregate_scale_down_does_not_strand_live_job_reservation() ->
             run_seed=1729,
         )
         agent = ctx.sim_state.kube_agents[0]
-        aggregate_nodes_after_thermal_settle = 0
-        second_reservation_after_thermal_settle = True
+        settle_s = math.ceil(
+            (
+                ctx.sim_state.gpu_modules[0].ramp_seconds
+                + ctx.sim_state.site.dt_thermal_seconds
+                + 5.0 * ctx.sim_state.site.tau_seconds
+            )
+            / TICK_SECONDS
+        ) * TICK_SECONDS
+        aggregate_nodes_at_250 = 0
+        second_reservation_at_250 = False
+        second_reservation_after_settle = True
         for _ in range(int(spec.end_sim_time // TICK_SECONDS)):
             tick = ctx.step()
-            if tick.sim_time_seconds >= 250.0:
-                aggregate_nodes_after_thermal_settle = sum(
+            if tick.sim_time_seconds >= 250.0 and aggregate_nodes_at_250 == 0:
+                aggregate_nodes_at_250 = sum(
                     ctx.sim_state.gpu_modules[0]._node_counts.values()
                 )
-                second_reservation_after_thermal_settle = any(
+                second_reservation_at_250 = any(
+                    reservation.event_id.startswith("scale-down-still-live")
+                    for reservation in agent._facility_admission_reservations
+                )
+            if tick.sim_time_seconds >= 400.0:
+                second_reservation_after_settle = any(
                     reservation.event_id.startswith("scale-down-still-live")
                     for reservation in agent._facility_admission_reservations
                 )
                 break
 
-    assert aggregate_nodes_after_thermal_settle == 1
-    assert not second_reservation_after_thermal_settle
+    assert aggregate_nodes_at_250 == 1
+    assert not second_reservation_at_250
+    assert not second_reservation_after_settle
+    assert 400.0 >= 10.0 + settle_s
 
 
 def test_tc_adm_6_held_admission_unblocks_on_first_fitting_headroom() -> None:
@@ -257,13 +274,13 @@ def test_tc_adm_7_realized_draw_is_not_counted_again_as_pending() -> None:
     # 0.012 MW is already represented by previous-tick demand; only the
     # unrealized remainder belongs in the pending reservation sum.
     agent.update_facility_admission_realization(
-        compute_by_job_mw={cohort_key: 0.010},
+        realized_fraction_by_event={"admitted-job": 0.75},
         cooling_by_job_mw={cohort_key: 0.002},
         future_cooling_peak_by_job_mw={},
         sim_time=5.0,
         cooling_retention_s=190.0,
     )
-    assert reservation.remaining_mw == pytest.approx(0.003912)
+    assert reservation.remaining_mw == pytest.approx(0.003978)
     state = KubeGridState(
         p_dispatch_required_mw=0.0,
         bess_soc_fraction=0.0,
@@ -273,5 +290,101 @@ def test_tc_adm_7_realized_draw_is_not_counted_again_as_pending() -> None:
         facility_admission_pending_mw=agent.facility_admission_unrealized_mw,
     )
     assert state.remaining_facility_admission_headroom_mw() == pytest.approx(
-        1.0 - 0.012 - 0.003912
+        1.0 - 0.012 - 0.003978
     )
+
+
+def test_tc_adm_8_pending_total_is_bounded_by_recent_admissions() -> None:
+    raw = json.loads(QUEUE_SCENARIO_PATH.read_text(encoding="utf-8"))
+    spec = ScenarioSpec.model_validate(raw)
+    admitted_reservations: list[tuple[KubeDemandAgent, object]] = []
+    original_reserve = KubeDemandAgent._reserve_facility_admission
+
+    def record_reservation(agent, admission, grid_state) -> None:
+        previous_count = len(agent._facility_admission_reservations)
+        original_reserve(agent, admission, grid_state)
+        if len(agent._facility_admission_reservations) > previous_count:
+            admitted_reservations.append(
+                (agent, agent._facility_admission_reservations[-1])
+            )
+
+    with patch(
+        "runtime.run_manager._time_module.time",
+        return_value=PINNED_CLOCK,
+    ):
+        ctx = build_run_context_from_spec(
+            "admission-pending-full-day",
+            spec.model_dump(mode="json"),
+            run_seed=1729,
+        )
+        max_ramp_s = max(
+            (gpu.ramp_seconds for gpu in ctx.sim_state.gpu_modules),
+            default=0.0,
+        )
+        settle_s = math.ceil(
+            (
+                max_ramp_s
+                + ctx.sim_state.site.dt_thermal_seconds
+                + 5.0 * ctx.sim_state.site.tau_seconds
+            )
+            / TICK_SECONDS
+        ) * TICK_SECONDS
+        cooling_retention_s = ctx.sim_state.cooling.retention_seconds
+        with patch.object(
+            KubeDemandAgent,
+            "_reserve_facility_admission",
+            record_reservation,
+        ):
+            for _ in range(int(spec.end_sim_time // TICK_SECONDS)):
+                tick = ctx.step()
+                now = tick.sim_time_seconds
+                pending_mw = sum(
+                    agent.facility_admission_unrealized_mw
+                    for agent in ctx.sim_state.kube_agents
+                )
+                recent_admissions_mw = sum(
+                    reservation.projected_increment_mw
+                    for _, reservation in admitted_reservations
+                    if now
+                    <= max(
+                        reservation.admitted_at + settle_s,
+                        (
+                            reservation.ended_at + cooling_retention_s
+                            if reservation.ended_at is not None
+                            else reservation.admitted_at + settle_s
+                        ),
+                    )
+                )
+                pending_rows = [
+                    (
+                        reservation.event_id,
+                        reservation.admitted_at,
+                        reservation.ends_at,
+                        reservation.ended_at,
+                        reservation.remaining_mw,
+                    )
+                    for agent in ctx.sim_state.kube_agents
+                    for reservation in agent._facility_admission_reservations
+                ]
+                assert pending_mw <= recent_admissions_mw + 1e-6, (
+                    f"t={now}: pending={pending_mw}, recent="
+                    f"{recent_admissions_mw}, settle={settle_s}, "
+                    f"pending rows={pending_rows}"
+                )
+                for agent, reservation in admitted_reservations:
+                    reservation_deadline = (
+                        max(
+                            reservation.admitted_at + settle_s,
+                            reservation.ended_at + cooling_retention_s,
+                        )
+                        if reservation.ended_at is not None
+                        else reservation.admitted_at + settle_s
+                    )
+                    if now > reservation_deadline + TICK_SECONDS:
+                        assert all(
+                            current is not reservation
+                            for current in agent._facility_admission_reservations
+                        ), (
+                            f"{reservation.event_id} remained reserved after "
+                            f"its {reservation_deadline:.1f}s settle deadline"
+                        )

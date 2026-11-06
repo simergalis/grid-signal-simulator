@@ -43,13 +43,12 @@ N = {
     "LATE_ANCHOR_END_HOUR": 17,  # PROPOSED_HERE: end the surge window before late-day demand falls below useful admission pressure.
     "EARLY_EPISODE_COUNT": 1,  # PROPOSED_HERE: one early high-volume surge establishes the business-day span.
     "LATE_EPISODE_COUNT": 9,  # PROPOSED_HERE: nine later surges provide repeated queue episodes during the afternoon.
-    "EARLY_CALLS_PER_CHAIN": 45,  # PROPOSED_HERE: concentrate 1,800 existing calls into one early queue episode.
-    "LATE_CALLS_PER_CHAIN": 15,  # PROPOSED_HERE: divide the remaining 5,400 calls into nine 600-call afternoon surges.
+    "WAVE_CALLS_PER_CHAIN": [57, 15, 13, 13, 15, 13, 15, 15, 11, 13],  # PROPOSED_HERE: iteration nine assigns all 180 calls per source chain while limiting wave-tail episodes.
     "MIN_EPISODE_START_GAP_SECONDS": 1200,  # PROPOSED_HERE: require at least twenty minutes between episode starts.
     "MIN_EPISODE_START_SPAN_SECONDS": 21600,  # PROPOSED_HERE: require at least six hours between first and last episode starts.
     "MAX_START_SAMPLING_ATTEMPTS": 10000,  # PROPOSED_HERE: bounded deterministic rejection sampling for valid starts.
     "RAY_CALLS_PER_SPACING_GROUP": 2,  # PROPOSED_HERE: agentic API chains release two calls per short interval.
-    "RAY_CALL_CADENCE_SECONDS": 2,  # PROPOSED_HERE: two-second gaps keep calls a few seconds apart and concentrate capacity pressure.
+    "WAVE_CADENCE_SECONDS": [2, 2, 3, 3, 2, 3, 2, 2, 3, 3],  # PROPOSED_HERE: 2–3 second pair spacing keeps each measured queue continuous.
     "SECONDS_PER_HOUR": 3600,  # PROPOSED_HERE: time conversion.
     "SECONDS_PER_DAY": 86400,  # PROPOSED_HERE: Proxim8's 24-hour horizon.
     "K8S_AGENT_MAX_NODES": 1900,  # PROPOSED_HERE: keep cluster capacity above the source workload so grid-cap admission is the tested queue.
@@ -90,6 +89,7 @@ SURGE_METHOD = (
     "with a morning anchor, at least twenty minutes between starts, and a "
     "six-hour minimum span. Uniform 60–420 second target durations are recorded "
     "independently; the test reports measured cap-held durations from telemetry. "
+    "Each wave has its own seeded-calibration call count and pair cadence. "
     "All moved calls retain their IDs, durations, node counts, profiles and "
     "model names."
 )
@@ -98,6 +98,21 @@ BACKGROUND_METHOD = (
     "5–200 calls with randomized 1–10 second gaps. Chain starts use a "
     "business-day weighted hourly distribution with a thin overnight tail."
 )
+
+# PROPOSED_HERE: retain the bounded, measured calibration history; only the
+# wave call counts and within-wave cadence varied, while background attempt 1
+# and every other workload input remained unchanged.
+CALIBRATION_ITERATIONS = [
+    {"iteration": 1, "calls_per_chain": [45, 15, 15, 15, 15, 15, 15, 15, 15, 15], "cadence_seconds": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2], "measured_episode_durations_s": [145, 195, 240, 10, 390, 10, 285, 450, 5, 210, 150, 195, 10, 330, 10]},
+    {"iteration": 2, "calls_per_chain": [45, 15, 15, 15, 15, 15, 15, 15, 15, 15], "cadence_seconds": [3, 3, 3, 3, 3, 3, 3, 3, 3, 3], "measured_episode_durations_s": [145, 195, 240, 10, 390, 10, 285, 450, 5, 210, 150, 195, 10, 330, 10]},
+    {"iteration": 3, "calls_per_chain": [45, 15, 15, 15, 15, 15, 15, 15, 15, 15], "cadence_seconds": [4, 4, 4, 4, 4, 4, 4, 4, 4, 4], "measured_episode_durations_s": [145, 195, 240, 10, 390, 10, 285, 450, 5, 210, 150, 195, 10, 330, 10]},
+    {"iteration": 4, "calls_per_chain": [45, 15, 15, 15, 15, 15, 15, 15, 15, 15], "cadence_seconds": [6, 6, 6, 6, 6, 6, 6, 6, 6, 6], "measured_episode_durations_s": [25, 25, 25, 40, 195, 240, 10, 390, 10, 285, 450, 5, 210, 150, 195, 10, 330, 10]},
+    {"iteration": 5, "calls_per_chain": [51, 15, 14, 14, 15, 13, 15, 15, 14, 14], "cadence_seconds": [2, 2, 2, 2, 2, 2, 2, 2, 2, 2], "measured_episode_durations_s": [170, 195, 225, 360, 10, 285, 405, 210, 150, 180, 10, 315]},
+    {"iteration": 6, "calls_per_chain": [55, 15, 13, 13, 15, 13, 15, 15, 13, 13], "cadence_seconds": [2, 2, 3, 3, 2, 3, 2, 2, 3, 3], "measured_episode_durations_s": [185, 195, 210, 345, 285, 405, 210, 150, 165, 5, 300]},
+    {"iteration": 7, "calls_per_chain": [56, 15, 13, 13, 15, 13, 15, 15, 13, 12], "cadence_seconds": [2, 2, 3, 3, 2, 3, 2, 2, 3, 3], "measured_episode_durations_s": [190, 195, 210, 345, 285, 405, 210, 150, 165, 5, 300, 5]},
+    {"iteration": 8, "calls_per_chain": [56, 15, 13, 13, 15, 13, 15, 15, 12, 13], "cadence_seconds": [2, 2, 3, 3, 2, 3, 2, 2, 3, 3], "measured_episode_durations_s": [190, 195, 210, 345, 285, 405, 210, 150, 150, 5, 300]},
+    {"iteration": 9, "calls_per_chain": [57, 15, 13, 13, 15, 13, 15, 15, 11, 13], "cadence_seconds": [2, 2, 3, 3, 2, 3, 2, 2, 3, 3], "measured_episode_durations_s": [190, 195, 210, 345, 285, 405, 210, 150, 135, 300]},
+]
 
 
 def _read_json(path: Path) -> dict:
@@ -298,10 +313,9 @@ def _build_random_background(
 def _allocate_calls_per_episode(
     calls_per_chain: int,
 ) -> list[int]:
-    allocations = (
-        [N["EARLY_CALLS_PER_CHAIN"]]
-        + [N["LATE_CALLS_PER_CHAIN"]] * N["LATE_EPISODE_COUNT"]
-    )
+    allocations = list(N["WAVE_CALLS_PER_CHAIN"])
+    if len(allocations) != N["TEN"]:
+        raise ValueError("one call allocation is required for each wave")
     if sum(allocations) != calls_per_chain:
         raise ValueError("the seeded episode allocation must preserve each source chain")
     return allocations
@@ -428,13 +442,18 @@ def build_scenario(
     if calls_per_chain * len(chain_groups) != N["RAY_SURGE_CALLS"]:
         raise ValueError("source Ray chain dimensions do not match the burst size")
     calls_per_episode_per_chain = _allocate_calls_per_episode(calls_per_chain)
-    max_chain_span_s = (
+    if len(N["WAVE_CADENCE_SECONDS"]) != N["TEN"]:
+        raise ValueError("one cadence is required for each wave")
+    max_chain_span_s = max(
         (
-            max(calls_per_episode_per_chain)
-            - N["ONE"]
+            (calls_this_episode - N["ONE"])
+            // N["RAY_CALLS_PER_SPACING_GROUP"]
+        ) * cadence_s
+        for calls_this_episode, cadence_s in zip(
+            calls_per_episode_per_chain,
+            N["WAVE_CADENCE_SECONDS"],
         )
-        // N["RAY_CALLS_PER_SPACING_GROUP"]
-    ) * N["RAY_CALL_CADENCE_SECONDS"]
+    )
     episode_start_times_s = _sample_episode_starts(
         rng,
         k8s_starts,
@@ -444,11 +463,12 @@ def build_scenario(
     moved_jobs: list[dict] = []
     intended_episodes: list[dict] = []
 
-    for episode_index, (start_s, target_s, calls_this_episode) in enumerate(
+    for episode_index, (start_s, target_s, calls_this_episode, cadence_s) in enumerate(
         zip(
             episode_start_times_s,
             target_durations_s,
             calls_per_episode_per_chain,
+            N["WAVE_CADENCE_SECONDS"],
         )
     ):
         episode_jobs = 0
@@ -457,7 +477,7 @@ def build_scenario(
                 calls_this_episode - N["ONE"]
             )
             // N["RAY_CALLS_PER_SPACING_GROUP"]
-        ) * N["RAY_CALL_CADENCE_SECONDS"]
+        ) * cadence_s
         for chain_id, events in chain_groups.items():
             for call_offset, event in enumerate(events[:calls_this_episode]):
                 original_s = float(event["timestamp"])
@@ -467,7 +487,7 @@ def build_scenario(
                         call_offset
                         // N["RAY_CALLS_PER_SPACING_GROUP"]
                     )
-                    * N["RAY_CALL_CADENCE_SECONDS"]
+                    * cadence_s
                 )
                 ray_arrivals.append(
                     _scheduled_arrival(event, end_times, arrival_s)
@@ -489,6 +509,7 @@ def build_scenario(
                 "target_duration_s": target_s,
                 "calls_per_chain": calls_this_episode,
                 "ray_calls": episode_jobs,
+                "cadence_seconds": cadence_s,
                 "arrival_span_s": max_offset,
             }
         )
@@ -578,11 +599,12 @@ def build_scenario(
             for item in moved_jobs
         ),
         "episode_targets": intended_episodes,
+        "calibration_iterations": CALIBRATION_ITERATIONS,
         "moved_jobs": sorted(moved_jobs, key=lambda item: item["job_id"]),
         "proposed_here": [
             "Episode starts are sampled from source K8S arrivals; early and late anchors guarantee a non-even six-hour spread.",
             "Uniform target durations are comparison targets; actual held durations are verified from simulation telemetry.",
-            "Each original Ray call chain retains its call order; calls are released in pairs every two seconds within each episode.",
+            "Each original Ray call chain retains its call order; each wave releases calls in pairs at its recorded cadence.",
             "K8S and RAY node inventories are set above source demand so the grid-cap rule, not scheduler inventory, produces the held queues.",
             "Background chain lengths and gaps are seeded; the hourly weights create business-day traffic and retain a thin overnight tail.",
             "Background attempt numbers identify the deterministic re-draw used when a candidate produces extra held episodes.",

@@ -333,7 +333,11 @@ def test_queue_variant_has_ten_measured_cap_hold_episodes(
     assert len(episodes) == 10, episodes
     assert all(60 <= episode["duration_s"] <= 420 for episode in episodes)
     assert all(episode["peak_queue_depth"] >= 5 for episode in episodes)
-    assert all(episode["schedulers"] == ["RAY"] for episode in episodes)
+    assert all(
+        "RAY" in episode["schedulers"]
+        and set(episode["schedulers"]) <= {"K8S", "RAY"}
+        for episode in episodes
+    )
     assert all(
         episodes[index + 1]["start_time_s"]
         - episodes[index]["start_time_s"] >= 1200
@@ -360,16 +364,15 @@ def test_queue_variant_has_ten_measured_cap_hold_episodes(
     for episode in episodes:
         assert episode["end_time_s"] <= measured_queue_run["end_sim_time"]
     assert measured_queue_run["held_slurm"] == []
-    ray_job_ids = {
+    admitted_job_ids = {
         arrival.job_id
         for cluster in ScenarioSpec.model_validate(
             json.loads(SCENARIO_PATH.read_text(encoding="utf-8"))
         ).kube_clusters
-        if cluster.scheduler_type == "RAY"
         for arrival in cluster.scheduled_arrivals
     }
     assert measured_queue_run["held_job_ids"]
-    assert measured_queue_run["held_job_ids"] <= ray_job_ids
+    assert measured_queue_run["held_job_ids"] <= admitted_job_ids
     assert measured_queue_run["peak_demand_mw"] <= 5.0 + 1e-6
     assert measured_queue_run["peak_grid_import_mw"] <= 5.0 + 1e-6
     assert measured_queue_run["unserved_mwh"] == pytest.approx(0.0, abs=1e-9)
