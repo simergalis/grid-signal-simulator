@@ -323,6 +323,9 @@ class _FacilityAdmissionReservation:
     projected_increment_mw: float
     admitted_at: float
     ends_at: float
+    ramp_seconds: float = 120.0
+    cooling_onset_t: Optional[float] = None
+    ended_at: Optional[float] = None
     # KubeDemandAgent emits one stable aggregate job id; its scale-up child
     # cohorts may be removed independently by aggregate scale-down.
     aggregate_job_id: Optional[str] = None
@@ -562,6 +565,8 @@ class KubeDemandAgent:
         cohort_node_count: int,
         *,
         aggregate_job_id: Optional[str] = None,
+        ramp_seconds: Optional[float] = None,
+        cooling_onset_t: Optional[float] = None,
     ) -> None:
         """Associate this tick's accepted jobs with their physical GPU cohort."""
         if not self._facility_admissions_this_tick:
@@ -575,14 +580,32 @@ class KubeDemandAgent:
             reservation.aggregate_job_id = aggregate_job_id
             reservation.cohort_key = cohort_key
             reservation.cohort_node_count = denominator
+            if ramp_seconds is not None:
+                reservation.ramp_seconds = ramp_seconds
+            if cooling_onset_t is not None:
+                reservation.cooling_onset_t = cooling_onset_t
         self._facility_admissions_this_tick.clear()
+
+    def mark_facility_admission_cohorts_ended(
+        self, cohort_keys: set[str], end_time: float
+    ) -> None:
+        """Start the cooling-tail phase for jobs physically ended this tick."""
+        if not self.config.grid_cap_admission_enabled or not cohort_keys:
+            return
+        for reservation in self._facility_admission_reservations:
+            if reservation.cohort_key in cohort_keys:
+                reservation.ended_at = min(
+                    end_time,
+                    reservation.ended_at
+                    if reservation.ended_at is not None
+                    else end_time,
+                )
 
     def facility_admission_cooling_probe_cohort_keys(
         self,
         sim_time: float,
-        compute_by_job_mw: dict[str, float],
     ) -> set[str]:
-        """Return ended or scale-removed cohorts whose cooling tail to probe."""
+        """Return ended cohorts whose remaining cooling tail must be measured."""
         if not self.config.grid_cap_admission_enabled:
             return set()
         return {
@@ -590,68 +613,66 @@ class KubeDemandAgent:
             for reservation in self._facility_admission_reservations
             if reservation.cohort_key is not None
             and (
-                sim_time >= reservation.ends_at
-                or reservation.cohort_key not in compute_by_job_mw
+                reservation.ended_at is not None
+                or sim_time >= reservation.ends_at
             )
         }
 
     def update_facility_admission_realization(
         self,
         *,
-        compute_by_job_mw: dict[str, float],
+        realized_fraction_by_event: dict[str, float],
         cooling_by_job_mw: dict[str, float],
         future_cooling_peak_by_job_mw: dict[str, float],
         sim_time: float,
         cooling_retention_s: float,
     ) -> None:
-        """Release reservations only as the engine's corresponding draw appears."""
+        """Decay active reservations by timer; retain only early-end cooling tails."""
         if not self.config.grid_cap_admission_enabled:
             return
         remaining: list[_FacilityAdmissionReservation] = []
         for reservation in self._facility_admission_reservations:
-            realized_share_mw = 0.0
-            cooling_share_mw = 0.0
-            cohort_missing = False
-            if reservation.cohort_key is not None:
-                cohort_missing = (
-                    reservation.cohort_key not in compute_by_job_mw
-                )
-                if reservation.aggregate_job_id is not None:
-                    expected_prefix = (
-                        f"{reservation.aggregate_job_id}-cohort-"
+            ended_at = reservation.ended_at
+            if ended_at is not None or sim_time >= reservation.ends_at:
+                if ended_at is None:
+                    ended_at = reservation.ends_at
+                cooling_share_mw = 0.0
+                if reservation.cohort_key is not None:
+                    node_fraction = (
+                        reservation.node_count
+                        / max(1, reservation.cohort_node_count)
                     )
-                    cohort_missing = cohort_missing or (
-                        reservation.cohort_key != reservation.aggregate_job_id
-                        and not reservation.cohort_key.startswith(expected_prefix)
+                    cooling_share_mw = (
+                        cooling_by_job_mw.get(reservation.cohort_key, 0.0)
+                        * node_fraction
                     )
-                node_fraction = (
-                    reservation.node_count
-                    / max(1, reservation.cohort_node_count)
-                )
-                cohort_draw_mw = (
-                    compute_by_job_mw.get(reservation.cohort_key, 0.0)
-                    + cooling_by_job_mw.get(reservation.cohort_key, 0.0)
-                )
-                realized_share_mw = cohort_draw_mw * node_fraction
-                cooling_share_mw = (
-                    cooling_by_job_mw.get(reservation.cohort_key, 0.0)
-                    * node_fraction
-                )
-            if cohort_missing or sim_time >= reservation.ends_at:
                 future_cooling_share_mw = (
                     future_cooling_peak_by_job_mw.get(
                         reservation.cohort_key or "", cooling_share_mw
                     )
-                    * reservation.node_count
-                    / max(1, reservation.cohort_node_count)
+                    * (
+                        reservation.node_count
+                        / max(1, reservation.cohort_node_count)
+                    )
                 )
                 reservation.remaining_mw = max(
                     0.0, future_cooling_share_mw - cooling_share_mw
                 )
+                reservation.ended_at = ended_at
             else:
+                realized_fraction = min(
+                    1.0,
+                    max(
+                        0.0,
+                        realized_fraction_by_event.get(
+                            reservation.event_id, 0.0
+                        ),
+                    ),
+                )
                 reservation.remaining_mw = max(
                     0.0,
-                    reservation.projected_increment_mw - realized_share_mw,
+                    reservation.projected_increment_mw
+                    * (1.0 - realized_fraction),
                 )
             if (
                 reservation.remaining_mw

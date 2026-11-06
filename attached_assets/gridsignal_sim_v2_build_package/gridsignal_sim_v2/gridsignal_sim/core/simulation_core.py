@@ -18,6 +18,7 @@ from core.frequency_reporting import frequency_is_valid, protection_is_configure
 import logging
 import math
 import dataclasses
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -29,6 +30,7 @@ from .asset_modules import (
     SolarModule,
     TurbineModule,
     TurbineState,
+    _LoadEnvelope,
 )
 from .fuel_cell_module import BlockFuelCellFleet, FuelCellModule
 from .loading import (
@@ -555,7 +557,45 @@ class SimulationState:
                         == f"kube-admission-{_agent.config.cluster_id or _agent.config.tenant_id}"
                         else None
                     ),
+                    ramp_seconds=(
+                        0.0
+                        if signal.event_type == WorkloadEventType.RUNNING
+                        else gpu._ramp_seconds_for_job(_cohort_key)
+                    ),
+                    cooling_onset_t=signal.timestamp,
                 )
+        if signal.event_type == WorkloadEventType.SCALE:
+            _ended_admission_cohorts = set(
+                gpu._last_scale_removed_cohort_keys
+            )
+        elif signal.event_type in (
+            WorkloadEventType.JOB_END,
+            WorkloadEventType.CANCELLED,
+            WorkloadEventType.JOB_FAILED,
+            WorkloadEventType.JOB_TIMEOUT,
+            WorkloadEventType.JOB_PREEMPTED,
+        ):
+            _ended_admission_cohorts = {
+                signal.job_id,
+                *_cohort_keys_before_end,
+            }
+        else:
+            _ended_admission_cohorts = set()
+        if _ended_admission_cohorts:
+            _signal_scheduler = (
+                signal.scheduler_type.value
+                if hasattr(signal.scheduler_type, "value")
+                else signal.scheduler_type
+            )
+            for _agent in self.kube_agents:
+                if (
+                    _agent.config.grid_cap_admission_enabled
+                    and _agent.config.cluster_id == signal.cluster_id
+                    and _agent.config.scheduler_type == _signal_scheduler
+                ):
+                    _agent.mark_facility_admission_cohorts_ended(
+                        _ended_admission_cohorts, signal.timestamp
+                    )
         if signal.event_type == WorkloadEventType.STARTING:
             # Instrumentation only: preserve the event timestamp before any
             # GPU ramp advances.  This does not alter the staging call below.
