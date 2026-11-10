@@ -49,7 +49,7 @@ Thumbs.db
 .local/
 
 # GridSignal — large build packages and uploaded assets
-attached_assets/
+attached_assets/*.zip
 *.zip
 __pycache__/
 *.pyc
